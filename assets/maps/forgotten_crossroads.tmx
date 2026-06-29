@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="400" height="400" tilewidth="8" tileheight="8" infinite="0" nextlayerid="4" nextobjectid="24">
+ <objectgroup id="2" name="ground">
+  <object id="8" x="-42.4242" y="-48.4848" width="90.9091" height="3312.12"/>
+  <object id="10" x="3166.67" y="-90.9091" width="115.152" height="3442.42"/>
+  <object id="11" x="21.2121" y="2745.45" width="3203.03" height="463.636"/>
+  <object id="13" x="1924.24" y="2587.88" width="824.242" height="69.697"/>
+  <object id="15" x="306.061" y="2557.58" width="639.394" height="51.5152"/>
+  <object id="16" x="2718.18" y="2375.76" width="266.667" height="112.121"/>
+ </objectgroup>
+ <objectgroup id="3" name="spikes">
+  <object id="17" x="1554.55" y="2603.03" width="106.061" height="148.485"/>
+ </objectgroup>
+</map>
