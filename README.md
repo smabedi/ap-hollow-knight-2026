@@ -1,24 +1,27 @@
-# Hollow Knight 2D Clone (Java GUI)
+# Hollow Knight 2D Clone (LibGDX & Box2D)
 
-A native 2D side-scroller inspired by *Hollow Knight*, developed entirely from scratch using **Java Swing and AWT**. This project was built as homework for the Advanced Programming (AP) course, specifically focusing on native rendering without the use of external game engines.
+A 2D side-scroller inspired by *Hollow Knight*, developed using the **LibGDX framework and Box2D physics engine**. This project was built as the Graphics Assignment for the Advanced Programming (AP) course.
 
 ## 📌 Project Overview
-Built strictly using the **MVC (Model-View-Controller)** architecture, this game engine processes rendering, physics, and game logic independently. By leveraging Java Swing's `JPanel` and `Graphics2D` components, it features a custom render loop, dynamic camera tracking, and complex entity AI.
+Built strictly using the **MVC (Model-View-Controller)** architecture, this game separates rendering, physics, and game logic. By leveraging LibGDX's OpenGL wrappers, Tiled maps (`.tmx`), and Box2D for rigid body physics, it features a robust game loop, dynamic camera tracking, and complex entity AI.
 
 ## 🚀 Core Features
-* **Native Swing Graphics:** Custom sprite rendering, animation frames, and visual effects handled entirely through Java's native 2D graphics API.
-* **Custom Physics Engine:** Handles gravity, collision detection, and advanced platforming mechanics including Dashing, Double Jumping, and Pogo-Jumping off hazards.
-* **Complex AI State Machines:** Features 4 standard enemy types and a multiphase boss fight (False Knight) equipped with distance-based decision logic, anti-spam move generation, and dynamic phase scaling.
-* **Charm & Inventory System:** An interactive pause menu allowing players to equip up to 5 different gameplay modifiers (Charms) using a 3-Notch limitation system.
+* **LibGDX & Scene2D Rendering:** Custom sprite rendering, UI stages for menus and HUDs, and dynamic orthographic camera tracking.
+* **Box2D Physics Engine:** Handles deterministic gravity, collision detection (via sensors), and advanced platforming mechanics including Dashing, Double Jumping, and Pogo-Jumping off hazards.
+* **Tiled Map Parsing:** Dynamically loads environments like Forgotten Crossroads and Greenpath, automatically converting map logic layers into Box2D static bodies.
+* **Complex AI State Machines:** Features environment-specific enemies (e.g., Crawlids, Mosquitoes) and a multiphase False Knight boss fight equipped with distance-based decision logic, anti-spam move generation, and dynamic phase scaling.
+* **Charm & Inventory System:** An interactive Scene2D pause menu allowing players to equip gameplay modifiers (Charms) using a Notch limitation system.
 * **Dynamic Spell & Soul System:** Combat interactions fill a Soul Vessel, which can be spent dynamically on healing (Focus) or casting unique spells (Vengeful Spirit, Howling Wraiths).
-* **JSON State Persistence:** Complete game state saving and loading (Player HP, Location, Soul, and unlocked Achievements) via JSON serialization.
+* **SQLite State Persistence:** Complete game state saving and loading (Player HP, Location, Soul, Playtime, and Achievements) utilizing a local, serverless SQLite relational database for robust, portable data management.
 
 ## 🛠️ Technical Stack
 * **Language:** Java
 * **Architecture:** MVC (Model-View-Controller)
-* **GUI Framework:** Java Swing / AWT
-* **IDE:** JetBrains IntelliJ IDEA
-* **Data Format:** JSON
+* **Game Framework:** LibGDX
+* **Physics Engine:** Box2D
+* **Level Design:** Tiled Map Editor
+* **Build Tool:** Gradle
+* **Database:** SQLite (JDBC)
 
 ## 🎮 Controls
 * **Movement:** Arrow Keys
@@ -26,17 +29,24 @@ Built strictly using the **MVC (Model-View-Controller)** architecture, this game
 * **Dash:** `C`
 * **Nail Attack:** `X` (Press `Down + X` while in air to Pogo)
 * **Focus (Heal):** Hold `A`
-* **Menus:** `Escape` (Pause/Settings), `I` (Inventory)
+* **Menus:** `Escape` (Pause/Settings), `I` (Inventory), `Tab` (Map)
 
 ## 📁 Getting Started
 1. Clone the repository:
-   https://github.com/smabedi/ap-hollow-knight-gui-2026.git
+   https://github.com/smabedi/ap-hollow-knight-2026.git
 2. Open the project folder inside **IntelliJ IDEA**.
-3. Allow the IDE to resolve the project structure and sync the JDK.
-4. Run the main entry point to launch the Java Swing graphical interface.
+3. Allow the IDE to resolve the project structure and sync the **Gradle** dependencies.
+4. Open the Gradle tab and run the `lwjgl3:run` task to launch the game.
 
 ## 🎓 Academic Context
 * **Institution:** Sharif University of Technology
 * **Course:** Advanced Programming (AP)
 * **Semester:** Spring 2026
-* **Assignment:** Homework #4 (Graphics in Java)
+* **Assignment:** Exercise 2 (Graphics Assignment)
+
+## 📝 License & Copyright
+**Code:** All original Java source code within this repository is licensed under the MIT License.
+
+**Assets & IP Disclaimer:** This project was created strictly for educational purposes as a university assignment. All *Hollow Knight* intellectual property, characters, environmental art, audio assets, and original game concepts are the exclusive property of **Team Cherry**.
+
+The game assets (images, sounds, fonts) included in this repository are **NOT** covered by the MIT License and are used under the assumption of Fair Use for non-commercial, educational purposes. No copyright infringement is intended.
