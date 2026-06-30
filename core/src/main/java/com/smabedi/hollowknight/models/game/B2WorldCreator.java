@@ -30,7 +30,7 @@ public class B2WorldCreator {
             fixtureDef.shape = shape;
             fixtureDef.friction = 0.5f;
 
-            body.createFixture(fixtureDef);
+            body.createFixture(fixtureDef).setUserData("ground");
         }
 
         // Generate Static SPIKES Hitboxes
@@ -48,7 +48,7 @@ public class B2WorldCreator {
             fixtureDef.shape = shape;
             fixtureDef.isSensor = true; // Sensors detect overlap but don't block movement
 
-            body.createFixture(fixtureDef);
+            body.createFixture(fixtureDef).setUserData("spikes");
         }
     }
 }

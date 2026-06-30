@@ -5,14 +5,19 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.views.ScreenManager;
+import com.smabedi.hollowknight.views.ScreenType;
 
 public class GameUI {
     public final Stage stage;
@@ -22,19 +27,18 @@ public class GameUI {
     private Table toastContainer;
 
     public GameUI() {
-        stage = new Stage(new FitViewport(Constants.UI.DEFAULT_WIDTH,
-            Constants.UI.DEFAULT_HEIGHT,
-            new OrthographicCamera()));
+        ScreenViewport viewport = new ScreenViewport(new OrthographicCamera());
+        viewport.setUnitsPerPixel(1f / Constants.UI.UPP);
+        stage = new Stage(viewport);
         skin = Assets.getSkin();
 
         buildPauseMenu();
-        buildDialogBox();
-        buildToastSystem();
     }
 
     private void buildPauseMenu() {
         pauseMenu = new Table();
         pauseMenu.setFillParent(true);
+        pauseMenu.defaults().pad(10);
 
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(new Color(0, 0, 0, 0.7f));
@@ -45,6 +49,16 @@ public class GameUI {
 
         Label title = new Label(Assets.getString("paused"), skin);
         pauseMenu.add(title).row();
+
+        TextButton backBtn = new TextButton(Assets.getString("back"), skin);
+        pauseMenu.add(backBtn).row();
+
+        backBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                ScreenManager.setMenuScreen(ScreenType.MAIN);
+            }
+        });
 
         // TODO: Add Resume, Settings, Quit buttons here.
 

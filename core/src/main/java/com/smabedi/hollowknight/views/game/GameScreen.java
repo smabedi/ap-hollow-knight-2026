@@ -15,15 +15,15 @@ import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
+import com.smabedi.hollowknight.models.game.WorldContactListener;
 
 public class GameScreen implements Screen {
     private final OrthographicCamera camera;
     private final Viewport viewport;
-    private GameSession session;
-    private final TmxMapLoader mapLoader;
+    private final GameSession session;
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
-    private final World world;
+    private World world;
     private final Box2DDebugRenderer b2dr;
     private float accumulator = 0;
     private Knight player;
@@ -37,21 +37,23 @@ public class GameScreen implements Screen {
             Constants.UI.DEFAULT_WIDTH / Constants.World.PPM,
             Constants.UI.DEFAULT_HEIGHT / Constants.World.PPM,
             camera);
-        world = new World(Constants.World.GRAVITY_VECTOR, true);
 
         // The Debug Renderer draws colored outlines around the hitboxes, for now.
         b2dr = new Box2DDebugRenderer();
 
-        mapLoader = new TmxMapLoader();
         loadMap(session.getLocation());
     }
 
     public void loadMap(LocationType location) {
         if (map != null) map.dispose();
         if (renderer != null) renderer.dispose();
+        if (gameUI != null) gameUI.dispose();
+        if (world != null) world.dispose();
+
+        world = new World(Constants.World.GRAVITY_VECTOR, true);
 
         String tmxFile = location.getPath();
-
+        TmxMapLoader mapLoader = new TmxMapLoader();
         map = mapLoader.load(tmxFile);
         renderer = new OrthogonalTiledMapRenderer(map, 1f / Constants.World.PPM);
         camera.position.set(viewport.getWorldWidth() / 2f, viewport.getWorldHeight() / 2f, 0);
@@ -61,6 +63,8 @@ public class GameScreen implements Screen {
 
         gameUI = new GameUI();
         playerController = new PlayerController(player);
+
+        world.setContactListener(new WorldContactListener(player));
     }
 
     public void update(float dt) {
@@ -100,7 +104,7 @@ public class GameScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height);
-        gameUI.resize(width, height); // Keep the UI scaled properly
+        gameUI.resize(width, height);
     }
 
     @Override

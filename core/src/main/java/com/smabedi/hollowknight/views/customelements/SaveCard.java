@@ -25,7 +25,7 @@ public class SaveCard extends Table {
         this.left().center();
 
         Label slotLabel = new Label(slotIndex + ".", skin);
-        this.add(slotLabel).padRight(10).width(30);
+        this.add(slotLabel).width(30);
 
         Button contentTable = new Button(skin);
         contentTable.left();
@@ -66,7 +66,7 @@ public class SaveCard extends Table {
             });
         }
 
-        this.add(contentTable).width(500).height(80).padRight(20);
+        this.add(contentTable).width(400).height(60).padRight(20);
 
         if (session != null) {
             TextButton clearBtn = new TextButton(Assets.getString("clear_save"), skin);
@@ -77,7 +77,6 @@ public class SaveCard extends Table {
                 public void clicked(InputEvent event, float x, float y) {
                     System.out.println("Clearing save on slot: " + slotIndex);
                     // TODO: Delete the JSON file for this slot
-                    // Refresh the UI to show "NEW GAME"
                     clearSaveAndRefresh();
                 }
             });
@@ -88,8 +87,8 @@ public class SaveCard extends Table {
     }
 
     private void clearSaveAndRefresh() {
-        // Trigger the file deletion logic.
-        this.session = null; // (Make session non-final if you want to mutate it directly)
+        // TODO: Trigger the file deletion logic here.
+        this.session = null;
         buildCard();
     }
 }

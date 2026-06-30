@@ -49,12 +49,12 @@ public class GameSettings {
         return prefs.getFloat(MUSIC_VOL);
     }
 
-    public static boolean isMusicMuted() {
-        return prefs.getBoolean(MUSIC_MUTE);
+    public static boolean shouldPlayMusic() {
+        return !prefs.getBoolean(MUSIC_MUTE);
     }
 
-    public static boolean isSfxMuted() {
-        return prefs.getBoolean(SFX_MUTE);
+    public static boolean shouldPlaySFX() {
+        return !prefs.getBoolean(SFX_MUTE);
     }
 
     public static void setMusicVolume(float vol) {
