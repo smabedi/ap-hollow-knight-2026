@@ -30,10 +30,20 @@ public final class Constants {
 
     public static final class Knight {
         public static final int WIDTH = 50;
+        public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
         public static final int HEIGHT = 80;
+        public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
         public static final float MAX_SPEED = 5f;
-        public static final float JUMP_STRENGTH = 2f;
+        public static final float JUMP_STRENGTH = 3f;
         public static final float FRICTION = 0.1f;
-        public static final float DENSITY = 0.8f;
+        public static final float DENSITY = 1f;
+        public static final float JUMP_CUTOFF_MULTIPLIER = 0.25f;
+        public static final float POGO_BOUNCE_STRENGTH = JUMP_STRENGTH * 1.1f;
+        public static final float POGO_REACH = 0.5f;
+        public static final float NAIL_ATTACK_DURATION = 0.15f; // Hitbox lingers for 150ms
+        public static final float DASH_SPEED = 15f;
+        public static final float DASH_DURATION = 0.2f;
+        public static final float DASH_COOLDOWN = 0.6f;
+        public static final float WALL_SLIDE_SPEED = 2.5f;
     }
 }

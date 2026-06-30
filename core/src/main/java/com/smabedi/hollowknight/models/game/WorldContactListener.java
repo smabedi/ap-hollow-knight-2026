@@ -15,11 +15,14 @@ public class WorldContactListener implements ContactListener {
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
 
-        if (isFootContact(fixA, fixB, "ground")) {
+        if (isContact(fixA, fixB, "foot_sensor", "ground")) {
             player.isGrounded = true;
+            player.canDoubleJump = true;
+            player.canDash = true;
         }
 
-        // TODO: Add an if statement here for "spikes" to trigger respawns.
+        if (isContact(fixA, fixB, "left_sensor", "ground")) player.isTouchingLeftWall = true;
+        if (isContact(fixA, fixB, "right_sensor", "ground")) player.isTouchingRightWall = true;
     }
 
     @Override
@@ -27,19 +30,22 @@ public class WorldContactListener implements ContactListener {
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
 
-        if (isFootContact(fixA, fixB, "ground")) {
+        if (isContact(fixA, fixB, "foot_sensor", "ground")) {
             player.isGrounded = false;
         }
+
+        if (isContact(fixA, fixB, "left_sensor", "ground")) player.isTouchingLeftWall = false;
+        if (isContact(fixA, fixB, "right_sensor", "ground")) player.isTouchingRightWall = false;
     }
 
-    private boolean isFootContact(Fixture a, Fixture b, String targetUserData) {
-        boolean aIsFoot = "foot".equals(a.getUserData());
+    private boolean isContact(Fixture a, Fixture b, String sensorUserData, String targetUserData) {
+        boolean aIsSensor = sensorUserData.equals(a.getUserData());
         boolean bIsTarget = targetUserData.equals(b.getUserData());
 
-        boolean bIsFoot = "foot".equals(b.getUserData());
+        boolean bIsSensor = sensorUserData.equals(b.getUserData());
         boolean aIsTarget = targetUserData.equals(a.getUserData());
 
-        return (aIsFoot && bIsTarget) || (bIsFoot && aIsTarget);
+        return (aIsSensor && bIsTarget) || (bIsSensor && aIsTarget);
     }
 
     @Override

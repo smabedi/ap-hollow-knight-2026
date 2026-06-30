@@ -144,5 +144,6 @@ public class GameScreen implements Screen {
         renderer.dispose();
         world.dispose();
         b2dr.dispose();
+        gameUI.dispose();
     }
 }

@@ -50,5 +50,7 @@ public class B2WorldCreator {
 
             body.createFixture(fixtureDef).setUserData("spikes");
         }
+
+        shape.dispose();
     }
 }
