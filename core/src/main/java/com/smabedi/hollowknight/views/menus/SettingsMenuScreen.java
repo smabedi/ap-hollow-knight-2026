@@ -42,7 +42,7 @@ public class SettingsMenuScreen extends MenuScreen {
 
         Table audioToggles = new Table();
         CheckBox sfxCheck = new CheckBox(Assets.getString("sfx"), skin);
-        sfxCheck.setChecked(!GameSettings.isSfxMuted());
+        sfxCheck.setChecked(GameSettings.shouldPlaySFX());
 
         sfxCheck.addListener(new ChangeListener() {
             @Override
@@ -52,7 +52,7 @@ public class SettingsMenuScreen extends MenuScreen {
         });
 
         CheckBox musicCheck = new CheckBox(Assets.getString("music"), skin);
-        musicCheck.setChecked(!GameSettings.isMusicMuted());
+        musicCheck.setChecked(GameSettings.shouldPlayMusic());
 
         musicCheck.addListener(new ChangeListener() {
             @Override
@@ -146,8 +146,8 @@ public class SettingsMenuScreen extends MenuScreen {
             public void clicked(InputEvent event, float x, float y) {
                 GameSettings.resetAudio();
                 volSlider.setValue(GameSettings.getMusicVolume());
-                sfxCheck.setChecked(!GameSettings.isSfxMuted());
-                musicCheck.setChecked(!GameSettings.isMusicMuted());
+                sfxCheck.setChecked(GameSettings.shouldPlaySFX());
+                musicCheck.setChecked(GameSettings.shouldPlayMusic());
             }
         });
 

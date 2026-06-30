@@ -27,12 +27,12 @@ public class PlayerController {
 
         player.b2body.setLinearVelocity(targetVelocity, vel.y);
 
-        // Jumping (Just pressed, not held!)
         if (Gdx.input.isKeyJustPressed(GameSettings.getKey(GameSettings.KEY_JUMP))) {
-            // NOTE: This currently lets you fly. We need to add a ground-check sensor later!
-            player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH),
-                player.b2body.getWorldCenter(),
-                true);
+            if (player.isGrounded) {
+                player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH),
+                    player.b2body.getWorldCenter(),
+                    true);
+            }
         }
     }
 }

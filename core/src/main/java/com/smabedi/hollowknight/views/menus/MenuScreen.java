@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 
@@ -16,7 +16,9 @@ abstract public class MenuScreen implements Screen {
 
     @Override
     public void show() {
-        stage = new Stage(new FitViewport(Constants.UI.DEFAULT_WIDTH, Constants.UI.DEFAULT_HEIGHT));
+        ScreenViewport viewport = new ScreenViewport();
+        viewport.setUnitsPerPixel(1f / Constants.UI.UPP);
+        stage = new Stage(viewport);
         skin = Assets.getSkin();
         showCore();
         Gdx.input.setInputProcessor(stage);

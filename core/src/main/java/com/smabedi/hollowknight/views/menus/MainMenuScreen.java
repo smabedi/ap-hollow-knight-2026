@@ -18,7 +18,7 @@ public class MainMenuScreen extends MenuScreen {
         stage.addActor(stack);
 
         Table mainOptionsWrapper = new Table();
-        mainOptionsWrapper.center().bottom().pad(300);
+        mainOptionsWrapper.center();
         mainOptionsWrapper.defaults().width(300).spaceBottom(50);
         stack.add(mainOptionsWrapper);
 
@@ -50,14 +50,14 @@ public class MainMenuScreen extends MenuScreen {
         stack.add(guideBtnWrapper);
 
         TextButton guideBtn = new TextButton(Assets.getString("guide"), skin);
-        guideBtnWrapper.add(guideBtn).width(200);
+        guideBtnWrapper.add(guideBtn).width(150);
 
         Table settingsBtnWrapper = new Table();
         settingsBtnWrapper.top().right().pad(50);
         stack.add(settingsBtnWrapper);
 
         TextButton settingsBtn = new TextButton(Assets.getString("settings"), skin);
-        settingsBtnWrapper.add(settingsBtn).width(200);
+        settingsBtnWrapper.add(settingsBtn).width(150);
 
         settingsBtn.addListener(new ClickListener() {
             @Override

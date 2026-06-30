@@ -1,11 +1,13 @@
 package com.smabedi.hollowknight.models.entities.knight;
 
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
 
 public class Knight {
     public World world;
     public Body b2body;
+    public boolean isGrounded = false;
 
     public Knight(World world, float startX, float startY) {
         this.world = world;
@@ -19,14 +21,26 @@ public class Knight {
 
         b2body = world.createBody(bodyDef);
         b2body.setFixedRotation(true);
-        PolygonShape shape = new PolygonShape();
-        shape.setAsBox(6 / Constants.World.PPM, 12 / Constants.World.PPM);
+        PolygonShape body = new PolygonShape();
+        body.setAsBox(Constants.Knight.WIDTH / 2f / Constants.World.PPM,
+            Constants.Knight.HEIGHT / 2f / Constants.World.PPM);
 
         FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = shape;
-        fixtureDef.friction = 0.2f;
-        fixtureDef.density = 1.0f;
+        fixtureDef.shape = body;
+        fixtureDef.friction = Constants.Knight.FRICTION;
+        fixtureDef.density = Constants.Knight.DENSITY;
 
-        b2body.createFixture(fixtureDef);
+        b2body.createFixture(fixtureDef).setUserData("knight");
+
+        PolygonShape foot = new PolygonShape();
+        foot.setAsBox(Constants.Knight.WIDTH / 2f * 0.9f / Constants.World.PPM,
+            2 / Constants.World.PPM,
+            new Vector2(0, -Constants.Knight.HEIGHT / 2f / Constants.World.PPM),
+            0);
+
+        fixtureDef.shape = foot;
+        fixtureDef.isSensor = true; // It detects collisions but doesn't bump into things
+
+        b2body.createFixture(fixtureDef).setUserData("foot");
     }
 }

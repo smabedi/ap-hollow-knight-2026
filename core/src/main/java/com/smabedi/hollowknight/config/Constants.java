@@ -17,8 +17,9 @@ public final class Constants {
     }
 
     public static final class UI {
-        public static final int DEFAULT_WIDTH = 1280;
-        public static final int DEFAULT_HEIGHT = 720;
+        public static final int DEFAULT_WIDTH = 1920;
+        public static final int DEFAULT_HEIGHT = 1080;
+        public static final float UPP = 2f;
     }
 
     public static final class World {
@@ -28,7 +29,11 @@ public final class Constants {
     }
 
     public static final class Knight {
-        public static final float MAX_SPEED = 3.5f;
-        public static final float JUMP_STRENGTH = 0.1f;
+        public static final int WIDTH = 50;
+        public static final int HEIGHT = 80;
+        public static final float MAX_SPEED = 5f;
+        public static final float JUMP_STRENGTH = 2f;
+        public static final float FRICTION = 0.1f;
+        public static final float DENSITY = 0.8f;
     }
 }
