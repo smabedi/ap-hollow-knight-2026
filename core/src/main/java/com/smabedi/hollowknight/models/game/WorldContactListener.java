@@ -4,6 +4,7 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 
 public class WorldContactListener implements ContactListener {
     private final Knight player;
@@ -27,8 +28,8 @@ public class WorldContactListener implements ContactListener {
         if (isContact(fixA, fixB, "left_sensor", "ground")) player.isTouchingLeftWall = true;
         if (isContact(fixA, fixB, "right_sensor", "ground")) player.isTouchingRightWall = true;
 
-        // Player taking damage from Hazards/Enemies
         handlePlayerDamage(fixA, fixB);
+        handleSpellCollisions(fixA, fixB);
     }
 
     @Override
@@ -97,6 +98,30 @@ public class WorldContactListener implements ContactListener {
         boolean aIsTarget = targetUserData.equals(a.getUserData());
 
         return (aIsSensor && bIsTarget) || (bIsSensor && aIsTarget);
+    }
+
+    private void handleSpellCollisions(Fixture fixA, Fixture fixB) {
+        Object dataA = fixA.getUserData();
+        Object dataB = fixB.getUserData();
+
+        boolean isAVSprit = dataA instanceof VengefulSpirit;
+        boolean isBVSprit = dataB instanceof VengefulSpirit;
+
+        if (isAVSprit || isBVSprit) {
+            VengefulSpirit sprit = isAVSprit ? (VengefulSpirit) dataA : (VengefulSpirit) dataB;
+            Fixture hazardFix = isAVSprit ? fixB : fixA;
+            Object hazardData = hazardFix.getUserData();
+
+            if ("ground".equals(hazardData)) {
+                // Destroys itself on walls
+                sprit.setToDestroy = true;
+            } else if (hazardData instanceof IDamageable enemy) {
+                // Damages enemies, but passes through them (does not destroy itself)
+                if (!enemy.isDead()) {
+                    enemy.takeDamage(1);
+                }
+            }
+        }
     }
 
     @Override

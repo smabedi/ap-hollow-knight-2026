@@ -21,9 +21,12 @@ public class Knight {
     public int health = Constants.Knight.MAX_HEALTH;
     public float iFrameTimer = 0f;
     public boolean isDead = false;
-    public int soul = 0;
+    public int soul = 99;
     public boolean isFocusing = false;
     public float focusTimer = 0f;
+    public float wraithsTimer = 0f;
+    public int wraithsTicksFired = 0;
+    public float spritCastTimer = 0f;
 
     public Knight(World world, float startX, float startY) {
         this.world = world;

@@ -54,5 +54,12 @@ public final class Constants {
         public static final int SOUL_PER_HIT = 11;
         public static final int FOCUS_COST = 33;
         public static final float FOCUS_DURATION = 1.5f;
+        public static final float WRAITHS_DURATION = 0.6f;
+        public static final float WRAITHS_WIDTH = 1.0f;
+        public static final float WRAITHS_HEIGHT = 1.5f;
+        public static final float SPRIT_SPEED = 15f;
+        public static final float SPRIT_WIDTH = 0.6f;
+        public static final float SPRIT_HEIGHT = 0.4f;
+        public static final float SPRIT_CAST_DURATION = 0.25f;
     }
 }

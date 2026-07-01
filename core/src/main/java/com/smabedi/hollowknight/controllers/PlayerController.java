@@ -8,6 +8,7 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 
 public class PlayerController {
     private final Knight player;
@@ -24,12 +25,17 @@ public class PlayerController {
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;
         if (player.pogoDurationTimer > 0) player.pogoDurationTimer -= dt;
         if (player.iFrameTimer > 0) player.iFrameTimer -= dt; // Tick invincibility Frames
+        if (player.wraithsTimer > 0) player.wraithsTimer -= dt;
+        if (player.spritCastTimer > 0) player.spritCastTimer -= dt;
 
         int jumpKey = GameSettings.getKey(GameSettings.KEY_JUMP);
         int attackKey = GameSettings.getKey(GameSettings.KEY_ATTACK);
         int downKey = GameSettings.getKey(GameSettings.KEY_DOWN);
         int dashKey = GameSettings.getKey(GameSettings.KEY_DASH);
         int focusKey = GameSettings.getKey(GameSettings.KEY_FOCUS);
+        int upKey = GameSettings.getKey(GameSettings.KEY_UP);
+        int leftKey = GameSettings.getKey(GameSettings.KEY_LEFT);
+        int rightKey = GameSettings.getKey(GameSettings.KEY_RIGHT);
 
         // --- DASH STATE MACHINE ---
         if (player.isDashing) {
@@ -123,23 +129,73 @@ public class PlayerController {
             }
         }
 
-        // --- FOCUS (HEALING) STATE MACHINE ---
-        if (player.isGrounded && Gdx.input.isKeyPressed(focusKey) && player.health < Constants.Knight.MAX_HEALTH && player.soul >= Constants.Knight.FOCUS_COST) {
-            player.isFocusing = true;
-            player.focusTimer += dt;
-
-            // Lock movement horizontally while focusing
+        // --- WRAITHS STATE MACHINE (Blocks all other input) ---
+        if (player.wraithsTimer > 0) {
             player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
 
-            // If we held it long enough, heal.
+            // Fire 3 ticks of damage over the 0.6 seconds
+            if (player.wraithsTimer <= 0.6f && player.wraithsTicksFired == 0) {
+                executeWraithsHit();
+                player.wraithsTicksFired++;
+            } else if (player.wraithsTimer <= 0.4f && player.wraithsTicksFired == 1) {
+                executeWraithsHit();
+                player.wraithsTicksFired++;
+            } else if (player.wraithsTimer <= 0.2f && player.wraithsTicksFired == 2) {
+                executeWraithsHit();
+                player.wraithsTicksFired++;
+            }
+            return;
+        }
+
+        // --- VENGEFUL SPIRIT STATE MACHINE ---
+        if (player.spritCastTimer > 0) {
+            // Lock horizontal movement entirely while the cast animation plays!
+            player.b2body.setLinearVelocity(0, 0);
+            return; // Exit handleInput early!
+        }
+
+        // --- SPELL INITIATION ---
+        boolean pressingUp = Gdx.input.isKeyPressed(upKey);
+        boolean pressingSide = Gdx.input.isKeyPressed(leftKey) || Gdx.input.isKeyPressed(rightKey);
+
+        // Check if they TAP the focus key
+        if (Gdx.input.isKeyJustPressed(focusKey)) {
+            // Check if they are HOLDING a spell direction
+            if (pressingUp || pressingSide) {
+                if (player.soul >= Constants.Knight.FOCUS_COST) {
+                    player.soul -= Constants.Knight.FOCUS_COST;
+
+                    if (pressingUp) {
+                        player.wraithsTimer = Constants.Knight.WRAITHS_DURATION; // Start the animation lock!
+                        player.wraithsTicksFired = 0;
+                        System.out.println("Howling Wraiths Cast!");
+                    } else {
+                        player.spritCastTimer = Constants.Knight.SPRIT_CAST_DURATION;
+                        Vector2 center = player.b2body.getWorldCenter();
+                        new VengefulSpirit(player.world, center.x, center.y, player.facingRight);
+                        System.out.println("Vengeful Spirit Cast!");
+                    }
+                    return; // Exit out, spell successfully cast
+                } else {
+                    System.out.println("Not enough Soul for spells! Need " + (Constants.Knight.FOCUS_COST - player.soul) + " more.");
+                }
+            }
+        }
+
+        // --- FOCUS (HEALING) STATE MACHINE ---
+        // Must be holding the key, grounded, NOT holding a spell direction, and have enough soul
+        if (player.isGrounded && Gdx.input.isKeyPressed(focusKey) && !pressingUp && !pressingSide && player.health < Constants.Knight.MAX_HEALTH && player.soul >= Constants.Knight.FOCUS_COST) {
+            player.isFocusing = true;
+            player.focusTimer += dt;
+            player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y); // Lock movement
+
             if (player.focusTimer >= Constants.Knight.FOCUS_DURATION) {
                 player.heal(1);
                 player.soul -= Constants.Knight.FOCUS_COST;
-                player.focusTimer = 0f; // Reset timer so they can keep holding to heal again
+                player.focusTimer = 0f;
             }
-            return; // Exit handleInput early. You cannot walk, jump, or attack while focusing.
+            return;
         } else {
-            // If they let go of the key, don't have enough soul, or get hit, reset everything.
             player.isFocusing = false;
             player.focusTimer = 0f;
         }
@@ -233,13 +289,34 @@ public class PlayerController {
 
         // If we hit anything, apply recoil to the Knight and kill the attack timer
         if (hitSomething[0]) {
-            // Apply a little "bounce back" to the Knight for game feel
-            player.b2body.applyLinearImpulse(
-                new Vector2(-direction * 5f, 0.5f),
-                center,
-                true
-            );
             player.pogoDurationTimer = 0;
         }
+    }
+
+    private void executeWraithsHit() {
+        Vector2 center = player.b2body.getWorldCenter();
+
+        float width = Constants.Knight.WRAITHS_WIDTH;
+        float heightY = Constants.Knight.HEIGHT_HALVED_SCALED;
+
+        float lowerX = center.x - width;
+        float upperX = center.x + width;
+        float lowerY = center.y + heightY; // Starts at the top of the Knight's head
+        float upperY = center.y + heightY + Constants.Knight.WRAITHS_HEIGHT;
+
+        QueryCallback wraithsCallback = fixture -> {
+            Object userData = fixture.getUserData();
+
+            if (userData instanceof IDamageable enemy) {
+                if (!enemy.isDead()) {
+                    enemy.takeDamage(1);
+                    // Wraiths don't give soul, but pop enemies upward slightly
+                    enemy.applyKnockback(0, 2f);
+                }
+            }
+            return true;
+        };
+
+        player.world.QueryAABB(wraithsCallback, lowerX, lowerY, upperX, upperY);
     }
 }
