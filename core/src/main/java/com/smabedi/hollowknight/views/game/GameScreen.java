@@ -6,14 +6,17 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.DummyEnemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.models.game.WorldContactListener;
@@ -61,7 +64,8 @@ public class GameScreen implements Screen {
         new B2WorldCreator(world, map);
         player = new Knight(world, session.getPlayerX(), session.getPlayerY());
 
-        new DummyEnemy(world, session.getPlayerX() + 200f, session.getPlayerY());
+        new DummyEnemy(world, session.getPlayerX() + 200f, session.getPlayerY() + 200f);
+        new DummyEnemy(world, session.getPlayerX() + 400f, session.getPlayerY() + 200f);
 
         gameUI = new GameUI();
         playerController = new PlayerController(player);
@@ -82,6 +86,18 @@ public class GameScreen implements Screen {
             accumulator -= TIME_STEP;
         }
 
+        Array<Body> bodies = new Array<>();
+        world.getBodies(bodies);
+        //noinspection GDXJavaUnsafeIterator
+        for (Body body : bodies) {
+            if (body.getUserData() instanceof VengefulSpirit sprit) {
+                if (sprit.setToDestroy && !sprit.isDestroyed) {
+                    world.destroyBody(body);
+                    sprit.isDestroyed = true;
+                }
+            }
+        }
+
         // Update camera to follow the player with a slight lerp (smoothness)
         camera.position.x += (player.b2body.getPosition().x - camera.position.x) * 0.1f;
         camera.position.y += (player.b2body.getPosition().y - camera.position.y) * 0.1f;
@@ -96,10 +112,14 @@ public class GameScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+
+        viewport.apply();
+        renderer.setView(camera);
         renderer.render();
         b2dr.render(world, camera.combined);
 
         // Draw the UI Stage ON TOP of the game world
+        gameUI.stage.getViewport().apply();
         gameUI.render(delta);
     }
 

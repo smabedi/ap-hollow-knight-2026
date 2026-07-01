@@ -116,7 +116,7 @@ public class SettingsMenuScreen extends MenuScreen {
         addKeybindRow(keysTable, Assets.getString("jump"), GameSettings.KEY_JUMP);
         addKeybindRow(keysTable, Assets.getString("attack"), GameSettings.KEY_ATTACK);
         addKeybindRow(keysTable, Assets.getString("dash"), GameSettings.KEY_DASH);
-        addKeybindRow(keysTable, Assets.getString("focus"), GameSettings.KEY_FOCUS);
+        addKeybindRow(keysTable, Assets.getString("focus_cast"), GameSettings.KEY_FOCUS);
         addKeybindRow(keysTable, Assets.getString("map"), GameSettings.KEY_MAP);
         addKeybindRow(keysTable, Assets.getString("inventory"), GameSettings.KEY_INVENTORY);
 
