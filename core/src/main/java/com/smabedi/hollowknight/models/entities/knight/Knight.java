@@ -18,6 +18,9 @@ public class Knight {
     public float dashCooldownTimer = 0f;
     public boolean isTouchingLeftWall = false;
     public boolean isTouchingRightWall = false;
+    public int health = Constants.Knight.MAX_HEALTH;
+    public float iFrameTimer = 0f;
+    public boolean isDead = false;
 
     public Knight(World world, float startX, float startY) {
         this.world = world;
@@ -77,5 +80,29 @@ public class Knight {
         footSensor.dispose();
         leftSensor.dispose();
         rightSensor.dispose();
+    }
+
+    public void takeDamage(int amount, float knockbackDirX) {
+        if (iFrameTimer > 0 || isDead) return;
+
+        health -= amount;
+        if (health <= 0) {
+            health = 0;
+            isDead = true;
+            System.out.println("Knight has died!");
+            // TODO: Trigger respawn logic later
+        } else {
+            // Give 1 second of invincibility
+            iFrameTimer = Constants.Knight.I_FRAME_DURATION;
+
+            // Apply knockback to the Knight
+            b2body.setLinearVelocity(0, 0); // Reset current momentum
+            b2body.applyLinearImpulse(
+                new Vector2(knockbackDirX * Constants.Knight.KNOCKBACK_FORCE_X, Constants.Knight.KNOCKBACK_FORCE_Y),
+                b2body.getWorldCenter(),
+                true
+            );
+            System.out.println("Knight took damage! HP: " + health);
+        }
     }
 }
