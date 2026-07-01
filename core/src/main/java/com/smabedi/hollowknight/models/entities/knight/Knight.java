@@ -21,6 +21,9 @@ public class Knight {
     public int health = Constants.Knight.MAX_HEALTH;
     public float iFrameTimer = 0f;
     public boolean isDead = false;
+    public int soul = 0;
+    public boolean isFocusing = false;
+    public float focusTimer = 0f;
 
     public Knight(World world, float startX, float startY) {
         this.world = world;
@@ -82,10 +85,31 @@ public class Knight {
         rightSensor.dispose();
     }
 
+    public void addSoul(int amount) {
+        soul += amount;
+        if (soul > Constants.Knight.MAX_SOUL) {
+            soul = Constants.Knight.MAX_SOUL;
+        }
+        System.out.println("Soul gained! Current Soul: " + soul);
+    }
+
+    public void heal(int amount) {
+        health += amount;
+        if (health > Constants.Knight.MAX_HEALTH) {
+            health = Constants.Knight.MAX_HEALTH;
+        }
+        System.out.println("Healed! HP: " + health);
+    }
+
     public void takeDamage(int amount, float knockbackDirX) {
         if (iFrameTimer > 0 || isDead) return;
 
         health -= amount;
+
+        // Interrupt focus if we get hit!
+        isFocusing = false;
+        focusTimer = 0f;
+
         if (health <= 0) {
             health = 0;
             isDead = true;
@@ -94,9 +118,7 @@ public class Knight {
         } else {
             // Give 1 second of invincibility
             iFrameTimer = Constants.Knight.I_FRAME_DURATION;
-
-            // Apply knockback to the Knight
-            b2body.setLinearVelocity(0, 0); // Reset current momentum
+            b2body.setLinearVelocity(0, 0);
             b2body.applyLinearImpulse(
                 new Vector2(knockbackDirX * Constants.Knight.KNOCKBACK_FORCE_X, Constants.Knight.KNOCKBACK_FORCE_Y),
                 b2body.getWorldCenter(),

@@ -25,11 +25,11 @@ public class GameScreen implements Screen {
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
     private World world;
-    private final Box2DDebugRenderer b2dr;
     private float accumulator = 0;
     private Knight player;
     private GameUI gameUI;
     private PlayerController playerController;
+    private final Box2DDebugRenderer b2dr;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -145,7 +145,7 @@ public class GameScreen implements Screen {
         map.dispose();
         renderer.dispose();
         world.dispose();
-        b2dr.dispose();
         gameUI.dispose();
+        b2dr.dispose();
     }
 }
