@@ -12,6 +12,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.PlayerController;
+import com.smabedi.hollowknight.models.entities.DummyEnemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
@@ -51,7 +52,6 @@ public class GameScreen implements Screen {
         if (world != null) world.dispose();
 
         world = new World(Constants.World.GRAVITY_VECTOR, true);
-
         String tmxFile = location.getPath();
         TmxMapLoader mapLoader = new TmxMapLoader();
         map = mapLoader.load(tmxFile);
@@ -60,6 +60,8 @@ public class GameScreen implements Screen {
 
         new B2WorldCreator(world, map);
         player = new Knight(world, session.getPlayerX(), session.getPlayerY());
+
+        new DummyEnemy(world, session.getPlayerX() + 200f, session.getPlayerY());
 
         gameUI = new GameUI();
         playerController = new PlayerController(player);

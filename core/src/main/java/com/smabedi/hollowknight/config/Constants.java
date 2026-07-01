@@ -45,5 +45,10 @@ public final class Constants {
         public static final float DASH_DURATION = 0.2f;
         public static final float DASH_COOLDOWN = 0.6f;
         public static final float WALL_SLIDE_SPEED = 2.5f;
+        public static final float NAIL_REACH = 0.8f;
+        public static final float KNOCKBACK_FORCE_X = 5f;
+        public static final float KNOCKBACK_FORCE_Y = 3f;
+        public static final float I_FRAME_DURATION = 1.0f; // 1 second of invincibility
+        public static final int MAX_HEALTH = 5;
     }
 }

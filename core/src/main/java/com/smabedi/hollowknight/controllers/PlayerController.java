@@ -2,9 +2,11 @@ package com.smabedi.hollowknight.controllers;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
+import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class PlayerController {
@@ -16,18 +18,19 @@ public class PlayerController {
     }
 
     public void handleInput(float dt) {
-        if (player.b2body == null) return;
+        if (player.b2body == null || player.isDead) return;
 
         // --- TICK TIMERS ---
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;
         if (player.pogoDurationTimer > 0) player.pogoDurationTimer -= dt;
+        if (player.iFrameTimer > 0) player.iFrameTimer -= dt; // Tick I-Frames!
 
         int jumpKey = GameSettings.getKey(GameSettings.KEY_JUMP);
         int attackKey = GameSettings.getKey(GameSettings.KEY_ATTACK);
         int downKey = GameSettings.getKey(GameSettings.KEY_DOWN);
         int dashKey = GameSettings.getKey(GameSettings.KEY_DASH);
 
-        // --- 1. DASH STATE MACHINE ---
+        // --- DASH STATE MACHINE ---
         if (player.isDashing) {
             player.dashTimer -= dt;
 
@@ -42,7 +45,7 @@ public class PlayerController {
             }
         }
 
-        // --- 2. DASH INITIATION (Now with Cooldown!) ---
+        // --- DASH INITIATION (Now with Cooldown!) ---
         if (Gdx.input.isKeyJustPressed(dashKey) && player.canDash && player.dashCooldownTimer <= 0) {
             player.isDashing = true;
             player.canDash = false;
@@ -55,7 +58,7 @@ public class PlayerController {
             return;
         }
 
-        // --- 3. NORMAL MOVEMENT LOGIC ---
+        // --- NORMAL MOVEMENT LOGIC ---
         Vector2 vel = player.b2body.getLinearVelocity();
         float targetVelX = 0;
         float targetVelY = vel.y;
@@ -68,13 +71,13 @@ public class PlayerController {
             player.facingRight = true;
         }
 
-        // --- 4. FIXED VARIABLE JUMP HEIGHT ---
+        // --- FIXED VARIABLE JUMP HEIGHT ---
         if (!Gdx.input.isKeyPressed(jumpKey) && targetVelY > 0 && player.isJumping) {
             targetVelY *= Constants.Knight.JUMP_CUTOFF_MULTIPLIER;
             player.isJumping = false;
         }
 
-        // --- 5. WALL SLIDE LOGIC ---
+        // --- WALL SLIDE LOGIC ---
         boolean pushingLeft =
             Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_LEFT)) && player.isTouchingLeftWall;
         boolean pushingRight =
@@ -90,7 +93,7 @@ public class PlayerController {
         // Apply calculated velocities
         player.b2body.setLinearVelocity(targetVelX, targetVelY);
 
-        // --- 6. JUMP & DOUBLE JUMP INITIATION ---
+        // --- JUMP & DOUBLE JUMP INITIATION ---
         if (Gdx.input.isKeyJustPressed(jumpKey)) {
             if (player.isGrounded) {
                 player.isJumping = true;
@@ -104,15 +107,19 @@ public class PlayerController {
             }
         }
 
-        // --- 7. POGO JUMP LOGIC (Now with Hitbox Linger!) ---
-        // If they press the keys, activate the attack timer
-        if (!player.isGrounded && Gdx.input.isKeyPressed(downKey) && Gdx.input.isKeyJustPressed(attackKey)) {
+        // --- ATTACK LOGIC ---
+        if (Gdx.input.isKeyJustPressed(attackKey)) {
             player.pogoDurationTimer = Constants.Knight.POGO_ATTACK_DURATION;
         }
 
-        // As long as the timer is active, keep firing the RayCast downward
         if (player.pogoDurationTimer > 0) {
-            executePogoJump(targetVelX);
+            if (!player.isGrounded && Gdx.input.isKeyPressed(downKey)) {
+                // Pogo Attack (Downward) As long as the timer is active, keep firing the RayCast downward
+                executePogoJump(targetVelX);
+            } else {
+                // Normal Attack (Horizontal)
+                executeHorizontalAttack();
+            }
         }
     }
 
@@ -147,5 +154,53 @@ public class PlayerController {
         };
 
         player.world.rayCast(pogoCallback, center, rayEnd);
+    }
+
+    private void executeHorizontalAttack() {
+        Vector2 center = player.b2body.getWorldCenter();
+        float direction = player.facingRight ? 1f : -1f;
+
+        float reachX = Constants.Knight.NAIL_REACH;
+        float heightY = Constants.Knight.HEIGHT_HALVED_SCALED;
+
+        float lowerX = player.facingRight ? center.x : center.x - reachX;
+        float upperX = player.facingRight ? center.x + reachX : center.x;
+        float lowerY = center.y - heightY;
+        float upperY = center.y + heightY;
+
+        // A single array boolean allows us to apply player recoil only once,
+        // even if we slice through 3 enemies simultaneously.
+        final boolean[] hitSomething = {false};
+
+        // The Box2D Query Callback
+        QueryCallback attackCallback = fixture -> {
+            Object userData = fixture.getUserData();
+
+            if (userData instanceof IDamageable enemy) {
+
+                if (!enemy.isDead()) {
+                    // Deal damage and push the enemy back
+                    enemy.takeDamage(1);
+                    enemy.applyKnockback(direction * 3f, 1f);
+
+                    hitSomething[0] = true;
+                }
+            }
+            return true;
+        };
+
+        // ire the invisible rectangle into the world
+        player.world.QueryAABB(attackCallback, lowerX, lowerY, upperX, upperY);
+
+        // If we hit anything, apply recoil to the Knight and kill the attack timer
+        if (hitSomething[0]) {
+            // Apply a little "bounce back" to the Knight for game feel
+            player.b2body.applyLinearImpulse(
+                new Vector2(-direction * 5f, 0.5f),
+                center,
+                true
+            );
+            player.pogoDurationTimer = 0;
+        }
     }
 }
