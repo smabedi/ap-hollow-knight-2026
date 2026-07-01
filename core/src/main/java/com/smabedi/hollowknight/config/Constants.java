@@ -50,5 +50,9 @@ public final class Constants {
         public static final float KNOCKBACK_FORCE_Y = 3f;
         public static final float I_FRAME_DURATION = 1.0f; // 1 second of invincibility
         public static final int MAX_HEALTH = 5;
+        public static final int MAX_SOUL = 99;
+        public static final int SOUL_PER_HIT = 11;
+        public static final int FOCUS_COST = 33;
+        public static final float FOCUS_DURATION = 1.5f;
     }
 }

@@ -23,12 +23,13 @@ public class PlayerController {
         // --- TICK TIMERS ---
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;
         if (player.pogoDurationTimer > 0) player.pogoDurationTimer -= dt;
-        if (player.iFrameTimer > 0) player.iFrameTimer -= dt; // Tick I-Frames!
+        if (player.iFrameTimer > 0) player.iFrameTimer -= dt; // Tick invincibility Frames
 
         int jumpKey = GameSettings.getKey(GameSettings.KEY_JUMP);
         int attackKey = GameSettings.getKey(GameSettings.KEY_ATTACK);
         int downKey = GameSettings.getKey(GameSettings.KEY_DOWN);
         int dashKey = GameSettings.getKey(GameSettings.KEY_DASH);
+        int focusKey = GameSettings.getKey(GameSettings.KEY_FOCUS);
 
         // --- DASH STATE MACHINE ---
         if (player.isDashing) {
@@ -45,7 +46,7 @@ public class PlayerController {
             }
         }
 
-        // --- DASH INITIATION (Now with Cooldown!) ---
+        // --- DASH INITIATION ---
         if (Gdx.input.isKeyJustPressed(dashKey) && player.canDash && player.dashCooldownTimer <= 0) {
             player.isDashing = true;
             player.canDash = false;
@@ -121,6 +122,27 @@ public class PlayerController {
                 executeHorizontalAttack();
             }
         }
+
+        // --- FOCUS (HEALING) STATE MACHINE ---
+        if (player.isGrounded && Gdx.input.isKeyPressed(focusKey) && player.health < Constants.Knight.MAX_HEALTH && player.soul >= Constants.Knight.FOCUS_COST) {
+            player.isFocusing = true;
+            player.focusTimer += dt;
+
+            // Lock movement horizontally while focusing
+            player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
+
+            // If we held it long enough, heal.
+            if (player.focusTimer >= Constants.Knight.FOCUS_DURATION) {
+                player.heal(1);
+                player.soul -= Constants.Knight.FOCUS_COST;
+                player.focusTimer = 0f; // Reset timer so they can keep holding to heal again
+            }
+            return; // Exit handleInput early. You cannot walk, jump, or attack while focusing.
+        } else {
+            // If they let go of the key, don't have enough soul, or get hit, reset everything.
+            player.isFocusing = false;
+            player.focusTimer = 0f;
+        }
     }
 
     private void executePogoJump(final float currentVelX) {
@@ -131,7 +153,19 @@ public class PlayerController {
         RayCastCallback pogoCallback = (fixture, _, _, _) -> {
             Object userData = fixture.getUserData();
 
-            if ("spikes".equals(userData) || "enemy".equals(userData)) {
+            boolean isSpikes = "spikes".equals(userData);
+            boolean isEnemy = userData instanceof IDamageable;
+
+            // If it's an enemy, make sure it's not a corpse
+            if (isEnemy) {
+                IDamageable enemy = (IDamageable) userData;
+                if (enemy.isDead()) {
+                    return 1; // Ignore corpses, continue the raycast downward
+                }
+            }
+
+            if (isSpikes || isEnemy) {
+                // Reset falling momentum and apply the bounce
                 player.b2body.setLinearVelocity(currentVelX, 0);
                 player.b2body.applyLinearImpulse(
                     new Vector2(0, Constants.Knight.POGO_BOUNCE_STRENGTH),
@@ -139,18 +173,25 @@ public class PlayerController {
                     true
                 );
 
+                // Reset midair abilities
                 player.canDoubleJump = true;
                 player.canDash = true;
                 player.isJumping = false;
 
-                // Kill the attack timer immediately so we don't bounce twice on the same spike
+                // Kill the attack timer immediately so we don't bounce twice
                 player.pogoDurationTimer = 0;
 
-                // TODO: Should deal damage to the enemy here.
+                // Enemy-specific logic (Damage & Soul, NO knockback)
+                if (isEnemy) {
+                    IDamageable enemy = (IDamageable) userData;
+                    enemy.takeDamage(1);
+                    player.addSoul(Constants.Knight.SOUL_PER_HIT);
+                }
 
-                return 0;
+                return 0; // Terminate raycast, we found our target
             }
-            return 1;
+
+            return 1; // Not spikes or a living enemy, keep checking
         };
 
         player.world.rayCast(pogoCallback, center, rayEnd);
@@ -179,17 +220,15 @@ public class PlayerController {
             if (userData instanceof IDamageable enemy) {
 
                 if (!enemy.isDead()) {
-                    // Deal damage and push the enemy back
                     enemy.takeDamage(1);
                     enemy.applyKnockback(direction * 3f, 1f);
-
+                    player.addSoul(Constants.Knight.SOUL_PER_HIT);
                     hitSomething[0] = true;
                 }
             }
             return true;
         };
 
-        // ire the invisible rectangle into the world
         player.world.QueryAABB(attackCallback, lowerX, lowerY, upperX, upperY);
 
         // If we hit anything, apply recoil to the Knight and kill the attack timer
