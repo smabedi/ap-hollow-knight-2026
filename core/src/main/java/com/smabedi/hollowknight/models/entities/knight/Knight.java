@@ -10,7 +10,7 @@ public class Knight {
     public boolean isGrounded = false;
     public boolean canDoubleJump = false;
     public boolean isJumping = false;
-    public float nailDurationTimer = 0f;
+    public float pogoDurationTimer = 0f;
     public boolean canDash = true;
     public boolean isDashing = false;
     public float dashTimer = 0f;

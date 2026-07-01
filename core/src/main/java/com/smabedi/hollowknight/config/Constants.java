@@ -40,7 +40,7 @@ public final class Constants {
         public static final float JUMP_CUTOFF_MULTIPLIER = 0.25f;
         public static final float POGO_BOUNCE_STRENGTH = JUMP_STRENGTH * 1.1f;
         public static final float POGO_REACH = 0.5f;
-        public static final float NAIL_ATTACK_DURATION = 0.15f; // Hitbox lingers for 150ms
+        public static final float POGO_ATTACK_DURATION = 0.15f; // Hitbox lingers for 150ms
         public static final float DASH_SPEED = 15f;
         public static final float DASH_DURATION = 0.2f;
         public static final float DASH_COOLDOWN = 0.6f;

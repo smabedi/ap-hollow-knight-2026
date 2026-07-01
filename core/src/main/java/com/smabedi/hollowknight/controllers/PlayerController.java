@@ -20,7 +20,7 @@ public class PlayerController {
 
         // --- TICK TIMERS ---
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;
-        if (player.nailDurationTimer > 0) player.nailDurationTimer -= dt;
+        if (player.pogoDurationTimer > 0) player.pogoDurationTimer -= dt;
 
         int jumpKey = GameSettings.getKey(GameSettings.KEY_JUMP);
         int attackKey = GameSettings.getKey(GameSettings.KEY_ATTACK);
@@ -107,11 +107,11 @@ public class PlayerController {
         // --- 7. POGO JUMP LOGIC (Now with Hitbox Linger!) ---
         // If they press the keys, activate the attack timer
         if (!player.isGrounded && Gdx.input.isKeyPressed(downKey) && Gdx.input.isKeyJustPressed(attackKey)) {
-            player.nailDurationTimer = Constants.Knight.NAIL_ATTACK_DURATION;
+            player.pogoDurationTimer = Constants.Knight.POGO_ATTACK_DURATION;
         }
 
         // As long as the timer is active, keep firing the RayCast downward
-        if (player.nailDurationTimer > 0) {
+        if (player.pogoDurationTimer > 0) {
             executePogoJump(targetVelX);
         }
     }
@@ -137,7 +137,7 @@ public class PlayerController {
                 player.isJumping = false;
 
                 // Kill the attack timer immediately so we don't bounce twice on the same spike
-                player.nailDurationTimer = 0;
+                player.pogoDurationTimer = 0;
 
                 // TODO: Should deal damage to the enemy here.
 
