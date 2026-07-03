@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -72,7 +73,7 @@ public class GameScreen implements Screen {
         enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
         enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
 
-        gameUI = new GameUI();
+        gameUI = new GameUI(session.inventory);
         playerController = new PlayerController(player, session.inventory);
 
         world.setContactListener(new WorldContactListener(player, session.inventory));
@@ -149,7 +150,28 @@ public class GameScreen implements Screen {
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.ESCAPE) {
-                    gameUI.togglePause();
+                    if (gameUI.isInventoryOpen()) {
+                        gameUI.toggleInventory(); // Close inventory if it's open
+                    } else {
+                        gameUI.togglePause(); // Otherwise toggle normal pause
+                    }
+                    return true;
+                }
+
+                // Toggle inventory menu, checking for animation locks!
+                if (keycode == GameSettings.getKey(GameSettings.KEY_INVENTORY)) {
+
+                    // Check the actual timers to guarantee we are locked in an animation
+                    boolean isAnimationLocked = player.focusTimer > 0
+                        || player.wraithsTimer > 0
+                        || player.spritCastTimer > 0;
+
+                    // Only allow toggling if we aren't locked, OR if the menu is already open
+                    if (!isAnimationLocked || gameUI.isInventoryOpen()) {
+                        if (!gameUI.isPaused() || gameUI.isInventoryOpen()) {
+                            gameUI.toggleInventory();
+                        }
+                    }
                     return true;
                 }
                 return false;

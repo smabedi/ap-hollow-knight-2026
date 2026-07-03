@@ -19,4 +19,8 @@ public enum CharmType {
     public String getName() {
         return Assets.getString(getLangKey());
     }
+
+    public String getDescription() {
+        return Assets.getString(getLangKey() + "_desc");
+    }
 }
