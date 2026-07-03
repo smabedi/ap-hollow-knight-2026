@@ -14,7 +14,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.PlayerController;
-import com.smabedi.hollowknight.models.entities.DummyEnemy;
+import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
@@ -33,6 +33,7 @@ public class GameScreen implements Screen {
     private GameUI gameUI;
     private PlayerController playerController;
     private final Box2DDebugRenderer b2dr;
+    private Array<Enemy> enemies;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -64,8 +65,11 @@ public class GameScreen implements Screen {
         new B2WorldCreator(world, map);
         player = new Knight(world, session.getPlayerX(), session.getPlayerY());
 
-        new DummyEnemy(world, session.getPlayerX() + 200f, session.getPlayerY() + 200f);
-        new DummyEnemy(world, session.getPlayerX() + 400f, session.getPlayerY() + 200f);
+        enemies = new Array<>();
+        enemies.add(new Crawlid(world, session.getPlayerX() + 300f, session.getPlayerY() + 200f));
+        enemies.add(new Mossfly(world, session.getPlayerX() + 450f, session.getPlayerY() + 400f));
+        enemies.add(new HuskHornhead(world, session.getPlayerX() + 2000f, session.getPlayerY()));
+        enemies.add(new CrystalGuardian(world, session.getPlayerX() + 1000f, session.getPlayerY() + 200f, true));
 
         gameUI = new GameUI();
         playerController = new PlayerController(player);
@@ -86,6 +90,7 @@ public class GameScreen implements Screen {
             accumulator -= TIME_STEP;
         }
 
+        // Destroy spoiled Vengeful Spirit bodies
         Array<Body> bodies = new Array<>();
         world.getBodies(bodies);
         //noinspection GDXJavaUnsafeIterator
@@ -96,6 +101,11 @@ public class GameScreen implements Screen {
                     sprit.isDestroyed = true;
                 }
             }
+        }
+
+        // Tick AI logic for all enemies
+        for (int i = 0; i < enemies.size; i++) {
+            enemies.get(i).update(dt, player);
         }
 
         // Update camera to follow the player with a slight lerp (smoothness)
