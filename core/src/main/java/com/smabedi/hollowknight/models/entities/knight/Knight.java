@@ -7,6 +7,9 @@ import com.smabedi.hollowknight.config.Constants;
 public class Knight {
     public World world;
     public Body b2body;
+    public boolean facingRight = true;
+    public int health = Constants.Knight.MAX_HEALTH;
+    public boolean isDead = false;
     public boolean isGrounded = false;
     public boolean canDoubleJump = false;
     public boolean isJumping = false;
@@ -14,19 +17,17 @@ public class Knight {
     public boolean canDash = true;
     public boolean isDashing = false;
     public float dashTimer = 0f;
-    public boolean facingRight = true;
     public float dashCooldownTimer = 0f;
     public boolean isTouchingLeftWall = false;
     public boolean isTouchingRightWall = false;
-    public int health = Constants.Knight.MAX_HEALTH;
     public float iFrameTimer = 0f;
-    public boolean isDead = false;
     public int soul = 99;
     public boolean isFocusing = false;
     public float focusTimer = 0f;
     public float wraithsTimer = 0f;
     public int wraithsTicksFired = 0;
     public float spritCastTimer = 0f;
+    public float attackCooldownTimer = 0f;
 
     public Knight(World world, float startX, float startY) {
         this.world = world;

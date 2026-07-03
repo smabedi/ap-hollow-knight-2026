@@ -76,7 +76,7 @@ public abstract class Enemy implements IDamageable {
     public void takeDamage(int amount) {
         if (dead) return;
         hp -= amount;
-        stunTimer = 1.0f;
+        stunTimer = 1f;
         System.out.println(this.getClass().getSimpleName() + " hit! HP left: " + hp);
         if (hp <= 0) die();
     }
@@ -100,5 +100,9 @@ public abstract class Enemy implements IDamageable {
     @Override
     public boolean isDead() {
         return dead;
+    }
+
+    public int getHp() {
+        return hp;
     }
 }

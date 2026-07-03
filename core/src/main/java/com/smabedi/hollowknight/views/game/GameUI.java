@@ -16,23 +16,32 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.models.inventory.CharmType;
+import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
 public class GameUI {
     public final Stage stage;
     private final Skin skin;
+    private final Inventory inventory;
     private Table pauseMenu;
     private Table dialogBox;
     private Table toastContainer;
+    private Table inventoryMenu;
+    private Label notchLabel;
+    private Label charmDescription;
+    private Table charmsGrid;
 
-    public GameUI() {
+    public GameUI(Inventory inventory) {
+        this.inventory = inventory;
         ScreenViewport viewport = new ScreenViewport(new OrthographicCamera());
         viewport.setUnitsPerPixel(1f / Constants.UI.UPP);
         stage = new Stage(viewport);
         skin = Assets.getSkin();
 
         buildPauseMenu();
+        buildInventoryMenu();
     }
 
     private void buildPauseMenu() {
@@ -41,7 +50,7 @@ public class GameUI {
         pauseMenu.defaults().pad(10);
 
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(0, 0, 0, 0.7f));
+        pixmap.setColor(new Color(0, 0, 0, 0.5f));
         pixmap.fill();
         Texture transparentBlack = new Texture(pixmap);
         pauseMenu.setBackground(new TextureRegionDrawable(new TextureRegion(transparentBlack)));
@@ -99,6 +108,92 @@ public class GameUI {
         // TODO: Add a label to toastContainer, use Scene2D Actions to fade it out after 3 seconds.
     }
 
+    private void buildInventoryMenu() {
+        inventoryMenu = new Table();
+        inventoryMenu.setFillParent(true);
+        inventoryMenu.defaults().pad(10);
+
+        // Reuse the translucent black background from the pause menu
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(new Color(0, 0, 0, 0.8f));
+        pixmap.fill();
+        Texture transparentBlack = new Texture(pixmap);
+        inventoryMenu.setBackground(new TextureRegionDrawable(new TextureRegion(transparentBlack)));
+        pixmap.dispose();
+
+        Label title = new Label(Assets.getString("inventory"), skin);
+        inventoryMenu.add(title).row();
+
+        notchLabel = new Label("", skin);
+        inventoryMenu.add(notchLabel).padBottom(20).row();
+
+        charmsGrid = new Table();
+        inventoryMenu.add(charmsGrid).expandX().fillX().row();
+
+        charmDescription = new Label(Assets.getString("select_a_charm"), skin);
+        charmDescription.setWrap(true);
+        charmDescription.setAlignment(com.badlogic.gdx.utils.Align.center);
+        inventoryMenu.add(charmDescription).width(800).padTop(30);
+
+        inventoryMenu.setVisible(false);
+        stage.addActor(inventoryMenu);
+    }
+
+    @SuppressWarnings("GDXJavaUnsafeIterator")
+    public void refreshInventoryUI() {
+        notchLabel.setText(Assets.getString("notches_used") + ": " + inventory.getUsedNotches() + " / " + Constants.Inventory.MAX_NOTCHES);
+        charmsGrid.clearChildren();
+
+        int col = 0;
+        for (CharmType charm : inventory.getOwnedCharms()) {
+            boolean isEquipped = inventory.isEquipped(charm);
+
+            // Append (EQ) if equipped for basic visual feedback
+            String btnText = charm.getName() + (isEquipped ? " (EQ)" : "");
+            TextButton charmBtn = new TextButton(btnText, skin);
+
+            if (isEquipped) {
+                charmBtn.setColor(Color.LIME); // Highlight equipped charms
+            }
+
+            charmBtn.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    if (isEquipped) {
+                        inventory.unequipCharm(charm);
+                    } else {
+                        inventory.equipCharm(charm);
+                    }
+                    charmDescription.setText(charm.getDescription());
+                    refreshInventoryUI(); // Rebuild the grid to update colors/text
+                }
+            });
+
+            charmsGrid.add(charmBtn).width(200).height(50).pad(10);
+            col++;
+            if (col >= 4) { // 4 charms per row
+                col = 0;
+                charmsGrid.row();
+            }
+        }
+    }
+
+    public void toggleInventory() {
+        if (pauseMenu.isVisible()) return; // Don't open if standard pause menu is up
+
+        boolean isVisible = inventoryMenu.isVisible();
+        inventoryMenu.setVisible(!isVisible);
+
+        if (!isVisible) {
+            refreshInventoryUI(); // Refresh data every time we open it
+            charmDescription.setText(Assets.getString("select_a_charm"));
+        }
+    }
+
+    public boolean isInventoryOpen() {
+        return inventoryMenu != null && inventoryMenu.isVisible();
+    }
+
     public void render(float delta) {
         stage.act(delta);
         stage.draw();
@@ -113,6 +208,6 @@ public class GameUI {
     }
 
     public boolean isPaused() {
-        return pauseMenu != null && pauseMenu.isVisible();
+        return (pauseMenu != null && pauseMenu.isVisible()) || (inventoryMenu != null && inventoryMenu.isVisible());
     }
 }

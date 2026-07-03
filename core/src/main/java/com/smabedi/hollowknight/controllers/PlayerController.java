@@ -4,29 +4,45 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
+import com.badlogic.gdx.utils.Array;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.IDamageable;
+import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
+import com.smabedi.hollowknight.models.inventory.CharmType;
+import com.smabedi.hollowknight.models.inventory.Inventory;
 
 public class PlayerController {
     private final Knight player;
+    private final Inventory inventory;
     private final Vector2 rayEnd = new Vector2();
+    private final Array<IDamageable> enemiesHitDuringDash = new Array<>();
 
-    public PlayerController(Knight player) {
+    public PlayerController(Knight player, Inventory inventory) {
         this.player = player;
+        this.inventory = inventory;
     }
 
     public void handleInput(float dt) {
         if (player.b2body == null || player.isDead) return;
 
         // --- TICK TIMERS ---
+        if (player.iFrameTimer > 0) player.iFrameTimer -= dt;
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;
         if (player.pogoDurationTimer > 0) player.pogoDurationTimer -= dt;
-        if (player.iFrameTimer > 0) player.iFrameTimer -= dt; // Tick invincibility Frames
         if (player.wraithsTimer > 0) player.wraithsTimer -= dt;
         if (player.spritCastTimer > 0) player.spritCastTimer -= dt;
+        if (player.attackCooldownTimer > 0) player.attackCooldownTimer -= dt;
+
+        // Continuously refresh midair abilities while safely on the ground.
+        // We ensure !player.isDashing is checked so that dashing off a ledge
+        // correctly consumes the dash ability.
+        if (player.isGrounded && !player.isDashing) {
+            player.canDash = true;
+            player.canDoubleJump = true;
+        }
 
         int jumpKey = GameSettings.getKey(GameSettings.KEY_JUMP);
         int attackKey = GameSettings.getKey(GameSettings.KEY_ATTACK);
@@ -46,8 +62,18 @@ public class PlayerController {
                 player.b2body.setGravityScale(1f);
                 player.b2body.setLinearVelocity(0, 0);
             } else {
-                float dashVelocity = player.facingRight ? Constants.Knight.DASH_SPEED : -Constants.Knight.DASH_SPEED;
+                // Maintain the 1.2x speed multiplier for the whole dash
+                float baseDashSpeed = inventory.isEquipped(CharmType.SHARP_SHADOW)
+                    ? Constants.Knight.DASH_SPEED * 1.2f
+                    : Constants.Knight.DASH_SPEED;
+
+                float dashVelocity = player.facingRight ? baseDashSpeed : -baseDashSpeed;
                 player.b2body.setLinearVelocity(dashVelocity, 0);
+
+                // Apply damage to enemies we collide with
+                if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
+                    executeDashDamage();
+                }
                 return;
             }
         }
@@ -57,11 +83,26 @@ public class PlayerController {
             player.isDashing = true;
             player.canDash = false;
             player.dashTimer = Constants.Knight.DASH_DURATION;
-            player.dashCooldownTimer = Constants.Knight.DASH_COOLDOWN; // Start the cooldown
+            enemiesHitDuringDash.clear();
+
+            // Dashmaster check to lower cooldown time
+            player.dashCooldownTimer = inventory.isEquipped(CharmType.DASHMASTER)
+                ? Constants.Knight.DASH_COOLDOWN * 0.5f
+                : Constants.Knight.DASH_COOLDOWN;
             player.b2body.setGravityScale(0f);
 
-            float dashVelocity = player.facingRight ? Constants.Knight.DASH_SPEED : -Constants.Knight.DASH_SPEED;
+            // Sharp Shadow check to multiply dash speed by 1.2
+            float baseDashSpeed = inventory.isEquipped(CharmType.SHARP_SHADOW)
+                ? Constants.Knight.DASH_SPEED * 1.2f
+                : Constants.Knight.DASH_SPEED;
+
+            float dashVelocity = player.facingRight ? baseDashSpeed : -baseDashSpeed;
             player.b2body.setLinearVelocity(dashVelocity, 0);
+
+            // Disable the knight's damage-taking while dashing
+            if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
+                player.iFrameTimer = Constants.Knight.DASH_DURATION;
+            }
             return;
         }
 
@@ -115,8 +156,10 @@ public class PlayerController {
         }
 
         // --- ATTACK LOGIC ---
-        if (Gdx.input.isKeyJustPressed(attackKey)) {
+        if (Gdx.input.isKeyJustPressed(attackKey) && player.attackCooldownTimer <= 0) {
             player.pogoDurationTimer = Constants.Knight.POGO_ATTACK_DURATION;
+            player.attackCooldownTimer = Constants.Knight.ATTACK_COOLDOWN;
+            if (inventory.isEquipped(CharmType.QUICK_SLASH)) player.attackCooldownTimer *= 0.5f; // Half the cooldown
         }
 
         if (player.pogoDurationTimer > 0) {
@@ -183,13 +226,23 @@ public class PlayerController {
         }
 
         // --- FOCUS (HEALING) STATE MACHINE ---
+        float focusTargetTime = inventory.isEquipped(CharmType.QUICK_FOCUS)
+            ? Constants.Knight.FOCUS_DURATION * 0.6f // 40% faster
+            : Constants.Knight.FOCUS_DURATION;
+
         // Must be holding the key, grounded, NOT holding a spell direction, and have enough soul
-        if (player.isGrounded && Gdx.input.isKeyPressed(focusKey) && !pressingUp && !pressingSide && player.health < Constants.Knight.MAX_HEALTH && player.soul >= Constants.Knight.FOCUS_COST) {
+        if (player.isGrounded
+            && Gdx.input.isKeyPressed(focusKey)
+            && !pressingUp
+            && !pressingSide
+            && player.health < Constants.Knight.MAX_HEALTH
+            && player.soul >= Constants.Knight.FOCUS_COST
+        ) {
             player.isFocusing = true;
             player.focusTimer += dt;
-            player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y); // Lock movement
+            player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
 
-            if (player.focusTimer >= Constants.Knight.FOCUS_DURATION) {
+            if (player.focusTimer >= focusTargetTime) {
                 player.heal(1);
                 player.soul -= Constants.Knight.FOCUS_COST;
                 player.focusTimer = 0f;
@@ -199,6 +252,42 @@ public class PlayerController {
             player.isFocusing = false;
             player.focusTimer = 0f;
         }
+    }
+
+    private void executeDashDamage() {
+        Vector2 center = player.b2body.getWorldCenter();
+
+        // Create a hitbox slightly wider than the Knight
+        float reachX = Constants.Knight.WIDTH_HALVED_SCALED * 1.2f;
+        float heightY = Constants.Knight.HEIGHT_HALVED_SCALED;
+
+        QueryCallback dashDamageCallback = fixture -> {
+            Object userData = fixture.getUserData();
+
+            if (userData instanceof IDamageable enemy) {
+                // Only damage them if they are alive AND haven't been hit this dash
+                if (!enemy.isDead() && !enemiesHitDuringDash.contains(enemy, true)) {
+                    // Sharp Shadow deals exactly 1 damage (standard nail damage)
+                    enemy.takeDamage(1);
+
+                    // Slight upward knockback so they don't get stuck inside us
+                    enemy.applyKnockback(0, 2f);
+
+                    // Add them to the list so they don't get hit on the next frame
+                    enemiesHitDuringDash.add(enemy);
+                }
+            }
+            return true;
+        };
+
+        // Query the physics world around the Knight
+        player.world.QueryAABB(
+            dashDamageCallback,
+            center.x - reachX,
+            center.y - heightY,
+            center.x + reachX,
+            center.y + heightY
+        );
     }
 
     private void executePogoJump(final float currentVelX) {
@@ -237,11 +326,18 @@ public class PlayerController {
                 // Kill the attack timer immediately so we don't bounce twice
                 player.pogoDurationTimer = 0;
 
-                // Enemy-specific logic (Damage & Soul, NO knockback)
+                // Enemy-specific logic (Damage & Soul, Applying Soul Catcher)
                 if (isEnemy) {
                     IDamageable enemy = (IDamageable) userData;
-                    enemy.takeDamage(1);
-                    player.addSoul(Constants.Knight.SOUL_PER_HIT);
+                    int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
+                    enemy.takeDamage(damage);
+
+                    // Check for Soul Catcher
+                    int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
+                        ? Constants.Knight.SOUL_PER_HIT + 5 // Bonus soul
+                        : Constants.Knight.SOUL_PER_HIT;
+
+                    player.addSoul(soulGain);
                 }
 
                 return fraction; // Terminate raycast, we found our target
@@ -278,11 +374,21 @@ public class PlayerController {
             Object userData = fixture.getUserData();
 
             if (userData instanceof IDamageable enemy) {
-
                 if (!enemy.isDead()) {
-                    enemy.takeDamage(1);
-                    enemy.applyKnockback(direction * 3f, 1f);
-                    player.addSoul(Constants.Knight.SOUL_PER_HIT);
+                    // Check for Unbreakable Strength
+                    int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
+
+                    // Check for Heavy Blow
+                    float knockbackMulti = inventory.isEquipped(CharmType.HEAVY_BLOW) ? 2f : 1f;
+
+                    enemy.takeDamage(damage);
+                    enemy.applyKnockback(direction * 3f * knockbackMulti, 1f);
+
+                    int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
+                        ? Constants.Knight.SOUL_PER_HIT + 5
+                        : Constants.Knight.SOUL_PER_HIT;
+
+                    player.addSoul(soulGain);
                     hitSomething[0] = true;
                 }
             }
@@ -313,9 +419,12 @@ public class PlayerController {
 
             if (userData instanceof IDamageable enemy) {
                 if (!enemy.isDead()) {
-                    enemy.takeDamage(1);
-                    // Wraiths don't give soul, but pop enemies upward slightly
-                    enemy.applyKnockback(0, 2f);
+                    // Apply Void Heart modifier
+                    int spellDamage = inventory.isEquipped(CharmType.VOID_HEART) ? 2 : 1;
+                    if (player.wraithsTicksFired == 2 || (enemy instanceof Enemy && ((Enemy) enemy).getHp() == 1)) {
+                        enemy.applyKnockback(0, 2f);
+                    }
+                    enemy.takeDamage(spellDamage);
                 }
             }
             return true;

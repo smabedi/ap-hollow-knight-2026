@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -46,7 +47,7 @@ public class GameScreen implements Screen {
         // The Debug Renderer draws colored outlines around the hitboxes, for now.
         b2dr = new Box2DDebugRenderer();
 
-        loadMap(session.getLocation());
+        loadMap(session.location);
     }
 
     public void loadMap(LocationType location) {
@@ -62,19 +63,20 @@ public class GameScreen implements Screen {
         renderer = new OrthogonalTiledMapRenderer(map, 1f / Constants.World.PPM);
         camera.position.set(viewport.getWorldWidth() / 2f, viewport.getWorldHeight() / 2f, 0);
 
+        assert map != null;
         new B2WorldCreator(world, map);
-        player = new Knight(world, session.getPlayerX(), session.getPlayerY());
+        player = new Knight(world, session.playerX, session.playerY);
 
         enemies = new Array<>();
-        enemies.add(new Crawlid(world, session.getPlayerX() + 300f, session.getPlayerY() + 200f));
-        enemies.add(new Mossfly(world, session.getPlayerX() + 450f, session.getPlayerY() + 400f));
-        enemies.add(new HuskHornhead(world, session.getPlayerX() + 2000f, session.getPlayerY()));
-        enemies.add(new CrystalGuardian(world, session.getPlayerX() + 1000f, session.getPlayerY() + 200f, true));
+        enemies.add(new Crawlid(world, session.playerX + 300f, session.playerY + 200f));
+        enemies.add(new Mossfly(world, session.playerX + 450f, session.playerY + 400f));
+        enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
+        enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
 
-        gameUI = new GameUI();
-        playerController = new PlayerController(player);
+        gameUI = new GameUI(session.inventory);
+        playerController = new PlayerController(player, session.inventory);
 
-        world.setContactListener(new WorldContactListener(player));
+        world.setContactListener(new WorldContactListener(player, session.inventory));
     }
 
     public void update(float dt) {
@@ -148,7 +150,28 @@ public class GameScreen implements Screen {
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == Input.Keys.ESCAPE) {
-                    gameUI.togglePause();
+                    if (gameUI.isInventoryOpen()) {
+                        gameUI.toggleInventory(); // Close inventory if it's open
+                    } else {
+                        gameUI.togglePause(); // Otherwise toggle normal pause
+                    }
+                    return true;
+                }
+
+                // Toggle inventory menu, checking for animation locks!
+                if (keycode == GameSettings.getKey(GameSettings.KEY_INVENTORY)) {
+
+                    // Check the actual timers to guarantee we are locked in an animation
+                    boolean isAnimationLocked = player.focusTimer > 0
+                        || player.wraithsTimer > 0
+                        || player.spritCastTimer > 0;
+
+                    // Only allow toggling if we aren't locked, OR if the menu is already open
+                    if (!isAnimationLocked || gameUI.isInventoryOpen()) {
+                        if (!gameUI.isPaused() || gameUI.isInventoryOpen()) {
+                            gameUI.toggleInventory();
+                        }
+                    }
                     return true;
                 }
                 return false;
