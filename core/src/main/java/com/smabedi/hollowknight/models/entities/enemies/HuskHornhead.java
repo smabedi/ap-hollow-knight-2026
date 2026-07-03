@@ -1,0 +1,159 @@
+package com.smabedi.hollowknight.models.entities.enemies;
+
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
+import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.models.entities.knight.Knight;
+
+public class HuskHornhead extends Enemy {
+    private HornheadState currentState;
+    private float stateTimer;
+    private boolean movingRight = true;
+
+    public HuskHornhead(World world, float x, float y) {
+        super(world, x, y, Constants.Enemy.HuskHornhead.HP);
+        this.currentState = HornheadState.WALKING;
+        this.stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
+        define();
+    }
+
+    @Override
+    public void defineShape() {
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox(Constants.Enemy.HuskHornhead.WIDTH_HALVED_SCALED, Constants.Enemy.HuskHornhead.HEIGHT_HALVED_SCALED);
+
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = shape;
+        fixtureDef.friction = Constants.Enemy.HuskHornhead.FRICTION;
+
+        b2body.createFixture(fixtureDef).setUserData(this);
+        shape.dispose();
+    }
+
+    @Override
+    public void update(float dt, Knight player) {
+        checkRespawn(player);
+
+        if (dead) {
+            Vector2 vel = b2body.getLinearVelocity();
+            b2body.setLinearVelocity(vel.x * 0.9f, vel.y);
+            return;
+        }
+
+        if (stunTimer > 0) {
+            stunTimer -= dt;
+            return;
+        }
+
+        Vector2 center = b2body.getWorldCenter();
+        float direction = movingRight ? 1f : -1f;
+
+        // --- 1. RAYCAST: Ledges & Walls (Safety checks) ---
+        Vector2 wallRayEnd = new Vector2(
+            center.x + (direction * 2f * Constants.Enemy.HuskHornhead.WIDTH_HALVED_SCALED),
+            center.y
+        );
+        final boolean[] hitWall = {false};
+        world.rayCast((fixture, _, _, _) -> {
+            if (hitEnd(fixture)) hitWall[0] = true;
+            return 1;
+        }, center, wallRayEnd);
+
+        Vector2 ledgeRayEnd = new Vector2(
+            center.x + (direction * 2f * Constants.Enemy.HuskHornhead.WIDTH_HALVED_SCALED),
+            center.y - (2f * Constants.Enemy.HuskHornhead.HEIGHT_HALVED_SCALED)
+        );
+        final boolean[] hitGround = {false};
+        world.rayCast((fixture, _, _, _) -> {
+            if (hitEnd(fixture)) hitGround[0] = true;
+            return 1;
+        }, center, ledgeRayEnd);
+
+        boolean pathBlocked = hitWall[0] || !hitGround[0];
+
+        // --- 2. RAYCAST: Vision Check ---
+        if (currentState != HornheadState.CHARGING) {
+            Vector2 visionEnd = new Vector2(
+                center.x + (direction * Constants.Enemy.HuskHornhead.VISION_RANGE),
+                center.y
+            );
+
+            final boolean[] sawPlayer = {false};
+
+            // Notice we are using 'fraction' here now
+            world.rayCast((fixture, p, n, fraction) -> {
+                Object userData = fixture.getUserData();
+
+                if ("ground".equals(userData) || "spikes".equals(userData)) {
+                    sawPlayer[0] = false; // Vision is blocked!
+                    return fraction; // Clip the ray to this wall/spike
+                }
+                if ("knight".equals(userData)) {
+                    sawPlayer[0] = true;  // We see the Knight!
+                    return fraction; // Clip the ray to the Knight
+                }
+
+                return 1; // Ignore other things like sensors or corpses, keep going
+            }, center, visionEnd);
+
+            if (sawPlayer[0]) {
+                System.out.println("Husk Hornhead spotted the Knight! CHARGING!");
+                currentState = HornheadState.CHARGING;
+            }
+        }
+
+        // --- 3. HornheadState MACHINE LOGIC ---
+        switch (currentState) {
+            case WALKING:
+                if (pathBlocked) {
+                    movingRight = !movingRight; // Turn around
+                }
+                b2body.setLinearVelocity(
+                    direction * Constants.Enemy.HuskHornhead.WALK_SPEED,
+                    b2body.getLinearVelocity().y
+                );
+
+                stateTimer -= dt;
+                if (stateTimer <= 0) {
+                    currentState = HornheadState.RESTING;
+                    stateTimer = Constants.Enemy.HuskHornhead.REST_DURATION;
+                }
+                break;
+
+            case RESTING:
+                b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+                stateTimer -= dt;
+                if (stateTimer <= 0) {
+                    currentState = HornheadState.WALKING;
+                    stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
+                }
+                break;
+
+            case CHARGING:
+                if (pathBlocked) {
+                    // Crash! The blind rush ends here.
+                    System.out.println("Husk Hornhead crashed! Ending charge.");
+                    currentState = HornheadState.RESTING;
+                    stateTimer = Constants.Enemy.HuskHornhead.REST_DURATION;
+                    movingRight = !movingRight; // Turn around after crashing
+                } else {
+                    // Execute the blind rush
+                    b2body.setLinearVelocity(
+                        direction * Constants.Enemy.HuskHornhead.CHARGE_SPEED,
+                        b2body.getLinearVelocity().y
+                    );
+                }
+                break;
+        }
+    }
+
+
+    @Override
+    public void respawn() {
+        super.respawn();
+        this.currentState = HornheadState.WALKING;
+        this.stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
+    }
+}

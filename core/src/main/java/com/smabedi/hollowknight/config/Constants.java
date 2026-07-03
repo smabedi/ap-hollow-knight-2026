@@ -47,19 +47,70 @@ public final class Constants {
         public static final float WALL_SLIDE_SPEED = 2.5f;
         public static final float NAIL_REACH = 0.8f;
         public static final float KNOCKBACK_FORCE_X = 5f;
-        public static final float KNOCKBACK_FORCE_Y = 3f;
-        public static final float I_FRAME_DURATION = 1.0f; // 1 second of invincibility
+        public static final float KNOCKBACK_FORCE_Y = 2f;
+        public static final float I_FRAME_DURATION = 1f; // 1 second of invincibility
         public static final int MAX_HEALTH = 5;
         public static final int MAX_SOUL = 99;
         public static final int SOUL_PER_HIT = 11;
         public static final int FOCUS_COST = 33;
         public static final float FOCUS_DURATION = 1.5f;
         public static final float WRAITHS_DURATION = 0.6f;
-        public static final float WRAITHS_WIDTH = 1.0f;
+        public static final float WRAITHS_WIDTH = 1f;
         public static final float WRAITHS_HEIGHT = 1.5f;
         public static final float SPRIT_SPEED = 15f;
         public static final float SPRIT_WIDTH = 0.6f;
         public static final float SPRIT_HEIGHT = 0.4f;
         public static final float SPRIT_CAST_DURATION = 0.25f;
+    }
+
+    public static final class Enemy {
+        public static final float RESPAWN_DISTANCE = 20f;
+
+        public static final class Crawlid {
+            public static final int HP = 2;
+            public static final float SPEED = 1.5f;
+            public static final int WIDTH = 80;
+            public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
+            public static final int HEIGHT = 40;
+            public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
+            public static final float FRICTION = 0.2f;
+        }
+
+        public static final class Mossfly {
+            public static final int HP = 3;
+            public static final float SPEED = 2.5f;
+            public static final float AGGRO_RADIUS = 5f;
+            public static final int RADIUS = 30;
+            public static final float RADIUS_HALVED_SCALED = RADIUS / World.PPM;
+            public static final float FRICTION = 0f;
+        }
+
+        public static final class HuskHornhead {
+            public static final int HP = 4;
+            public static final float WALK_SPEED = 1f;
+            public static final float CHARGE_SPEED = 5f;
+            public static final int WIDTH = 50;
+            public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
+            public static final int HEIGHT = 80;
+            public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
+            public static final float FRICTION = 0.2f;
+            public static final float VISION_RANGE = 8f; // How far it sees in front of itself
+            public static final float WALK_DURATION = 4f;
+            public static final float REST_DURATION = 2f;
+        }
+
+        public static final class CrystalGuardian {
+            public static final int HP = 6;
+            public static final float CHARGE_SPEED = 5.5f;
+            public static final float RETURN_SPEED = 2f;
+            public static final int WIDTH = 60;
+            public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
+            public static final int HEIGHT = 70;
+            public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
+            public static final float FRICTION = 0.2f;
+            public static final float VISION_RANGE = 12f; // Long range laser sight!
+            public static final float ENRAGE_DURATION = 3f;
+            public static final float LASER_TELEGRAPH_TIME = 0.4f; // A brief pause to warn the player
+        }
     }
 }

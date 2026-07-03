@@ -3,6 +3,7 @@ package com.smabedi.hollowknight.models.game;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
+import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 
@@ -125,7 +126,39 @@ public class WorldContactListener implements ContactListener {
     }
 
     @Override
-    public void preSolve(Contact contact, Manifold oldManifold) {}
+    public void preSolve(Contact contact, Manifold oldManifold) {
+        Fixture fixA = contact.getFixtureA();
+        Fixture fixB = contact.getFixtureB();
+
+        Object dataA = fixA.getUserData();
+        Object dataB = fixB.getUserData();
+
+        boolean isAPlayer = "knight".equals(dataA);
+        boolean isBPlayer = "knight".equals(dataB);
+
+        boolean isAEnemy = dataA instanceof Enemy;
+        boolean isBEnemy = dataB instanceof Enemy;
+
+        // --- 1. Player vs Enemy Collisions ---
+        if ((isAPlayer && isBEnemy) || (isBPlayer && isAEnemy)) {
+            Enemy enemy = isAEnemy ? (Enemy) dataA : (Enemy) dataB;
+
+            // Phase through corpses OR phase through living enemies if we have I-Frames
+            if (enemy.isDead() || player.iFrameTimer > 0) {
+                contact.setEnabled(false);
+            }
+        }
+        // --- 2. Enemy vs Enemy Collisions ---
+        else if (isAEnemy && isBEnemy) {
+            Enemy enemyA = (Enemy) dataA;
+            Enemy enemyB = (Enemy) dataB;
+
+            // If either bug is a corpse, disable the physical bump so they walk right through it!
+            if (enemyA.isDead() || enemyB.isDead()) {
+                contact.setEnabled(false);
+            }
+        }
+    }
 
     @Override
     public void postSolve(Contact contact, ContactImpulse impulse) {}

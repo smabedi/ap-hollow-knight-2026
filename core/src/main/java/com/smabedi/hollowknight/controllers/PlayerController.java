@@ -206,7 +206,7 @@ public class PlayerController {
         float halfHeight = Constants.Knight.HEIGHT_HALVED_SCALED;
         rayEnd.set(center.x, center.y - halfHeight - Constants.Knight.POGO_REACH);
 
-        RayCastCallback pogoCallback = (fixture, _, _, _) -> {
+        RayCastCallback pogoCallback = (fixture, _, _, fraction) -> {
             Object userData = fixture.getUserData();
 
             boolean isSpikes = "spikes".equals(userData);
@@ -216,7 +216,7 @@ public class PlayerController {
             if (isEnemy) {
                 IDamageable enemy = (IDamageable) userData;
                 if (enemy.isDead()) {
-                    return 1; // Ignore corpses, continue the raycast downward
+                    return -1; // Ignore corpses, continue the raycast downward
                 }
             }
 
@@ -244,10 +244,14 @@ public class PlayerController {
                     player.addSoul(Constants.Knight.SOUL_PER_HIT);
                 }
 
-                return 0; // Terminate raycast, we found our target
+                return fraction; // Terminate raycast, we found our target
             }
 
-            return 1; // Not spikes or a living enemy, keep checking
+            if ("ground".equals(userData)) {
+                return fraction; // ground blocks the pogo ray
+            }
+
+            return -1;
         };
 
         player.world.rayCast(pogoCallback, center, rayEnd);
