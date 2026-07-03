@@ -1,0 +1,22 @@
+package com.smabedi.hollowknight.models.inventory;
+
+import com.smabedi.hollowknight.config.Assets;
+
+public enum CharmType {
+    SOUL_CATCHER,
+    DASHMASTER,
+    UNBREAKABLE_STRENGTH,
+    QUICK_SLASH,
+    QUICK_FOCUS,
+    HEAVY_BLOW,
+    SHARP_SHADOW,
+    VOID_HEART;
+
+    private String getLangKey() {
+        return this.name().toLowerCase();
+    }
+
+    public String getName() {
+        return Assets.getString(getLangKey());
+    }
+}

@@ -33,7 +33,7 @@ public class GameSettings {
         if (!prefs.contains(MUSIC_VOL)) {
             resetAudio();
             resetControls();
-            setBrightness(1.0f);
+            setBrightness(1f);
             setLanguage("en");
         }
     }

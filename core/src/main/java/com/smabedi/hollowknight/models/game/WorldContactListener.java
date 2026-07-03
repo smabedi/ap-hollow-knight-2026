@@ -6,12 +6,16 @@ import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
+import com.smabedi.hollowknight.models.inventory.CharmType;
+import com.smabedi.hollowknight.models.inventory.Inventory;
 
 public class WorldContactListener implements ContactListener {
     private final Knight player;
+    private final Inventory inventory;
 
-    public WorldContactListener(Knight player) {
+    public WorldContactListener(Knight player, Inventory inventory) {
         this.player = player;
+        this.inventory = inventory;
     }
 
     @Override
@@ -119,7 +123,9 @@ public class WorldContactListener implements ContactListener {
             } else if (hazardData instanceof IDamageable enemy) {
                 // Damages enemies, but passes through them (does not destroy itself)
                 if (!enemy.isDead()) {
-                    enemy.takeDamage(1);
+                    // Apply Void Heart modifier
+                    int spellDamage = inventory.isEquipped(CharmType.VOID_HEART) ? 2 : 1;
+                    enemy.takeDamage(spellDamage);
                 }
             }
         }

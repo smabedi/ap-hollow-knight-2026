@@ -33,6 +33,7 @@ public final class Constants {
         public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
         public static final int HEIGHT = 80;
         public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
+        public static final float ATTACK_COOLDOWN = 0.3f;
         public static final float MAX_SPEED = 5f;
         public static final float JUMP_STRENGTH = 3f;
         public static final float FRICTION = 0.1f;
@@ -43,7 +44,7 @@ public final class Constants {
         public static final float POGO_ATTACK_DURATION = 0.15f; // Hitbox lingers for 150ms
         public static final float DASH_SPEED = 15f;
         public static final float DASH_DURATION = 0.2f;
-        public static final float DASH_COOLDOWN = 0.6f;
+        public static final float DASH_COOLDOWN = 2f;
         public static final float WALL_SLIDE_SPEED = 2.5f;
         public static final float NAIL_REACH = 0.8f;
         public static final float KNOCKBACK_FORCE_X = 5f;
@@ -112,5 +113,9 @@ public final class Constants {
             public static final float ENRAGE_DURATION = 3f;
             public static final float LASER_TELEGRAPH_TIME = 0.4f; // A brief pause to warn the player
         }
+    }
+
+    public static final class Inventory {
+        public static final int MAX_NOTCHES = 3;
     }
 }

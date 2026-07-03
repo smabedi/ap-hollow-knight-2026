@@ -43,10 +43,10 @@ public class SaveCard extends Table {
                 }
             });
         } else {
-            Label masksLabel = new Label(Assets.getString("mask") + ": " + session.getHealth(), skin);
-            Label geoLabel = new Label(Assets.getString("soul") + ": " + session.getSoul(), skin);
-            Label locationLabel = new Label(session.getLocation().getName(), skin);
-            Label timeLabel = new Label(session.getPlaytime() + " " + Assets.getString("min"), skin);
+            Label masksLabel = new Label(Assets.getString("mask") + ": " + session.health, skin);
+            Label geoLabel = new Label(Assets.getString("soul") + ": " + session.soul, skin);
+            Label locationLabel = new Label(session.location.getName(), skin);
+            Label timeLabel = new Label(session.playtime + " " + Assets.getString("min"), skin);
 
             Table statsTable = new Table();
             statsTable.add(masksLabel).left().row();

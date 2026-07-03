@@ -46,7 +46,7 @@ public class GameScreen implements Screen {
         // The Debug Renderer draws colored outlines around the hitboxes, for now.
         b2dr = new Box2DDebugRenderer();
 
-        loadMap(session.getLocation());
+        loadMap(session.location);
     }
 
     public void loadMap(LocationType location) {
@@ -62,19 +62,20 @@ public class GameScreen implements Screen {
         renderer = new OrthogonalTiledMapRenderer(map, 1f / Constants.World.PPM);
         camera.position.set(viewport.getWorldWidth() / 2f, viewport.getWorldHeight() / 2f, 0);
 
+        assert map != null;
         new B2WorldCreator(world, map);
-        player = new Knight(world, session.getPlayerX(), session.getPlayerY());
+        player = new Knight(world, session.playerX, session.playerY);
 
         enemies = new Array<>();
-        enemies.add(new Crawlid(world, session.getPlayerX() + 300f, session.getPlayerY() + 200f));
-        enemies.add(new Mossfly(world, session.getPlayerX() + 450f, session.getPlayerY() + 400f));
-        enemies.add(new HuskHornhead(world, session.getPlayerX() + 2000f, session.getPlayerY()));
-        enemies.add(new CrystalGuardian(world, session.getPlayerX() + 1000f, session.getPlayerY() + 200f, true));
+        enemies.add(new Crawlid(world, session.playerX + 300f, session.playerY + 200f));
+        enemies.add(new Mossfly(world, session.playerX + 450f, session.playerY + 400f));
+        enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
+        enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
 
         gameUI = new GameUI();
-        playerController = new PlayerController(player);
+        playerController = new PlayerController(player, session.inventory);
 
-        world.setContactListener(new WorldContactListener(player));
+        world.setContactListener(new WorldContactListener(player, session.inventory));
     }
 
     public void update(float dt) {
