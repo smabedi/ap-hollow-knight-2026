@@ -28,6 +28,9 @@ public class Knight {
     public int wraithsTicksFired = 0;
     public float spritCastTimer = 0f;
     public float attackCooldownTimer = 0f;
+    public boolean isGodMode = false;
+    public boolean emergencyHealArmed = false;
+    public boolean isNoclip = false;
 
     public Knight(World world, float startX, float startY) {
         this.world = world;
@@ -106,10 +109,17 @@ public class Knight {
     }
 
     public void takeDamage(int amount, float knockbackDirX) {
-        if (iFrameTimer > 0 || isDead) return;
+        // Also intercept damages if Cheat is active
+        if (isGodMode || isNoclip || iFrameTimer > 0 || isDead) return;
+
+        // EMERGENCY HEAL SAFETY NET INTERCEPT
+        if (health - amount <= 0 && emergencyHealArmed) {
+            amount = health - 1; // This ensures health -= amount leaves exactly 1 HP
+            emergencyHealArmed = false;
+            System.out.println("Emergency Heal prevented death! Taking knockback.");
+        }
 
         health -= amount;
-
         // Interrupt focus if we get hit!
         isFocusing = false;
         focusTimer = 0f;
@@ -118,7 +128,7 @@ public class Knight {
             health = 0;
             isDead = true;
             System.out.println("Knight has died!");
-            // TODO: Trigger respawn logic later
+            // TODO: Trigger respawn logic later.
         } else {
             // Give 1 second of invincibility
             iFrameTimer = Constants.Knight.I_FRAME_DURATION;

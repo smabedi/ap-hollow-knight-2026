@@ -28,6 +28,20 @@ public class PlayerController {
     public void handleInput(float dt) {
         if (player.b2body == null || player.isDead) return;
 
+        // --- NOCLIP / SPECTATOR OVERRIDE ---
+        if (player.isNoclip) {
+            float flySpeed = Constants.Knight.MAX_SPEED * 2f;
+            float vx = 0, vy = 0;
+
+            if (Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_LEFT))) vx = -flySpeed;
+            if (Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_RIGHT))) vx = flySpeed;
+            if (Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_UP))) vy = flySpeed;
+            if (Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_DOWN))) vy = -flySpeed;
+
+            player.b2body.setLinearVelocity(vx, vy);
+            return; // Terminate early so normal logic does not override our flight
+        }
+
         // --- TICK TIMERS ---
         if (player.iFrameTimer > 0) player.iFrameTimer -= dt;
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;

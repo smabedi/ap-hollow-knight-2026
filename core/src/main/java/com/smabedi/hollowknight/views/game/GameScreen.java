@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
+import com.smabedi.hollowknight.controllers.CheatController;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -35,6 +36,8 @@ public class GameScreen implements Screen {
     private PlayerController playerController;
     private final Box2DDebugRenderer b2dr;
     private Array<Enemy> enemies;
+    public float timeScale = 1f;
+    private CheatController cheatController;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -75,6 +78,7 @@ public class GameScreen implements Screen {
 
         gameUI = new GameUI(session.inventory);
         playerController = new PlayerController(player, session.inventory);
+        cheatController = new CheatController(player, gameUI, this);
 
         world.setContactListener(new WorldContactListener(player, session.inventory));
     }
@@ -82,14 +86,24 @@ public class GameScreen implements Screen {
     public void update(float dt) {
         if (gameUI.isPaused()) return;
 
-        playerController.handleInput(dt);
+        // Scale timers and inputs
+        float scaledDt = dt * timeScale;
+        playerController.handleInput(scaledDt);
 
+        // DO NOT scale the frameTime added to the accumulator
         float frameTime = Math.min(dt, 0.25f);
         accumulator += frameTime;
         float TIME_STEP = Constants.World.TIME_STEP;
+
         while (accumulator >= TIME_STEP) {
-            world.step(TIME_STEP, 6, 2);
+            // Scale the physics step internally, keeping 60 smooth frames!
+            world.step(TIME_STEP * timeScale, 6, 2);
             accumulator -= TIME_STEP;
+        }
+
+        // Scale AI
+        for (int i = 0; i < enemies.size; i++) {
+            enemies.get(i).update(scaledDt, player);
         }
 
         // Destroy spoiled Vengeful Spirit bodies
@@ -103,11 +117,6 @@ public class GameScreen implements Screen {
                     sprit.isDestroyed = true;
                 }
             }
-        }
-
-        // Tick AI logic for all enemies
-        for (int i = 0; i < enemies.size; i++) {
-            enemies.get(i).update(dt, player);
         }
 
         // Update camera to follow the player with a slight lerp (smoothness)
@@ -144,6 +153,7 @@ public class GameScreen implements Screen {
     @Override
     public void show() {
         InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(cheatController);
         multiplexer.addProcessor(gameUI.stage);
         multiplexer.addProcessor(new InputAdapter() {
 

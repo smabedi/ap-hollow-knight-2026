@@ -1,5 +1,6 @@
 package com.smabedi.hollowknight.config;
 
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 
 public final class Constants {
@@ -117,5 +118,21 @@ public final class Constants {
 
     public static final class Inventory {
         public static final int MAX_NOTCHES = 3;
+    }
+
+    public static final class Cheats {
+        // TODO: Adjust these to match the exact Tiled map coordinates later.
+        public static final float BOSS_ARENA_X = 500f;
+        public static final float BOSS_ARENA_Y = 500f;
+
+        public static final class Keys {
+            public static final int MODIFIER = Input.Keys.CONTROL_LEFT;
+            public static final int GOD_MODE = Input.Keys.G;
+            public static final int REFILL_SOUL = Input.Keys.R;
+            public static final int EMERGENCY_HEAL = Input.Keys.H;
+            public static final int BOSS_TELEPORT = Input.Keys.T;
+            public static final int TIME_DILATION = Input.Keys.D;
+            public static final int SPECTATOR_MODE = Input.Keys.N;
+        }
     }
 }
