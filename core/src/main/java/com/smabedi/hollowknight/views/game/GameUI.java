@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -21,6 +22,8 @@ import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
+import static com.badlogic.gdx.utils.Align.right;
+
 public class GameUI {
     public final Stage stage;
     private final Skin skin;
@@ -28,6 +31,7 @@ public class GameUI {
     private Table pauseMenu;
     private Table dialogBox;
     private Table toastContainer;
+    private TextureRegionDrawable toastBackground;
     private Table inventoryMenu;
     private Label notchLabel;
     private Label charmDescription;
@@ -41,6 +45,8 @@ public class GameUI {
         skin = Assets.getSkin();
 
         buildPauseMenu();
+        buildToastSystem();
+        buildDialogBox();
         buildInventoryMenu();
     }
 
@@ -50,7 +56,7 @@ public class GameUI {
         pauseMenu.defaults().pad(10);
 
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(0, 0, 0, 0.5f));
+        pixmap.setColor(new Color(0, 0, 0, 0.6f));
         pixmap.fill();
         Texture transparentBlack = new Texture(pixmap);
         pauseMenu.setBackground(new TextureRegionDrawable(new TextureRegion(transparentBlack)));
@@ -87,12 +93,20 @@ public class GameUI {
     }
 
     private void buildToastSystem() {
+        // Create a reusable, dark, semi-transparent background for the toast boxes
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(new Color(0, 0, 0, 0.6f));
+        pixmap.fill();
+        Texture bgTex = new Texture(pixmap);
+        toastBackground = new TextureRegionDrawable(new TextureRegion(bgTex));
+        pixmap.dispose();
+
         toastContainer = new Table();
+        // Anchor to the Upper Right corner!
         toastContainer.top().right().pad(20);
         toastContainer.setFillParent(true);
         stage.addActor(toastContainer);
     }
-
 
     public void togglePause() {
         boolean isPaused = pauseMenu.isVisible();
@@ -105,7 +119,41 @@ public class GameUI {
     }
 
     public void showToast(String message) {
-        // TODO: Add a label to toastContainer, use Scene2D Actions to fade it out after 3 seconds.
+        // 1. Create a dedicated box for this specific toast
+        Table toastBox = new Table();
+        toastBox.setBackground(toastBackground);
+        toastBox.pad(15); // Inner padding so text doesn't touch the edges
+
+        // 2. Setup the text label
+        Label toastLabel = new Label(message, skin);
+        toastLabel.setWrap(true); // Prevents long text from breaking the layout
+        toastLabel.setAlignment(right); // Text is right-aligned inside the box
+
+        // 3. Add the label to the box and lock its width
+        toastBox.add(toastLabel).width(250).align(right);
+
+        // 4. Start the box as completely transparent
+        toastBox.setColor(1, 1, 1, 0);
+
+        // 5. Add the box to the main Upper-Left container.
+        // Aligning right here ensures all boxes stack neatly against their own column's right edge.
+        toastContainer.add(toastBox).width(280).padBottom(10).align(right).row();
+
+        // 6. Smooth Animation Sequence
+        toastBox.addAction(Actions.sequence(
+            Actions.fadeIn(0.25f),
+            Actions.delay(2f),
+            Actions.fadeOut(0.5f),
+            Actions.run(() -> {
+                // Safely extract the cell and reset it to collapse the gap
+                com.badlogic.gdx.scenes.scene2d.ui.Cell<?> cell = toastContainer.getCell(toastBox);
+                if (cell != null) {
+                    cell.reset();
+                }
+                // Destroy the box
+                toastBox.remove();
+            })
+        ));
     }
 
     private void buildInventoryMenu() {
@@ -115,7 +163,7 @@ public class GameUI {
 
         // Reuse the translucent black background from the pause menu
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(0, 0, 0, 0.8f));
+        pixmap.setColor(new Color(0, 0, 0, 0.6f));
         pixmap.fill();
         Texture transparentBlack = new Texture(pixmap);
         inventoryMenu.setBackground(new TextureRegionDrawable(new TextureRegion(transparentBlack)));
