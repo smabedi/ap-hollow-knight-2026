@@ -5,6 +5,7 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
@@ -67,9 +68,9 @@ public class WorldContactListener implements ContactListener {
         // Check if the hazard is spikes or an enemy
         if ("spikes".equals(hazardData) || hazardData instanceof IDamageable) {
 
-            // If it's an enemy, check if it's already dead so we don't take damage from corpses
+            // If it's an enemy, check if it's already dead, or it's the Zote so we don't take damage from them
             if (hazardData instanceof IDamageable) {
-                if (((IDamageable) hazardData).isDead()) return;
+                if (((IDamageable) hazardData).isDead() || hazardData instanceof Zote) return;
             }
 
             // Calculate knockback direction. If the hazard is to our right, we get knocked left (-1).

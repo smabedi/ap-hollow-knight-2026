@@ -18,6 +18,7 @@ import com.smabedi.hollowknight.controllers.CheatController;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
@@ -32,10 +33,11 @@ public class GameScreen implements Screen {
     private World world;
     private float accumulator = 0;
     private Knight player;
+    private Array<Enemy> enemies;
+    private Zote zote;
     private GameUI gameUI;
     private PlayerController playerController;
     private final Box2DDebugRenderer b2dr;
-    private Array<Enemy> enemies;
     public float timeScale = 1f;
     private CheatController cheatController;
 
@@ -71,13 +73,14 @@ public class GameScreen implements Screen {
         player = new Knight(world, session.playerX, session.playerY);
 
         enemies = new Array<>();
-        enemies.add(new Crawlid(world, session.playerX + 300f, session.playerY + 200f));
-        enemies.add(new Mossfly(world, session.playerX + 450f, session.playerY + 400f));
-        enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
-        enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
+//        enemies.add(new Crawlid(world, session.playerX + 300f, session.playerY + 200f));
+//        enemies.add(new Mossfly(world, session.playerX + 450f, session.playerY + 400f));
+//        enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
+//        enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
+        zote = new Zote(world, session.playerX + 1000f, session.playerY + 100f);
 
         gameUI = new GameUI(session.inventory);
-        playerController = new PlayerController(player, session.inventory);
+        playerController = new PlayerController(player, session.inventory, gameUI);
         cheatController = new CheatController(player, gameUI, this);
 
         world.setContactListener(new WorldContactListener(player, session.inventory));
@@ -101,9 +104,12 @@ public class GameScreen implements Screen {
             accumulator -= TIME_STEP;
         }
 
-        // Scale AI
         for (int i = 0; i < enemies.size; i++) {
             enemies.get(i).update(scaledDt, player);
+        }
+
+        if (zote != null) {
+            zote.update(scaledDt, player);
         }
 
         // Destroy spoiled Vengeful Spirit bodies
