@@ -4,6 +4,7 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
+import com.smabedi.hollowknight.models.entities.enemies.Shockwave;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
@@ -36,6 +37,7 @@ public class WorldContactListener implements ContactListener {
 
         handlePlayerDamage(fixA, fixB);
         handleSpellCollisions(fixA, fixB);
+        handleShockwaveCollisions(fixA, fixB);
     }
 
     @Override
@@ -132,6 +134,31 @@ public class WorldContactListener implements ContactListener {
         }
     }
 
+    private void handleShockwaveCollisions(Fixture fixA, Fixture fixB) {
+        Object dataA = fixA.getUserData();
+        Object dataB = fixB.getUserData();
+
+        boolean isAShockwave = dataA instanceof Shockwave;
+        boolean isBShockwave = dataB instanceof Shockwave;
+
+        if (isAShockwave || isBShockwave) {
+            Shockwave shockwave = isAShockwave ? (Shockwave) dataA : (Shockwave) dataB;
+            Fixture hazardFix = isAShockwave ? fixB : fixA;
+            Object hazardData = hazardFix.getUserData();
+
+            if ("knight".equals(hazardData)) {
+                // Determine knockback direction based on which way the shockwave is traveling
+                float knockbackDirX = shockwave.b2body.getLinearVelocity().x > 0 ? 1f : -1f;
+
+                // Power Slam Shockwaves usually deal 2 damage (double a standard hit)
+                player.takeDamage(2, knockbackDirX);
+            } else if ("ground".equals(hazardData) || "spikes".equals(hazardData)) {
+                // Destroy the shockwave if it hits a wall
+                shockwave.setToDestroy = true;
+            }
+        }
+    }
+
     @Override
     public void preSolve(Contact contact, Manifold oldManifold) {
         Fixture fixA = contact.getFixtureA();
@@ -146,7 +173,17 @@ public class WorldContactListener implements ContactListener {
         boolean isAEnemy = dataA instanceof Enemy;
         boolean isBEnemy = dataB instanceof Enemy;
 
-        // --- 1. Player vs Enemy Collisions ---
+        boolean isAZote = dataA instanceof Zote;
+        boolean isBZote = dataB instanceof Zote;
+
+        // --- 1. Remove friction if the Knight is moving UP against a wall ---
+        if ((isAPlayer && "ground".equals(dataB)) || (isBPlayer && "ground".equals(dataA))) {
+            if (player.b2body.getLinearVelocity().y > 0) {
+                contact.setFriction(0f);
+            }
+        }
+
+        // --- 2. Player vs Enemy Collisions ---
         if ((isAPlayer && isBEnemy) || (isBPlayer && isAEnemy)) {
             Enemy enemy = isAEnemy ? (Enemy) dataA : (Enemy) dataB;
 
@@ -155,13 +192,22 @@ public class WorldContactListener implements ContactListener {
                 contact.setEnabled(false);
             }
         }
-        // --- 2. Enemy vs Enemy Collisions ---
+        // --- 3. Enemy vs Enemy Collisions ---
         else if (isAEnemy && isBEnemy) {
             Enemy enemyA = (Enemy) dataA;
             Enemy enemyB = (Enemy) dataB;
 
             // If either bug is a corpse, disable the physical bump so they walk right through it!
             if (enemyA.isDead() || enemyB.isDead()) {
+                contact.setEnabled(false);
+            }
+        }
+        // --- 4. Zote collisions ---
+        else if ((isAZote && isBPlayer) || (isBZote && isAPlayer)) {
+            Zote zote = isAZote ? (Zote) dataA : (Zote) dataB;
+
+            // Phase through zote if he's angry, running around
+            if (zote.isAngry()) {
                 contact.setEnabled(false);
             }
         }

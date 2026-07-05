@@ -242,7 +242,7 @@ public class GameUI {
 
     @SuppressWarnings("GDXJavaUnsafeIterator")
     public void refreshInventoryUI() {
-        notchLabel.setText(Assets.getString("notches_used") + ": " + inventory.getUsedNotches() + " / " + Constants.Inventory.MAX_NOTCHES);
+        notchLabel.setText(Assets.getString("notches_used") + ": " + inventory.getUsedNotches() + " / " + Constants.Knight.Inventory.MAX_NOTCHES);
         charmsGrid.clearChildren();
 
         int col = 0;

@@ -15,7 +15,7 @@ public class VengefulSpirit {
         b2body = world.createBody(bodyDef);
 
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(Constants.Knight.SPRIT_WIDTH, Constants.Knight.SPRIT_HEIGHT);
+        shape.setAsBox(Constants.Knight.VengefulSpirit.WIDTH, Constants.Knight.VengefulSpirit.HEIGHT);
 
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
@@ -26,7 +26,7 @@ public class VengefulSpirit {
         shape.dispose();
 
         // Apply constant horizontal velocity
-        float velocityX = facingRight ? Constants.Knight.SPRIT_SPEED : -Constants.Knight.SPRIT_SPEED;
+        float velocityX = facingRight ? Constants.Knight.VengefulSpirit.SPEED : -Constants.Knight.VengefulSpirit.SPEED;
         b2body.setLinearVelocity(velocityX, 0);
     }
 }

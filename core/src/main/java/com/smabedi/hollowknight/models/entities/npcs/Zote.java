@@ -76,7 +76,12 @@ public class Zote implements IDamageable {
             }
 
             float velocityX = direction * Constants.Zote.CHASE_SPEED;
-            b2body.setLinearVelocity(velocityX, b2body.getLinearVelocity().y);
+            if (Math.abs(player.b2body.getPosition().x - b2body.getPosition().x)
+                >= (Constants.Knight.WIDTH_HALVED_SCALED + Constants.Zote.WIDTH_HALVED_SCALED) * 1.5f) {
+                b2body.setLinearVelocity(velocityX, b2body.getLinearVelocity().y);
+            } else {
+                b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+            }
 
             if (angryTimer <= 0) {
                 isAngry = false;

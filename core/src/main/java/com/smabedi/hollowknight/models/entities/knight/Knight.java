@@ -55,7 +55,7 @@ public class Knight {
         b2body.createFixture(fixtureDef).setUserData("knight");
 
         PolygonShape footSensor = new PolygonShape();
-        footSensor.setAsBox(Constants.Knight.WIDTH_HALVED_SCALED * 0.9f,
+        footSensor.setAsBox(Constants.Knight.WIDTH_HALVED_SCALED * 0.8f,
             2 / Constants.World.PPM,
             new Vector2(0, -Constants.Knight.HEIGHT_HALVED_SCALED),
             0);
