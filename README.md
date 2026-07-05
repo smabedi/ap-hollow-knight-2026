@@ -42,7 +42,7 @@ Built strictly using the **MVC (Model-View-Controller)** architecture, this game
 * **Institution:** Sharif University of Technology
 * **Course:** Advanced Programming (AP)
 * **Semester:** Spring 2026
-* **Assignment:** Exercise 2 (Graphics Assignment)
+* **Assignment:** Exercise 4 (Graphics Assignment)
 
 ## 📝 License & Copyright
 **Code:** All original Java source code within this repository is licensed under the MIT License.
