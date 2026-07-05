@@ -23,7 +23,7 @@ public class Inventory {
             return false;
         }
 
-        if (equippedCharms.size >= Constants.Inventory.MAX_NOTCHES) {
+        if (equippedCharms.size >= Constants.Knight.Inventory.MAX_NOTCHES) {
             System.out.println("Cannot equip " + charm.name() + ": Notch capacity full.");
             return false;
         }
@@ -42,10 +42,6 @@ public class Inventory {
 
     public Array<CharmType> getOwnedCharms() {
         return ownedCharms;
-    }
-
-    public Array<CharmType> getEquippedCharms() {
-        return equippedCharms;
     }
 
     public int getUsedNotches() {

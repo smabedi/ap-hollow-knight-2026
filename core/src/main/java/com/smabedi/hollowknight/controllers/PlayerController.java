@@ -145,8 +145,8 @@ public class PlayerController {
             } else {
                 // Maintain the 1.2x speed multiplier for the whole dash
                 float baseDashSpeed = inventory.isEquipped(CharmType.SHARP_SHADOW)
-                    ? Constants.Knight.DASH_SPEED * 1.2f
-                    : Constants.Knight.DASH_SPEED;
+                    ? Constants.Knight.Dash.SPEED * 1.2f
+                    : Constants.Knight.Dash.SPEED;
 
                 float dashVelocity = player.facingRight ? baseDashSpeed : -baseDashSpeed;
                 player.b2body.setLinearVelocity(dashVelocity, 0);
@@ -163,26 +163,26 @@ public class PlayerController {
         if (Gdx.input.isKeyJustPressed(dashKey) && player.canDash && player.dashCooldownTimer <= 0) {
             player.isDashing = true;
             player.canDash = false;
-            player.dashTimer = Constants.Knight.DASH_DURATION;
+            player.dashTimer = Constants.Knight.Dash.DURATION;
             enemiesHitDuringDash.clear();
 
             // Dashmaster check to lower cooldown time
             player.dashCooldownTimer = inventory.isEquipped(CharmType.DASHMASTER)
-                ? Constants.Knight.DASH_COOLDOWN * 0.5f
-                : Constants.Knight.DASH_COOLDOWN;
+                ? Constants.Knight.Dash.COOLDOWN * 0.5f
+                : Constants.Knight.Dash.COOLDOWN;
             player.b2body.setGravityScale(0f);
 
             // Sharp Shadow check to multiply dash speed by 1.2
             float baseDashSpeed = inventory.isEquipped(CharmType.SHARP_SHADOW)
-                ? Constants.Knight.DASH_SPEED * 1.2f
-                : Constants.Knight.DASH_SPEED;
+                ? Constants.Knight.Dash.SPEED * 1.2f
+                : Constants.Knight.Dash.SPEED;
 
             float dashVelocity = player.facingRight ? baseDashSpeed : -baseDashSpeed;
             player.b2body.setLinearVelocity(dashVelocity, 0);
 
             // Disable the knight's damage-taking while dashing
             if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
-                player.iFrameTimer = Constants.Knight.DASH_DURATION;
+                player.iFrameTimer = Constants.Knight.Dash.DURATION;
             }
             return;
         }
@@ -246,7 +246,7 @@ public class PlayerController {
 
         // --- ATTACK LOGIC ---
         if (Gdx.input.isKeyJustPressed(attackKey) && player.attackCooldownTimer <= 0) {
-            player.pogoDurationTimer = Constants.Knight.POGO_ATTACK_DURATION;
+            player.pogoDurationTimer = Constants.Knight.Pogo.ATTACK_DURATION;
             player.attackCooldownTimer = Constants.Knight.ATTACK_COOLDOWN;
             if (inventory.isEquipped(CharmType.QUICK_SLASH)) player.attackCooldownTimer *= 0.5f; // Half the cooldown
         }
@@ -298,11 +298,11 @@ public class PlayerController {
                     player.soul -= Constants.Knight.FOCUS_COST;
 
                     if (pressingUp) {
-                        player.wraithsTimer = Constants.Knight.WRAITHS_DURATION; // Start the animation lock!
+                        player.wraithsTimer = Constants.Knight.HowlingWraiths.DURATION; // Start the animation lock!
                         player.wraithsTicksFired = 0;
                         System.out.println("Howling Wraiths Cast!");
                     } else {
-                        player.spritCastTimer = Constants.Knight.SPRIT_CAST_DURATION;
+                        player.spritCastTimer = Constants.Knight.VengefulSpirit.CAST_DURATION;
                         new VengefulSpirit(player.world, center.x, center.y, player.facingRight);
                         System.out.println("Vengeful Spirit Cast!");
                     }
@@ -381,7 +381,7 @@ public class PlayerController {
     private void executePogoJump(final float currentVelX) {
         Vector2 center = player.b2body.getWorldCenter();
         float halfHeight = Constants.Knight.HEIGHT_HALVED_SCALED;
-        rayEnd.set(center.x, center.y - halfHeight - Constants.Knight.POGO_REACH);
+        rayEnd.set(center.x, center.y - halfHeight - Constants.Knight.Pogo.REACH);
 
         RayCastCallback pogoCallback = (fixture, _, _, fraction) -> {
             Object userData = fixture.getUserData();
@@ -401,7 +401,7 @@ public class PlayerController {
                 // Reset falling momentum and apply the bounce
                 player.b2body.setLinearVelocity(currentVelX, 0);
                 player.b2body.applyLinearImpulse(
-                    new Vector2(0, Constants.Knight.POGO_BOUNCE_STRENGTH),
+                    new Vector2(0, Constants.Knight.Pogo.BOUNCE_STRENGTH),
                     player.b2body.getWorldCenter(),
                     true
                 );
@@ -497,13 +497,13 @@ public class PlayerController {
     private void executeWraithsHit() {
         Vector2 center = player.b2body.getWorldCenter();
 
-        float width = Constants.Knight.WRAITHS_WIDTH;
+        float width = Constants.Knight.HowlingWraiths.WIDTH;
         float heightY = Constants.Knight.HEIGHT_HALVED_SCALED;
 
         float lowerX = center.x - width;
         float upperX = center.x + width;
         float lowerY = center.y + heightY; // Starts at the top of the Knight's head
-        float upperY = center.y + heightY + Constants.Knight.WRAITHS_HEIGHT;
+        float upperY = center.y + heightY + Constants.Knight.HowlingWraiths.HEIGHT;
 
         QueryCallback wraithsCallback = fixture -> {
             Object userData = fixture.getUserData();

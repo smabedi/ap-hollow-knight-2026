@@ -40,6 +40,7 @@ public class GameScreen implements Screen {
     private final Box2DDebugRenderer b2dr;
     public float timeScale = 1f;
     private CheatController cheatController;
+    private final Array<Body> bodyBuffer = new Array<>();
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -78,6 +79,7 @@ public class GameScreen implements Screen {
 //        enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
 //        enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
         zote = new Zote(world, session.playerX + 1000f, session.playerY + 100f);
+//        enemies.add(new FalseKnight(world, session.playerX + 1000f, session.playerY + 100f));
 
         gameUI = new GameUI(session.inventory);
         playerController = new PlayerController(player, session.inventory, gameUI);
@@ -112,16 +114,16 @@ public class GameScreen implements Screen {
             zote.update(scaledDt, player);
         }
 
-        // Destroy spoiled Vengeful Spirit bodies
-        Array<Body> bodies = new Array<>();
-        world.getBodies(bodies);
+        world.getBodies(bodyBuffer); // LibGDX safely clears and refills this existing array!
         //noinspection GDXJavaUnsafeIterator
-        for (Body body : bodies) {
-            if (body.getUserData() instanceof VengefulSpirit sprit) {
-                if (sprit.setToDestroy && !sprit.isDestroyed) {
-                    world.destroyBody(body);
-                    sprit.isDestroyed = true;
-                }
+        for (Body body : bodyBuffer) {
+            Object userData = body.getUserData();
+            if (userData instanceof VengefulSpirit sprit && sprit.setToDestroy && !sprit.isDestroyed) {
+                world.destroyBody(body);
+                sprit.isDestroyed = true;
+            } else if (userData instanceof Shockwave wave && wave.setToDestroy && !wave.isDestroyed) {
+                world.destroyBody(body);
+                wave.isDestroyed = true;
             }
         }
 
