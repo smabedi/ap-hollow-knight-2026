@@ -5,24 +5,30 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
 import com.badlogic.gdx.utils.Array;
+import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
+import com.smabedi.hollowknight.views.game.GameUI;
 
 public class PlayerController {
     private final Knight player;
     private final Inventory inventory;
     private final Vector2 rayEnd = new Vector2();
     private final Array<IDamageable> enemiesHitDuringDash = new Array<>();
+    private final GameUI gameUI;
+    private boolean wasZoteNearby = false;
 
-    public PlayerController(Knight player, Inventory inventory) {
+    public PlayerController(Knight player, Inventory inventory, GameUI gameUI) {
         this.player = player;
         this.inventory = inventory;
+        this.gameUI = gameUI;
     }
 
     public void handleInput(float dt) {
@@ -66,6 +72,67 @@ public class PlayerController {
         int upKey = GameSettings.getKey(GameSettings.KEY_UP);
         int leftKey = GameSettings.getKey(GameSettings.KEY_LEFT);
         int rightKey = GameSettings.getKey(GameSettings.KEY_RIGHT);
+
+        // --- PROXIMITY SENSOR ---
+        float zoteInteractionDistance = Constants.Zote.INTERACTION_DISTANCE;
+        Vector2 center = player.b2body.getWorldCenter();
+        final Zote[] nearbyZote = {null};
+        player.world.QueryAABB(fixture -> {
+                if (fixture.getUserData() instanceof Zote) {
+                    nearbyZote[0] = (Zote) fixture.getUserData();
+                }
+                return true;
+            },
+            center.x - zoteInteractionDistance,
+            center.y - zoteInteractionDistance,
+            center.x + zoteInteractionDistance,
+            center.y + zoteInteractionDistance);
+
+        // Toast Hint Logic
+        if (nearbyZote[0] != null && !nearbyZote[0].isAngry()) {
+            if (!wasZoteNearby) {
+                gameUI.showToast(Assets.getString("press_up_to_listen"));
+                wasZoteNearby = true;
+            }
+        } else {
+            wasZoteNearby = false;
+        }
+
+        // --- DIALOGUE INTERACTION LOGIC ---
+        if (Gdx.input.isKeyJustPressed(upKey) && player.isGrounded) {
+            // If dialog is currently open/typing, pass input to UI to skip/close
+            if (gameUI.isDialogVisible()) {
+                gameUI.showDialog(""); // Passing empty string or triggering an advance method closes/skips it
+                return;
+            }
+
+            // If dialog is closed and Zote is within interaction reach
+            final boolean[] interacted = {false};
+            player.world.QueryAABB(fixture -> {
+                    if (fixture.getUserData() instanceof Zote zote) {
+                        String dialogText = zote.getNextDialogue();
+                        if (dialogText != null) {
+                            gameUI.showDialog(dialogText);
+                            player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y); // Halt player
+                            System.out.println("[SFX] Zote grumbles..."); // SFX Trigger
+                            interacted[0] = true;
+                        }
+                    }
+                    return true;
+                },
+                center.x - zoteInteractionDistance,
+                center.y - zoteInteractionDistance,
+                center.x + zoteInteractionDistance,
+                center.y + zoteInteractionDistance);
+
+            if (interacted[0]) return;
+        }
+
+        // Block player movement if dialogue is actively typing/showing
+        if (gameUI.isDialogVisible()) {
+            player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
+            return;
+        }
 
         // --- DASH STATE MACHINE ---
         if (player.isDashing) {
@@ -160,12 +227,20 @@ public class PlayerController {
             if (player.isGrounded) {
                 player.isJumping = true;
                 player.b2body.setLinearVelocity(targetVelX, 0);
-                player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
+                player.b2body.applyLinearImpulse(
+                    new Vector2(0, Constants.Knight.JUMP_STRENGTH),
+                    player.b2body.getWorldCenter(),
+                    true
+                );
             } else if (player.canDoubleJump) {
                 player.canDoubleJump = false;
                 player.isJumping = true;
                 player.b2body.setLinearVelocity(targetVelX, 0);
-                player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
+                player.b2body.applyLinearImpulse(
+                    new Vector2(0, Constants.Knight.JUMP_STRENGTH),
+                    player.b2body.getWorldCenter(),
+                    true
+                );
             }
         }
 
@@ -228,7 +303,6 @@ public class PlayerController {
                         System.out.println("Howling Wraiths Cast!");
                     } else {
                         player.spritCastTimer = Constants.Knight.SPRIT_CAST_DURATION;
-                        Vector2 center = player.b2body.getWorldCenter();
                         new VengefulSpirit(player.world, center.x, center.y, player.facingRight);
                         System.out.println("Vengeful Spirit Cast!");
                     }
@@ -346,12 +420,13 @@ public class PlayerController {
                     int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
                     enemy.takeDamage(damage);
 
-                    // Check for Soul Catcher
-                    int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
-                        ? Constants.Knight.SOUL_PER_HIT + 5 // Bonus soul
-                        : Constants.Knight.SOUL_PER_HIT;
-
-                    player.addSoul(soulGain);
+                    // Prevent Soul gain if the target is Zote
+                    if (!(enemy instanceof Zote)) {
+                        int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
+                            ? Constants.Knight.SOUL_PER_HIT + 5
+                            : Constants.Knight.SOUL_PER_HIT;
+                        player.addSoul(soulGain);
+                    }
                 }
 
                 return fraction; // Terminate raycast, we found our target
@@ -398,11 +473,13 @@ public class PlayerController {
                     enemy.takeDamage(damage);
                     enemy.applyKnockback(direction * 3f * knockbackMulti, 1f);
 
-                    int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
-                        ? Constants.Knight.SOUL_PER_HIT + 5
-                        : Constants.Knight.SOUL_PER_HIT;
-
-                    player.addSoul(soulGain);
+                    // Prevent Soul gain if the target is Zote
+                    if (!(enemy instanceof Zote)) {
+                        int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
+                            ? Constants.Knight.SOUL_PER_HIT + 5
+                            : Constants.Knight.SOUL_PER_HIT;
+                        player.addSoul(soulGain);
+                    }
                     hitSomething[0] = true;
                 }
             }

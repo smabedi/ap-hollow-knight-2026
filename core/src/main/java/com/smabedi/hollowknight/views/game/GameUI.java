@@ -8,10 +8,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -22,20 +19,28 @@ import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
+import static com.badlogic.gdx.math.Interpolation.pow2In;
+import static com.badlogic.gdx.math.Interpolation.pow2Out;
 import static com.badlogic.gdx.utils.Align.right;
 
 public class GameUI {
     public final Stage stage;
     private final Skin skin;
-    private final Inventory inventory;
     private Table pauseMenu;
-    private Table dialogBox;
-    private Table toastContainer;
-    private TextureRegionDrawable toastBackground;
+    private final Inventory inventory;
     private Table inventoryMenu;
     private Label notchLabel;
     private Label charmDescription;
     private Table charmsGrid;
+    private Table toastContainer;
+    private TextureRegionDrawable toastBackground;
+    private Table dialogBox;
+    private Label dialogTextLabel;
+    private String targetText = "";
+    private String displayedText = "";
+    private float typewriterTimer = 0f;
+    private int textIndex = 0;
+    private boolean isTyping = false;
 
     public GameUI(Inventory inventory) {
         this.inventory = inventory;
@@ -86,8 +91,14 @@ public class GameUI {
         dialogBox.bottom().padBottom(50);
         dialogBox.setFillParent(true);
 
-        // TODO: Add text labels her.
+        // Dark background for readability
+        dialogBox.setBackground(toastBackground); // Reusing the toast background
 
+        dialogTextLabel = new Label("", skin);
+        dialogTextLabel.setWrap(true);
+        dialogTextLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
+
+        dialogBox.add(dialogTextLabel).width(600).pad(20);
         dialogBox.setVisible(false);
         stage.addActor(dialogBox);
     }
@@ -102,7 +113,6 @@ public class GameUI {
         pixmap.dispose();
 
         toastContainer = new Table();
-        // Anchor to the Upper Right corner!
         toastContainer.top().right().pad(20);
         toastContainer.setFillParent(true);
         stage.addActor(toastContainer);
@@ -115,43 +125,86 @@ public class GameUI {
     }
 
     public void showDialog(String text) {
-        // TODO: Update label text and setVisible(true).
+        if (isTyping) {
+            // Player pressed UP while typing: Skip to the end!
+            displayedText = targetText;
+            dialogTextLabel.setText(displayedText);
+            isTyping = false;
+            return;
+        }
+
+        if (dialogBox.isVisible() && !isTyping) {
+            // Player pressed UP after text finished: Close the box
+            dialogBox.setVisible(false);
+            return;
+        }
+
+        // Start a new dialogue line
+        targetText = text;
+        displayedText = "";
+        dialogTextLabel.setText("");
+        textIndex = 0;
+        isTyping = true;
+        dialogBox.setVisible(true);
+    }
+
+    public boolean isDialogVisible() {
+        return dialogBox.isVisible();
     }
 
     public void showToast(String message) {
-        // 1. Create a dedicated box for this specific toast
+        // 1. Create the core toast box
         Table toastBox = new Table();
         toastBox.setBackground(toastBackground);
-        toastBox.pad(15); // Inner padding so text doesn't touch the edges
+        toastBox.padRight(10).padBottom(10);
 
-        // 2. Setup the text label
         Label toastLabel = new Label(message, skin);
-        toastLabel.setWrap(true); // Prevents long text from breaking the layout
-        toastLabel.setAlignment(right); // Text is right-aligned inside the box
+        toastLabel.setAlignment(right);
 
-        // 3. Add the label to the box and lock its width
-        toastBox.add(toastLabel).width(250).align(right);
+        toastBox.add(toastLabel).align(right);
+        toastBox.pack(); // Calculate the box size based on the text
 
-        // 4. Start the box as completely transparent
+        // 2. THE WRAPPER TRICK
+        // A WidgetGroup reserves space in the parent Table, but doesn't force layout on its children.
+        // This allows us to animate the toastBox's position inside it!
+        WidgetGroup wrapper = new WidgetGroup();
+        wrapper.setSize(toastBox.getWidth(), toastBox.getHeight());
+        wrapper.addActor(toastBox);
+
+        // 3. Set starting state: invisible and pushed 150 pixels to the right
         toastBox.setColor(1, 1, 1, 0);
+        float slideOffset = 150f;
+        toastBox.setPosition(slideOffset, 0);
 
-        // 5. Add the box to the main Upper-Left container.
-        // Aligning right here ensures all boxes stack neatly against their own column's right edge.
-        toastContainer.add(toastBox).width(280).padBottom(10).align(right).row();
+        // 4. Add the WRAPPER to the main container (not the toastBox directly)
+        toastContainer.add(wrapper).size(toastBox.getWidth(), toastBox.getHeight()).padBottom(10).align(right).row();
 
-        // 6. Smooth Animation Sequence
+        // 5. Smooth Slide & Fade Sequence
         toastBox.addAction(Actions.sequence(
-            Actions.fadeIn(0.25f),
+            // IN: Slide left to (0,0) and fade in at the same time
+            Actions.parallel(
+                Actions.fadeIn(0.25f),
+                Actions.moveTo(0, 0, 0.25f, pow2Out) // pow2Out gives a natural decelerating slide
+            ),
             Actions.delay(2f),
-            Actions.fadeOut(0.5f),
+            // OUT: Slide back out to the right and fade out
+            Actions.parallel(
+                Actions.fadeOut(0.5f),
+                Actions.moveBy(slideOffset, 0, 0.5f, pow2In)
+            ),
             Actions.run(() -> {
-                // Safely extract the cell and reset it to collapse the gap
-                com.badlogic.gdx.scenes.scene2d.ui.Cell<?> cell = toastContainer.getCell(toastBox);
+                // Safely collapse the gap without breaking the Table's row logic
+                Cell<?> cell = toastContainer.getCell(wrapper);
                 if (cell != null) {
-                    cell.reset();
+                    cell.setActor(null); // Remove the wrapper from the cell
+                    cell.size(0, 0);     // Shrink the cell to 0 width/height
+                    cell.pad(0);         // Remove the padding
                 }
-                // Destroy the box
-                toastBox.remove();
+                // Force the table to recalculate layout to close the gap
+                toastContainer.invalidateHierarchy();
+
+                // Destroy the wrapper (which destroys the toastBox)
+                wrapper.remove();
             })
         ));
     }
@@ -243,6 +296,20 @@ public class GameUI {
     }
 
     public void render(float delta) {
+        if (isTyping && dialogBox.isVisible()) {
+            typewriterTimer += delta;
+            if (typewriterTimer >= Constants.Zote.TYPE_SPEED) {
+                typewriterTimer = 0f;
+                displayedText += targetText.charAt(textIndex);
+                dialogTextLabel.setText(displayedText);
+                textIndex++;
+
+                if (textIndex >= targetText.length()) {
+                    isTyping = false; // Finished typing
+                }
+            }
+        }
+
         stage.act(delta);
         stage.draw();
     }

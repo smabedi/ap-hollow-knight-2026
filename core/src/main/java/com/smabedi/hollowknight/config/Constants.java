@@ -65,6 +65,20 @@ public final class Constants {
         public static final float SPRIT_CAST_DURATION = 0.25f;
     }
 
+    public static final class Zote {
+        public static final int WIDTH = 40;
+        public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
+        public static final int HEIGHT = 60;
+        public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
+        public static final float FRICTION = 0.5f;
+        public static final float ANGRY_TIME = 4f;
+        public static final float CHASE_SPEED = 3f;
+        public static final float TYPE_SPEED = 0.025f;
+        public static final int DIALOG_NUMBER = 3;
+        public static final int PRECEPTS_NUMBER = 3;
+        public static final float INTERACTION_DISTANCE = 4f;
+    }
+
     public static final class Enemy {
         public static final float RESPAWN_DISTANCE = 20f;
 
