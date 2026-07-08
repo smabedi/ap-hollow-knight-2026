@@ -1,4 +1,4 @@
-package com.smabedi.hollowknight.models.entities.enemies;
+package com.smabedi.hollowknight.models.entities.items;
 
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
@@ -14,6 +14,7 @@ public class Shockwave {
         bodyDef.position.set(x + (direction * 0.5f), y - (Constants.FalseKnight.HEIGHT_HALVED_SCALED * 0.8f));
         bodyDef.type = BodyDef.BodyType.KinematicBody;
         b2body = world.createBody(bodyDef);
+        b2body.setUserData(this);
 
         PolygonShape shape = new PolygonShape();
         // A low, wide rectangular hitbox for the shockwave

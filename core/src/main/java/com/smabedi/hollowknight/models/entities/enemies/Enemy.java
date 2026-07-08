@@ -33,7 +33,7 @@ public abstract class Enemy implements IDamageable {
 
     public void define() {
         BodyDef bodyDef = new BodyDef();
-        bodyDef.position.set(startX / Constants.World.PPM, startY / Constants.World.PPM);
+        bodyDef.position.set(startX, startY);
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         b2body = world.createBody(bodyDef);
         b2body.setFixedRotation(true);
@@ -57,7 +57,7 @@ public abstract class Enemy implements IDamageable {
     protected void checkRespawn(Knight player) {
         if (player.b2body == null) return;
 
-        float dist = Math.abs(player.b2body.getPosition().x - (startX / Constants.World.PPM));
+        float dist = Math.abs(player.b2body.getPosition().x - (startX));
         if (dist > respawnDistance && dead) {
             respawn();
         }
@@ -67,7 +67,7 @@ public abstract class Enemy implements IDamageable {
         this.hp = maxHp;
         this.dead = false;
         this.stunTimer = 0f;
-        b2body.setTransform(startX / Constants.World.PPM, startY / Constants.World.PPM, 0);
+        b2body.setTransform(startX, startY, 0);
         b2body.setLinearVelocity(0, 0);
         System.out.println(this.getClass().getSimpleName() + " Respawned!");
     }

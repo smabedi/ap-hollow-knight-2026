@@ -8,6 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.models.game.GameSession;
+import com.smabedi.hollowknight.controllers.repositories.DatabaseManager;
 import com.smabedi.hollowknight.views.ScreenType;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.customelements.SaveCard;
@@ -31,12 +32,11 @@ public class StartGameMenuScreen extends MenuScreen {
         slotsWrapper.defaults().padBottom(20);
         stack.add(slotsWrapper);
 
-        // Simulate fetching JSON data for the slots
-        // TODO: Replace with actual JSON file parsing
-        GameSession slot1Data = new GameSession(); // Pretend this loaded from save1.json
-        GameSession slot2Data = null;              // Empty
-        GameSession slot3Data = null;              // Empty
-        GameSession slot4Data = null;              // Empty
+        // Dynamically fetch JSON blobs from the SQLite database
+        GameSession slot1Data = DatabaseManager.loadSession(1);
+        GameSession slot2Data = DatabaseManager.loadSession(2);
+        GameSession slot3Data = DatabaseManager.loadSession(3);
+        GameSession slot4Data = DatabaseManager.loadSession(4);
 
         slotsWrapper.add(new SaveCard(1, slot1Data, skin)).row();
         slotsWrapper.add(new SaveCard(2, slot2Data, skin)).row();

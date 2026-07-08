@@ -14,6 +14,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.controllers.repositories.DatabaseManager;
+import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.ScreenManager;
@@ -27,6 +30,8 @@ public class GameUI {
     public final Stage stage;
     private final Skin skin;
     private Table pauseMenu;
+    private final Knight player;
+    private final GameSession session;
     private final Inventory inventory;
     private Table inventoryMenu;
     private Label notchLabel;
@@ -42,8 +47,10 @@ public class GameUI {
     private int textIndex = 0;
     private boolean isTyping = false;
 
-    public GameUI(Inventory inventory) {
-        this.inventory = inventory;
+    public GameUI(GameSession session, Knight player) {
+        this.player = player;
+        this.session = session;
+        this.inventory = session.inventory;
         ScreenViewport viewport = new ScreenViewport(new OrthographicCamera());
         viewport.setUnitsPerPixel(1f / Constants.UI.UPP);
         stage = new Stage(viewport);
@@ -76,10 +83,21 @@ public class GameUI {
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                // 1. Sync the live runtime data back into the persistent data model
+                session.health = player.health;
+                session.soul = player.soul;
+
+                // Save pure Box2D meters directly
+                session.playerX = player.b2body.getPosition().x;
+                session.playerY = player.b2body.getPosition().y;
+
+                // 2. Execute the SQLite save
+                DatabaseManager.saveSession(session);
+
+                // 3. Safely exit to the main menu
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
             }
         });
-
         // TODO: Add Resume, Settings, Quit buttons here.
 
         pauseMenu.setVisible(false);

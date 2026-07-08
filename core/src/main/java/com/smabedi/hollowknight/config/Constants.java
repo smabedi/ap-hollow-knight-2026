@@ -15,12 +15,25 @@ public final class Constants {
         public static final String MAPS = "maps/";
         public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads.tmx";
         public static final String GREENPATH = MAPS + "greenpath.tmx";
+
+        public static final class Saves {
+            public static final String ROOT = "saves/";
+            public static final String ROOT_PATH = "../" + ROOT;
+            public static final String DATABASE = ROOT_PATH + "game.db";
+        }
+
+        public static final class Textures {
+            public static final String ROOT = "textures/";
+            public static final String KNIGHT_ATLAS = ROOT + "knight/knight.atlas";
+            public static final String VFX_ATLAS = ROOT + "vfx/vfx.atlas";
+        }
     }
 
     public static final class UI {
         public static final int DEFAULT_WIDTH = 1920;
         public static final int DEFAULT_HEIGHT = 1080;
         public static final float UPP = 2f;
+        public static final int OVERSCREEN = 1000;
     }
 
     public static final class World {
@@ -34,6 +47,7 @@ public final class Constants {
         public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
         public static final int HEIGHT = 80;
         public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
+        public static final float SENSOR_WIDTH = 0.02f;
         public static final float ATTACK_COOLDOWN = 0.3f;
         public static final float MAX_SPEED = 5f;
         public static final float JUMP_STRENGTH = 3f;
@@ -41,7 +55,7 @@ public final class Constants {
         public static final float DENSITY = 1f;
         public static final float JUMP_CUTOFF_MULTIPLIER = 0.25f;
         public static final float WALL_SLIDE_SPEED = 2.5f;
-        public static final float NAIL_REACH = 0.8f;
+        public static final float NAIL_REACH = 2f;
         public static final float KNOCKBACK_FORCE_X = 5f;
         public static final float KNOCKBACK_FORCE_Y = 2f;
         public static final float I_FRAME_DURATION = 1f; // 1 second of invincibility
@@ -58,22 +72,22 @@ public final class Constants {
         }
 
         public static final class Dash {
-            public static final float SPEED = 15f;
-            public static final float DURATION = 0.2f;
+            public static final float SPEED = 12f;
+            public static final float DURATION = 0.4f;
             public static final float COOLDOWN = 2f;
         }
 
         public static final class HowlingWraiths {
-            public static final float DURATION = 0.6f;
-            public static final float WIDTH = 1f;
-            public static final float HEIGHT = 1.5f;
+            public static final float DURATION = 1f;
+            public static final float WIDTH = 2f;
+            public static final float HEIGHT = 2f;
         }
 
         public static final class VengefulSpirit {
             public static final float SPEED = 15f;
-            public static final float WIDTH = 0.6f;
+            public static final float WIDTH = 1f;
             public static final float HEIGHT = 0.4f;
-            public static final float CAST_DURATION = 0.25f;
+            public static final float DURATION = 1f;
         }
 
         public static final class Inventory {
@@ -163,9 +177,9 @@ public final class Constants {
     }
 
     public static final class Cheats {
-        // TODO: Adjust these to match the exact Tiled map coordinates later.
-        public static final float BOSS_ARENA_X = 500f;
-        public static final float BOSS_ARENA_Y = 500f;
+        // TODO: Fetch these from the tiled map later
+        public static final float BOSS_ARENA_X = 5f;
+        public static final float BOSS_ARENA_Y = 5f;
 
         public static final class Keys {
             public static final int MODIFIER = Input.Keys.CONTROL_LEFT;
