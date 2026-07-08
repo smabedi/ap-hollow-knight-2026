@@ -3,6 +3,11 @@ package com.smabedi.hollowknight.views.game;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
@@ -12,17 +17,22 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.controllers.CheatController;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
+import com.smabedi.hollowknight.models.entities.items.Shockwave;
+import com.smabedi.hollowknight.models.entities.items.VfxCallback;
+import com.smabedi.hollowknight.models.entities.items.VfxInstance;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
-import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
+import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.models.game.WorldContactListener;
+import com.smabedi.hollowknight.views.entities.KnightRenderer;
 
 public class GameScreen implements Screen {
     private final OrthographicCamera camera;
@@ -33,14 +43,18 @@ public class GameScreen implements Screen {
     private World world;
     private float accumulator = 0;
     private Knight player;
+    private KnightRenderer knightRenderer;
     private Array<Enemy> enemies;
     private Zote zote;
     private GameUI gameUI;
     private PlayerController playerController;
     private final Box2DDebugRenderer b2dr;
+    private SpriteBatch batch;
     public float timeScale = 1f;
     private CheatController cheatController;
     private final Array<Body> bodyBuffer = new Array<>();
+    public static final Array<VfxInstance> vfxList = new Array<>();
+    private Animation<TextureRegion> damageAnimation;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -68,24 +82,39 @@ public class GameScreen implements Screen {
         map = mapLoader.load(tmxFile);
         renderer = new OrthogonalTiledMapRenderer(map, 1f / Constants.World.PPM);
         camera.position.set(viewport.getWorldWidth() / 2f, viewport.getWorldHeight() / 2f, 0);
+        batch = new SpriteBatch();
 
         assert map != null;
         new B2WorldCreator(world, map);
-        player = new Knight(world, session.playerX, session.playerY);
 
+        VfxCallback vfxCallback = (anim, x, y, offsetX, offsetY, facingRight, defaultFacesRight) -> {
+            vfxList.add(new VfxInstance(anim, x, y, offsetX, offsetY, facingRight, defaultFacesRight));
+        };
+        TextureAtlas knightAtlas = Assets.getKnightAtlas();
+
+        damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
         enemies = new Array<>();
-//        enemies.add(new Crawlid(world, session.playerX + 300f, session.playerY + 200f));
-//        enemies.add(new Mossfly(world, session.playerX + 450f, session.playerY + 400f));
-//        enemies.add(new HuskHornhead(world, session.playerX + 2000f, session.playerY));
-//        enemies.add(new CrystalGuardian(world, session.playerX + 1000f, session.playerY + 200f, true));
-        zote = new Zote(world, session.playerX + 1000f, session.playerY + 100f);
-//        enemies.add(new FalseKnight(world, session.playerX + 1000f, session.playerY + 100f));
+        for (MapObject object : map.getLayers().get("spawns").getObjects()) {
 
-        gameUI = new GameUI(session.inventory);
-        playerController = new PlayerController(player, session.inventory, gameUI);
+            float x = ((float) object.getProperties().get("x")) / Constants.World.PPM;
+            float y = ((float) object.getProperties().get("y")) / Constants.World.PPM;
+            String type = (String) object.getProperties().get("type");
+
+            switch (type) {
+                case "player" -> {
+                    player = new Knight(world, x, y, session.health, session.soul);
+                    knightRenderer = new KnightRenderer(player, Assets.getKnightAtlas());
+                }
+                case "crawlid" -> enemies.add(new Crawlid(world, x, y));
+                case "mossfly" -> enemies.add(new Mossfly(world, x, y));
+            }
+        }
+
+        gameUI = new GameUI(session, player);
+        playerController = new PlayerController(player, session.inventory, gameUI, vfxCallback, damageAnimation);
         cheatController = new CheatController(player, gameUI, this);
 
-        world.setContactListener(new WorldContactListener(player, session.inventory));
+        world.setContactListener(new WorldContactListener(player, session.inventory, vfxCallback, damageAnimation));
     }
 
     public void update(float dt) {
@@ -94,6 +123,16 @@ public class GameScreen implements Screen {
         // Scale timers and inputs
         float scaledDt = dt * timeScale;
         playerController.handleInput(scaledDt);
+
+        player.update(scaledDt);
+
+        for (int i = vfxList.size - 1; i >= 0; i--) {
+            VfxInstance vfx = vfxList.get(i);
+            vfx.timer += scaledDt;
+            if (vfx.animation.isAnimationFinished(vfx.timer)) {
+                vfxList.removeIndex(i);
+            }
+        }
 
         // DO NOT scale the frameTime added to the accumulator
         float frameTime = Math.min(dt, 0.25f);
@@ -118,9 +157,13 @@ public class GameScreen implements Screen {
         //noinspection GDXJavaUnsafeIterator
         for (Body body : bodyBuffer) {
             Object userData = body.getUserData();
-            if (userData instanceof VengefulSpirit sprit && sprit.setToDestroy && !sprit.isDestroyed) {
-                world.destroyBody(body);
-                sprit.isDestroyed = true;
+            if (userData instanceof VengefulSpirit sprit) {
+                if (sprit.setToDestroy && !sprit.isDestroyed) {
+                    world.destroyBody(body);
+                    sprit.isDestroyed = true;
+                } else if (!sprit.isDestroyed) {
+                    sprit.stateTimer += scaledDt;
+                }
             } else if (userData instanceof Shockwave wave && wave.setToDestroy && !wave.isDestroyed) {
                 world.destroyBody(body);
                 wave.isDestroyed = true;
@@ -141,10 +184,135 @@ public class GameScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-
         viewport.apply();
-        renderer.setView(camera);
-        renderer.render();
+
+        // 1. Define your Anchor Point (Where does the camera start when the level loads?)
+        // You usually get these from your spawn point object!
+        float anchorX = 16; // Replace with your actual spawn/start X (scaled by PPM)
+        float anchorY = 11;  // Replace with your actual spawn/start Y (scaled by PPM)
+
+        // 2. Store the camera's true position
+        float realX = camera.position.x;
+        float realY = camera.position.y;
+
+        // 3. Calculate how far the camera has traveled away from the anchor
+        float travelX = realX - anchorX;
+        float travelY = realY - anchorY;
+
+        // 4. Pre-calculate the Overscan dimensions so we don't repeat math
+        float overscan = Constants.UI.OVERSCREEN;
+        float viewWidth = camera.viewportWidth + (overscan * 2);
+        float viewHeight = camera.viewportHeight + (overscan * 2);
+
+        // =========================================================
+        // PASS 1: BACKGROUNDS (Slow Parallax)
+        // =========================================================
+        // Start at the anchor, and only apply the 0.5f slowdown to the distance traveled!
+        camera.position.set(anchorX + (travelX * 0.5f), anchorY + (travelY * 0.5f), 0);
+        camera.update();
+
+        // Render visual_background (0) and midgrounds (1, 2)
+        renderer.setView(camera.combined,
+            camera.position.x - (camera.viewportWidth / 2) - overscan,
+            camera.position.y - (camera.viewportHeight / 2) - overscan,
+            viewWidth, viewHeight
+        );
+        renderer.render(new int[]{0});
+
+        // =========================================================
+        // PASS 2: TERRAINS (Normal Speed)
+        // =========================================================
+        camera.position.set(realX, realY, 0);
+        camera.update();
+
+        // Render visual_terrain 0, 1, 2 (Layers 3, 4, 5)
+        renderer.setView(camera.combined,
+            camera.position.x - (camera.viewportWidth / 2) - overscan,
+            camera.position.y - (camera.viewportHeight / 2) - overscan,
+            viewWidth, viewHeight
+        );
+        renderer.render(new int[]{1, 2, 3, 4, 5});
+
+        // =========================================================
+        // PASS 3: DRAW ENTITIES
+        // =========================================================
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        // Draw the player!
+        float renderDelta = delta * timeScale;
+        knightRenderer.render(batch, renderDelta);
+
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+
+        // --- DRAW STATIC VFX ---
+        //noinspection GDXJavaUnsafeIterator
+        for (VfxInstance vfx : vfxList) {
+            TextureRegion frame = vfx.animation.getKeyFrame(vfx.timer);
+
+            // Dynamic flipping: If its natural direction doesn't match the required direction, flip it!
+            boolean needsFlip = (vfx.facingRight != vfx.defaultFacesRight);
+            if (frame.isFlipX() != needsFlip) {
+                frame.flip(true, false);
+            }
+
+            float w = frame.getRegionWidth() / Constants.World.PPM;
+            float h = frame.getRegionHeight() / Constants.World.PPM;
+
+            batch.draw(
+                frame,
+                vfx.x - (w / 2f) + (vfx.facingRight ? vfx.offsetX : -vfx.offsetX),
+                vfx.y - (h / 2f) + vfx.offsetY,
+                w, h
+            );
+        }
+
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        // --- DRAW DYNAMIC PROJECTILES ---
+        world.getBodies(bodyBuffer);
+        //noinspection GDXJavaUnsafeIterator
+        for (Body body : bodyBuffer) {
+            Object userData = body.getUserData();
+            if (userData instanceof VengefulSpirit sprit && !sprit.isDestroyed) {
+                Animation<TextureRegion> anim = sprit.isVoid ? Assets.getVoidSpiritProjectile() : Assets.getSpiritProjectile();
+                TextureRegion frame = anim.getKeyFrame(sprit.stateTimer);
+
+                // Assuming raw asset faces Right. Flips safely without mutating the texture.
+                boolean needsFlip = !sprit.facingRight;
+                if (frame.isFlipX() != needsFlip) frame.flip(true, false);
+
+                float w = frame.getRegionWidth() / Constants.World.PPM;
+                float h = frame.getRegionHeight() / Constants.World.PPM;
+
+                batch.draw(frame, body.getPosition().x - (w / 2f), body.getPosition().y - (h / 2f), w, h);
+            }
+        }
+
+        batch.end();
+
+        // =========================================================
+        // PASS 4: FOREGROUNDS (Fast Parallax)
+        // =========================================================
+        // Move camera faster than the player (1.2f) for things close to the lens
+        camera.position.set(realX * 1.2f, realY * 1.2f, 0);
+        camera.update();
+
+        renderer.setView(camera.combined,
+            camera.position.x - (camera.viewportWidth / 2) - overscan,
+            camera.position.y - (camera.viewportHeight / 2) - overscan,
+            viewWidth, viewHeight
+        );
+        // Render visual_foreground (6) and visual_overlay (7)
+        renderer.render(new int[]{6, 7});
+
+        // =========================================================
+        // PASS 5: DEBUG & UI (Reset to Normal)
+        // =========================================================
+        // Snap camera back to reality one last time for Box2D lines
+        camera.position.set(realX, realY, 0);
+        camera.update();
+
         b2dr.render(world, camera.combined);
 
         // Draw the UI Stage ON TOP of the game world

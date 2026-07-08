@@ -1,23 +1,30 @@
 package com.smabedi.hollowknight.models.game;
 
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
-import com.smabedi.hollowknight.models.entities.enemies.Shockwave;
+import com.smabedi.hollowknight.models.entities.items.Shockwave;
+import com.smabedi.hollowknight.models.entities.items.VfxCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
-import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
+import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 
 public class WorldContactListener implements ContactListener {
     private final Knight player;
     private final Inventory inventory;
+    private final VfxCallback vfxCallback;
+    private final Animation<TextureRegion> damageAnimation;
 
-    public WorldContactListener(Knight player, Inventory inventory) {
+    public WorldContactListener(Knight player, Inventory inventory, VfxCallback vfxCallback, Animation<TextureRegion> damageAnimation) {
         this.player = player;
         this.inventory = inventory;
+        this.vfxCallback = vfxCallback;
+        this.damageAnimation = damageAnimation;
     }
 
     @Override
@@ -78,6 +85,7 @@ public class WorldContactListener implements ContactListener {
             // Calculate knockback direction. If the hazard is to our right, we get knocked left (-1).
             float knockbackDirX = getKnockbackDirX(hazardFixture, playerFixture);
             player.takeDamage(1, knockbackDirX);
+            vfxCallback.spawnStaticVfx(damageAnimation, playerFixture.getBody().getPosition().x, playerFixture.getBody().getPosition().y, 0, 0, true, true);
 
             // TODO: Implement safe position teleportation for Spikes.
         }
@@ -129,6 +137,7 @@ public class WorldContactListener implements ContactListener {
                     // Apply Void Heart modifier
                     int spellDamage = inventory.isEquipped(CharmType.VOID_HEART) ? 2 : 1;
                     enemy.takeDamage(spellDamage);
+                    vfxCallback.spawnStaticVfx(damageAnimation, hazardFix.getBody().getPosition().x, hazardFix.getBody().getPosition().y, 0, 0, true, true);
                 }
             }
         }

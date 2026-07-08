@@ -1,4 +1,4 @@
-package com.smabedi.hollowknight.models.entities.spells;
+package com.smabedi.hollowknight.models.entities.items;
 
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
@@ -7,12 +7,18 @@ public class VengefulSpirit {
     public Body b2body;
     public boolean isDestroyed = false;
     public boolean setToDestroy = false;
+    public float stateTimer = 0f;
+    public boolean facingRight;
+    public boolean isVoid;
 
-    public VengefulSpirit(World world, float x, float y, boolean facingRight) {
+    public VengefulSpirit(World world, float x, float y, boolean facingRight, boolean isVoid) {
+        this.facingRight = facingRight;
+        this.isVoid = isVoid;
         BodyDef bodyDef = new BodyDef();
         bodyDef.position.set(x, y);
         bodyDef.type = BodyDef.BodyType.KinematicBody; // Kinematic bodies ignore gravity!
         b2body = world.createBody(bodyDef);
+        b2body.setUserData(this);
 
         PolygonShape shape = new PolygonShape();
         shape.setAsBox(Constants.Knight.VengefulSpirit.WIDTH, Constants.Knight.VengefulSpirit.HEIGHT);

@@ -118,7 +118,7 @@ public class CrystalGuardian extends Enemy {
                 break;
 
             case RETURNING:
-                float originalX = startX / Constants.World.PPM;
+                float originalX = startX;
                 float distanceToStart = originalX - center.x;
 
                 // If we are close enough to the start, snap to it and go IDLE

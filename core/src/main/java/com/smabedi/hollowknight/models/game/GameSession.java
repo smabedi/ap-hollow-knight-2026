@@ -1,10 +1,11 @@
 package com.smabedi.hollowknight.models.game;
 
-import com.smabedi.hollowknight.models.inventory.CharmType;
+import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.game.LocationType;
 
 public class GameSession {
+    public int slotIndex;
     public int health;
     public int maxHealth;
     public int soul;
@@ -14,23 +15,22 @@ public class GameSession {
     public int playtime;
     public Inventory inventory;
 
-    public GameSession() {
-        // HACK: Values are used as an example. Proper loading system has to me implemented.
-        this.health = 5;
-        this.maxHealth = 5;
-        this.soul = 0;
-        this.location = LocationType.FORGOTTEN_CROSSROADS;
-        this.playerX = 200f;
-        this.playerY = 500f;
-        this.playtime = 0;
-        this.inventory = new Inventory();
-        this.inventory.addOwnedCharm(CharmType.SOUL_CATCHER);
-        this.inventory.addOwnedCharm(CharmType.DASHMASTER);
-        this.inventory.addOwnedCharm(CharmType.SHARP_SHADOW);
-        this.inventory.addOwnedCharm(CharmType.QUICK_SLASH);
-        this.inventory.equipCharm(CharmType.SHARP_SHADOW);
-        this.inventory.equipCharm(CharmType.DASHMASTER);
-        this.inventory.equipCharm(CharmType.QUICK_SLASH);
+    // Default constructor required for LibGDX JSON deserialization
+    public GameSession() {}
+
+    // Constructor for starting a brand-new game
+    public GameSession(int slotIndex) {
+        this.slotIndex = slotIndex;
+        health = Constants.Knight.MAX_HEALTH;
+        maxHealth = Constants.Knight.MAX_HEALTH;
+        soul = 0;
+        location = LocationType.FORGOTTEN_CROSSROADS;
+        playtime = 0;
+        inventory = new Inventory();
+
+        // HACK: Temporary values, need to be changed to session.currentSpawnNodeId
+        playerX = 2f;
+        playerY = 3f;
     }
 
     // NOTE: fuck me.

@@ -48,10 +48,9 @@ public class CheatController extends InputAdapter {
 
                 // 4. Boss Arena Teleport
                 case Constants.Cheats.Keys.BOSS_TELEPORT:
-                    // Requires Constants.Cheats.BOSS_ARENA_X and Y to be defined in Constants.java
                     player.b2body.setTransform(
-                        Constants.Cheats.BOSS_ARENA_X / Constants.World.PPM,
-                        Constants.Cheats.BOSS_ARENA_Y / Constants.World.PPM,
+                        Constants.Cheats.BOSS_ARENA_X, // CHANGED
+                        Constants.Cheats.BOSS_ARENA_Y, // CHANGED
                         0
                     );
                     gameUI.showToast(Assets.getString("teleported_to_false_knight_arena"));

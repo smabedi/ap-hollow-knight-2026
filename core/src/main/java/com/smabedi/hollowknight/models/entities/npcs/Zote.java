@@ -24,7 +24,7 @@ public class Zote implements IDamageable {
 
     private void defineZote(float x, float y) {
         BodyDef bodyDef = new BodyDef();
-        bodyDef.position.set(x / Constants.World.PPM, y / Constants.World.PPM);
+        bodyDef.position.set(x, y);
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         b2body = world.createBody(bodyDef);
 

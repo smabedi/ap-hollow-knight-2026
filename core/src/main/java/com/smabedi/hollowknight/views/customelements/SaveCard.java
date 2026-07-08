@@ -5,6 +5,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.models.game.GameSession;
+import com.smabedi.hollowknight.controllers.repositories.DatabaseManager;
 import com.smabedi.hollowknight.views.ScreenManager;
 
 public class SaveCard extends Table {
@@ -37,8 +38,10 @@ public class SaveCard extends Table {
             contentTable.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    GameSession newSession = new GameSession();
-                    // TODO: Add the SQL save logic here later.
+                    // Create a fresh session and instantly commit it to the database
+                    GameSession newSession = new GameSession(slotIndex);
+                    DatabaseManager.saveSession(newSession);
+
                     ScreenManager.setGameScreen(newSession);
                 }
             });
@@ -75,8 +78,8 @@ public class SaveCard extends Table {
             clearBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    System.out.println("Clearing save on slot: " + slotIndex);
-                    // TODO: Delete the JSON file for this slot
+                    // Execute SQL DELETE statement
+                    DatabaseManager.deleteSession(slotIndex);
                     clearSaveAndRefresh();
                 }
             });

@@ -1,6 +1,8 @@
 package com.smabedi.hollowknight.controllers;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
@@ -10,9 +12,10 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
+import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
+import com.smabedi.hollowknight.models.entities.items.VfxCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
-import com.smabedi.hollowknight.models.entities.spells.VengefulSpirit;
 import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.game.GameUI;
@@ -22,17 +25,35 @@ public class PlayerController {
     private final Inventory inventory;
     private final Vector2 rayEnd = new Vector2();
     private final Array<IDamageable> enemiesHitDuringDash = new Array<>();
+    private final Array<IDamageable> enemiesHitDuringAttack = new Array<>();
     private final GameUI gameUI;
     private boolean wasZoteNearby = false;
+    private final VfxCallback vfxCallback;
+    private final Animation<TextureRegion> damageAnimation;
 
-    public PlayerController(Knight player, Inventory inventory, GameUI gameUI) {
+    public PlayerController(Knight player, Inventory inventory, GameUI gameUI, VfxCallback vfxCallback, Animation<TextureRegion> damageAnimation) {
         this.player = player;
         this.inventory = inventory;
         this.gameUI = gameUI;
+        this.vfxCallback = vfxCallback;
+        this.damageAnimation = damageAnimation;
+
+        // HACK: Added for debug, remove later.
+        inventory.addOwnedCharm(CharmType.SOUL_CATCHER);
+        inventory.addOwnedCharm(CharmType.DASHMASTER);
+        inventory.addOwnedCharm(CharmType.UNBREAKABLE_STRENGTH);
+        inventory.addOwnedCharm(CharmType.QUICK_SLASH);
+        inventory.addOwnedCharm(CharmType.QUICK_FOCUS);
+        inventory.addOwnedCharm(CharmType.HEAVY_BLOW);
+        inventory.addOwnedCharm(CharmType.SHARP_SHADOW);
+        inventory.addOwnedCharm(CharmType.VOID_HEART);
     }
 
     public void handleInput(float dt) {
         if (player.b2body == null || player.isDead) return;
+
+        player.hasSharpShadow = inventory.isEquipped(CharmType.SHARP_SHADOW);
+        player.hasVoidHeart = inventory.isEquipped(CharmType.VOID_HEART);
 
         // --- NOCLIP / SPECTATOR OVERRIDE ---
         if (player.isNoclip) {
@@ -49,11 +70,9 @@ public class PlayerController {
         }
 
         // --- TICK TIMERS ---
-        if (player.iFrameTimer > 0) player.iFrameTimer -= dt;
+        // (iFrame, attackDuration, wraiths, and spritCast timers are now strictly handled in Knight.java!)
         if (player.dashCooldownTimer > 0) player.dashCooldownTimer -= dt;
         if (player.pogoDurationTimer > 0) player.pogoDurationTimer -= dt;
-        if (player.wraithsTimer > 0) player.wraithsTimer -= dt;
-        if (player.spritCastTimer > 0) player.spritCastTimer -= dt;
         if (player.attackCooldownTimer > 0) player.attackCooldownTimer -= dt;
 
         // Continuously refresh midair abilities while safely on the ground.
@@ -62,6 +81,7 @@ public class PlayerController {
         if (player.isGrounded && !player.isDashing) {
             player.canDash = true;
             player.canDoubleJump = true;
+            player.isDoubleJumping = false;
         }
 
         int jumpKey = GameSettings.getKey(GameSettings.KEY_JUMP);
@@ -163,7 +183,11 @@ public class PlayerController {
         if (Gdx.input.isKeyJustPressed(dashKey) && player.canDash && player.dashCooldownTimer <= 0) {
             player.isDashing = true;
             player.canDash = false;
-            player.dashTimer = Constants.Knight.Dash.DURATION;
+            if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
+                player.dashTimer = Constants.Knight.Dash.DURATION * 1.5f;
+            } else {
+                player.dashTimer = Constants.Knight.Dash.DURATION;
+            }
             enemiesHitDuringDash.clear();
 
             // Dashmaster check to lower cooldown time
@@ -180,9 +204,11 @@ public class PlayerController {
             float dashVelocity = player.facingRight ? baseDashSpeed : -baseDashSpeed;
             player.b2body.setLinearVelocity(dashVelocity, 0);
 
-            // Disable the knight's damage-taking while dashing
             if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
-                player.iFrameTimer = Constants.Knight.Dash.DURATION;
+                player.iFrameTimer = Constants.Knight.Dash.DURATION * 1.5f;
+                vfxCallback.spawnStaticVfx(Assets.getShadowDashVfx(), player.b2body.getPosition().x, player.b2body.getPosition().y, 0, 0, player.facingRight, false);
+            } else {
+                vfxCallback.spawnStaticVfx(Assets.getNormalDashVfx(), player.b2body.getPosition().x, player.b2body.getPosition().y, 0, 0, player.facingRight, false);
             }
             return;
         }
@@ -215,8 +241,6 @@ public class PlayerController {
         if (!player.isGrounded && targetVelY <= 0 && (pushingLeft || pushingRight)) {
             // Force the exact slide speed, ignoring any Box2D friction
             targetVelY = -Constants.Knight.WALL_SLIDE_SPEED;
-
-            // TODO: Trigger Mantis Claw animation state here later
         }
 
         // Apply calculated velocities
@@ -224,23 +248,23 @@ public class PlayerController {
 
         // --- JUMP & DOUBLE JUMP INITIATION ---
         if (Gdx.input.isKeyJustPressed(jumpKey)) {
+
+            // Condition 1: Normal Jump from the ground
             if (player.isGrounded) {
-                player.isJumping = true;
-                player.b2body.setLinearVelocity(targetVelX, 0);
-                player.b2body.applyLinearImpulse(
-                    new Vector2(0, Constants.Knight.JUMP_STRENGTH),
-                    player.b2body.getWorldCenter(),
-                    true
-                );
-            } else if (player.canDoubleJump) {
-                player.canDoubleJump = false;
-                player.isJumping = true;
-                player.b2body.setLinearVelocity(targetVelX, 0);
-                player.b2body.applyLinearImpulse(
-                    new Vector2(0, Constants.Knight.JUMP_STRENGTH),
-                    player.b2body.getWorldCenter(),
-                    true
-                );
+                // Reset Y velocity before jumping to ensure consistent jump heights
+                player.b2body.setLinearVelocity(player.b2body.getLinearVelocity().x, 0);
+                player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
+
+                player.isDoubleJumping = false; // Ensure double jump animation is OFF
+            }
+            // Condition 2: Double Jump in midair
+            else if (player.canDoubleJump) {
+                // Reset Y velocity so falling momentum doesn't eat the double jump force
+                player.b2body.setLinearVelocity(player.b2body.getLinearVelocity().x, 0);
+                player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
+
+                player.canDoubleJump = false; // Consume the double jump
+                player.isDoubleJumping = true;
             }
         }
 
@@ -249,11 +273,20 @@ public class PlayerController {
             player.pogoDurationTimer = Constants.Knight.Pogo.ATTACK_DURATION;
             player.attackCooldownTimer = Constants.Knight.ATTACK_COOLDOWN;
             if (inventory.isEquipped(CharmType.QUICK_SLASH)) player.attackCooldownTimer *= 0.5f; // Half the cooldown
+
+            // 1. Sync animation duration to the actual cooldown
+            player.attackDurationTimer = player.attackCooldownTimer;
+
+            // 2. Lock in the attack direction based on input, not gravity
+            player.isAttackingDown = !player.isGrounded && Gdx.input.isKeyPressed(downKey);
+
+            // 3. Clear the hit tracker for the new swing
+            enemiesHitDuringAttack.clear();
         }
 
         if (player.pogoDurationTimer > 0) {
-            if (!player.isGrounded && Gdx.input.isKeyPressed(downKey)) {
-                // Pogo Attack (Downward) As long as the timer is active, keep firing the RayCast downward
+            if (player.isAttackingDown) {
+                // Pogo Attack (Downward)
                 executePogoJump(targetVelX);
             } else {
                 // Normal Attack (Horizontal)
@@ -300,10 +333,14 @@ public class PlayerController {
                     if (pressingUp) {
                         player.wraithsTimer = Constants.Knight.HowlingWraiths.DURATION; // Start the animation lock!
                         player.wraithsTicksFired = 0;
+                        Animation<TextureRegion> wraithsAnim = player.hasVoidHeart ? Assets.getVoidWraithsVfx() : Assets.getWraithsVfx();
+                        vfxCallback.spawnStaticVfx(wraithsAnim, center.x, center.y, 0, Constants.Knight.HEIGHT_HALVED_SCALED * 3f, player.facingRight, true);
                         System.out.println("Howling Wraiths Cast!");
                     } else {
-                        player.spritCastTimer = Constants.Knight.VengefulSpirit.CAST_DURATION;
-                        new VengefulSpirit(player.world, center.x, center.y, player.facingRight);
+                        player.spritCastTimer = Constants.Knight.VengefulSpirit.DURATION;
+                        new VengefulSpirit(player.world, center.x, center.y, player.facingRight, inventory.isEquipped(CharmType.VOID_HEART));
+                        Animation<TextureRegion> soulAnim = player.hasVoidHeart ? Assets.getVoidSpiritCastVfx() : Assets.getSpiritCastVfx();
+                        vfxCallback.spawnStaticVfx(soulAnim, center.x, center.y, Constants.Knight.WIDTH_HALVED_SCALED, 0, player.facingRight, true);
                         System.out.println("Vengeful Spirit Cast!");
                     }
                     return; // Exit out, spell successfully cast
@@ -357,6 +394,7 @@ public class PlayerController {
                 if (!enemy.isDead() && !enemiesHitDuringDash.contains(enemy, true)) {
                     // Sharp Shadow deals exactly 1 damage (standard nail damage)
                     enemy.takeDamage(1);
+                    vfxCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
                     // Slight upward knockback so they don't get stuck inside us
                     enemy.applyKnockback(0, 2f);
@@ -385,20 +423,18 @@ public class PlayerController {
 
         RayCastCallback pogoCallback = (fixture, _, _, fraction) -> {
             Object userData = fixture.getUserData();
-
             boolean isSpikes = "spikes".equals(userData);
             boolean isEnemy = userData instanceof IDamageable;
 
-            // If it's an enemy, make sure it's not a corpse
             if (isEnemy) {
                 IDamageable enemy = (IDamageable) userData;
-                if (enemy.isDead()) {
-                    return -1; // Ignore corpses, continue the raycast downward
+                // Ignore corpses AND enemies we already hit this swing
+                if (enemy.isDead() || enemiesHitDuringAttack.contains(enemy, true)) {
+                    return -1;
                 }
             }
 
             if (isSpikes || isEnemy) {
-                // Reset falling momentum and apply the bounce
                 player.b2body.setLinearVelocity(currentVelX, 0);
                 player.b2body.applyLinearImpulse(
                     new Vector2(0, Constants.Knight.Pogo.BOUNCE_STRENGTH),
@@ -406,39 +442,31 @@ public class PlayerController {
                     true
                 );
 
-                // Reset midair abilities
                 player.canDoubleJump = true;
                 player.canDash = true;
                 player.isJumping = false;
+                player.isDoubleJumping = false;
 
-                // Kill the attack timer immediately so we don't bounce twice
-                player.pogoDurationTimer = 0;
-
-                // Enemy-specific logic (Damage & Soul, Applying Soul Catcher)
                 if (isEnemy) {
                     IDamageable enemy = (IDamageable) userData;
                     int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
                     enemy.takeDamage(damage);
+                    vfxCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
-                    // Prevent Soul gain if the target is Zote
                     if (!(enemy instanceof Zote)) {
                         int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
                             ? Constants.Knight.SOUL_PER_HIT + 5
                             : Constants.Knight.SOUL_PER_HIT;
                         player.addSoul(soulGain);
                     }
+
+                    enemiesHitDuringAttack.add(enemy); // Add to exclusion list
                 }
-
-                return fraction; // Terminate raycast, we found our target
+                return fraction;
             }
-
-            if ("ground".equals(userData)) {
-                return fraction; // ground blocks the pogo ray
-            }
-
+            if ("ground".equals(userData)) return fraction;
             return -1;
         };
-
         player.world.rayCast(pogoCallback, center, rayEnd);
     }
 
@@ -447,51 +475,42 @@ public class PlayerController {
         float direction = player.facingRight ? 1f : -1f;
 
         float reachX = Constants.Knight.NAIL_REACH;
-        float heightY = Constants.Knight.HEIGHT_HALVED_SCALED;
+        float heightY = Constants.Knight.HEIGHT_HALVED_SCALED * 2f;
+        player.isAttackingDown = false;
 
         float lowerX = player.facingRight ? center.x : center.x - reachX;
         float upperX = player.facingRight ? center.x + reachX : center.x;
         float lowerY = center.y - heightY;
         float upperY = center.y + heightY;
 
-        // A single array boolean allows us to apply player recoil only once,
-        // even if we slice through 3 enemies simultaneously.
-        final boolean[] hitSomething = {false};
-
-        // The Box2D Query Callback
         QueryCallback attackCallback = fixture -> {
             Object userData = fixture.getUserData();
-
             if (userData instanceof IDamageable enemy) {
-                if (!enemy.isDead()) {
-                    // Check for Unbreakable Strength
-                    int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
+                // Ignore corpses AND enemies already hit this swing
+                if (!enemy.isDead() && !enemiesHitDuringAttack.contains(enemy, true)) {
 
-                    // Check for Heavy Blow
+                    int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
                     float knockbackMulti = inventory.isEquipped(CharmType.HEAVY_BLOW) ? 2f : 1f;
 
                     enemy.takeDamage(damage);
                     enemy.applyKnockback(direction * 3f * knockbackMulti, 1f);
+                    vfxCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
-                    // Prevent Soul gain if the target is Zote
                     if (!(enemy instanceof Zote)) {
                         int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
                             ? Constants.Knight.SOUL_PER_HIT + 5
                             : Constants.Knight.SOUL_PER_HIT;
                         player.addSoul(soulGain);
                     }
-                    hitSomething[0] = true;
+
+                    enemiesHitDuringAttack.add(enemy); // Add to exclusion list
                 }
             }
             return true;
         };
 
         player.world.QueryAABB(attackCallback, lowerX, lowerY, upperX, upperY);
-
-        // If we hit anything, apply recoil to the Knight and kill the attack timer
-        if (hitSomething[0]) {
-            player.pogoDurationTimer = 0;
-        }
+        // DELETED: The entire hitSomething[0] block that killed the timer early.
     }
 
     private void executeWraithsHit() {
@@ -516,6 +535,7 @@ public class PlayerController {
                         enemy.applyKnockback(0, 2f);
                     }
                     enemy.takeDamage(spellDamage);
+                    vfxCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
                 }
             }
             return true;
