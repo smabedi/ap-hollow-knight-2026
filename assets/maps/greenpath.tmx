@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="400" height="400" tilewidth="8" tileheight="8" infinite="0" nextlayerid="24" nextobjectid="74">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="400" height="400" tilewidth="8" tileheight="8" infinite="0" nextlayerid="23" nextobjectid="76">
  <tileset firstgid="1" name="terrain_details" tilewidth="156" tileheight="174" tilecount="8" columns="0">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="11">
@@ -48,8 +48,8 @@
  <tileset firstgid="262848" name="cd_broken_wall" tilewidth="8" tileheight="8" tilecount="1035" columns="23">
   <image source="../textures/environment/forgotten-crossroads/cd_broken_wall.png" width="188" height="365"/>
  </tileset>
- <imagelayer id="18" name="visual_background" offsetx="-500" offsety="750">
-  <image source="../textures/environment/forgotten-crossroads/forgotten_crossroads_bg_2.jpg" width="3941" height="2200"/>
+ <imagelayer id="18" name="visual_background" offsetx="300" offsety="1200">
+  <image source="../textures/environment/greenpath/Artemis II Launch Edited.png" width="3501" height="2334"/>
  </imagelayer>
  <layer id="5" name="visual_midground_0" width="400" height="400">
   <data encoding="base64" compression="zlib">
@@ -114,25 +114,30 @@
   </object>
  </objectgroup>
  <objectgroup id="11" name="spawns">
-  <object id="48" name="player_spawn" type="player" x="1603.5" y="2153.75">
+  <object id="48" name="player_spawn" type="player" x="1006.17" y="1551.85">
    <point/>
   </object>
-  <object id="51" name="crawlid_0" type="crawlid" x="984.25" y="2345.5">
+  <object id="51" name="crawlid_0" type="crawlidNO" x="984.25" y="2345.5">
    <point/>
   </object>
   <object id="54" name="mossfly_0" type="mossflyNO" x="2341" y="1890">
    <point/>
   </object>
- </objectgroup>
- <objectgroup id="19" name="camera_bounds" class="arena_rect"/>
- <objectgroup id="22" name="safe_spots"/>
- <objectgroup id="20" name="arena_sensors"/>
- <objectgroup id="21" name="arena_gates"/>
- <objectgroup id="23" name="transitions">
-  <object id="73" x="2307" y="1848" width="77" height="110">
-   <properties>
-    <property name="target_map" value="GREENPATH"/>
-   </properties>
+  <object id="73" name="boss" type="boss" x="1641.14" y="2521.9">
+   <point/>
   </object>
+  <object id="74" name="boss_teleport" type="boss_teleport" x="1290.67" y="1779.81">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="19" name="camera_bounds" class="arena_rect">
+  <object id="72" x="841.333" y="1728" width="1608" height="973.333"/>
+ </objectgroup>
+ <objectgroup id="22" name="safe_spots"/>
+ <objectgroup id="20" name="arena_sensors">
+  <object id="69" x="1244" y="2314.67" width="852" height="385.333"/>
+ </objectgroup>
+ <objectgroup id="21" name="arena_gates">
+  <object id="71" x="2033.33" y="2270.67" width="42.6667" height="434.667"/>
  </objectgroup>
 </map>

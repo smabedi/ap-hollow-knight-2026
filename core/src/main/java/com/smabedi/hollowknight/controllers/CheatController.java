@@ -6,18 +6,22 @@ import com.badlogic.gdx.physics.box2d.Fixture;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
+import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.game.GameScreen;
 import com.smabedi.hollowknight.views.game.GameUI;
+import com.smabedi.hollowknight.views.game.LocationType;
 
 public class CheatController extends InputAdapter {
     private final Knight player;
     private final GameUI gameUI;
     private final GameScreen gameScreen;
+    private final GameSession session;
 
-    public CheatController(Knight player, GameUI gameUI, GameScreen gameScreen) {
+    public CheatController(Knight player, GameUI gameUI, GameScreen gameScreen, GameSession session) {
         this.player = player;
         this.gameUI = gameUI;
         this.gameScreen = gameScreen;
+        this.session = session;
     }
 
     @SuppressWarnings("GDXJavaUnsafeIterator")
@@ -48,12 +52,20 @@ public class CheatController extends InputAdapter {
 
                 // 4. Boss Arena Teleport
                 case Constants.Cheats.Keys.BOSS_TELEPORT:
-                    player.b2body.setTransform(
-                        Constants.Cheats.BOSS_ARENA_X, // CHANGED
-                        Constants.Cheats.BOSS_ARENA_Y, // CHANGED
-                        0
-                    );
-                    gameUI.showToast(Assets.getString("teleported_to_false_knight_arena"));
+                    if (session.location != LocationType.GREENPATH) {
+                        // We are in another map! Trigger a transition.
+                        session.pendingTransition = true;
+                        session.nextLocation = LocationType.GREENPATH;
+                        session.pendingBossTeleport = true;
+                        session.isArenaLocked = false; // Ensure camera unlocks
+                        gameUI.showToast("Warping to Greenpath...");
+                    } else {
+                        // We are already in Greenpath, just teleport instantly.
+                        player.b2body.setTransform(session.bossTeleportX, session.bossTeleportY, 0);
+                        session.lastSafeX = session.bossTeleportX;
+                        session.lastSafeY = session.bossTeleportY;
+                        gameUI.showToast(Assets.getString("teleported_to_false_knight_arena"));
+                    }
                     return true;
 
                 // 5. Time Dilation

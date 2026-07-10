@@ -4,33 +4,43 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
-import com.smabedi.hollowknight.models.entities.items.VfxCallback;
+import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
-import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 
 public class WorldContactListener implements ContactListener {
     private final Knight player;
     private final Inventory inventory;
-    private final VfxCallback vfxCallback;
+    private final EventCallback eventCallback;
     private final Animation<TextureRegion> damageAnimation;
+    private final GameSession session;
 
-    public WorldContactListener(Knight player, Inventory inventory, VfxCallback vfxCallback, Animation<TextureRegion> damageAnimation) {
+    public WorldContactListener(Knight player, Inventory inventory, GameSession session, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
         this.player = player;
         this.inventory = inventory;
-        this.vfxCallback = vfxCallback;
+        this.eventCallback = eventCallback;
         this.damageAnimation = damageAnimation;
+        this.session = session;
     }
 
     @Override
     public void beginContact(Contact contact) {
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
+
+        // Check for Arena Lock Trigger
+        if (isContact(fixA, fixB, "knight", "arena_sensor")) {
+            if (!session.isArenaLocked) {
+                session.isArenaLocked = true;
+                System.out.println("Boss Arena Locked!");
+            }
+        }
 
         // Ground and Wall Sensors
         if (isContact(fixA, fixB, "foot_sensor", "ground")) {
@@ -41,6 +51,35 @@ public class WorldContactListener implements ContactListener {
 
         if (isContact(fixA, fixB, "left_sensor", "ground")) player.isTouchingLeftWall = true;
         if (isContact(fixA, fixB, "right_sensor", "ground")) player.isTouchingRightWall = true;
+
+        // Update last safe spot dynamically
+        if (isContact(fixA, fixB, "knight", "safe_spot")) {
+            Fixture safeSpotFix = "safe_spot".equals(fixA.getUserData()) ? fixA : fixB;
+
+            // The body's position is exactly the dead-center of the Tiled rectangle
+            float newX = safeSpotFix.getBody().getPosition().x;
+            float newY = safeSpotFix.getBody().getPosition().y;
+
+            // ANTI-SPAM: Only trigger if this is a DIFFERENT safe spot than our current one
+            // We use a small epsilon (0.1f) because floating point math is never perfectly equal
+            if (Math.abs(session.lastSafeX - newX) > 0.1f || Math.abs(session.lastSafeY - newY) > 0.1f) {
+                session.lastSafeX = newX;
+                session.lastSafeY = newY;
+                session.safeSpotUpdated = true; // Tell the view to pop the toast!
+            }
+        }
+
+        // Map Transition Trigger
+        if (isContact(fixA, fixB, "knight", "transition_sensor")) {
+            Fixture transitionFix = "transition_sensor".equals(fixA.getUserData()) ? fixA : fixB;
+
+            // Extract the target data from the Body
+            TransitionData data = (TransitionData) transitionFix.getBody().getUserData();
+
+            // Flag the session
+            session.pendingTransition = true;
+            session.nextLocation = data.targetLocation;
+        }
 
         handlePlayerDamage(fixA, fixB);
         handleSpellCollisions(fixA, fixB);
@@ -85,9 +124,11 @@ public class WorldContactListener implements ContactListener {
             // Calculate knockback direction. If the hazard is to our right, we get knocked left (-1).
             float knockbackDirX = getKnockbackDirX(hazardFixture, playerFixture);
             player.takeDamage(1, knockbackDirX);
-            vfxCallback.spawnStaticVfx(damageAnimation, playerFixture.getBody().getPosition().x, playerFixture.getBody().getPosition().y, 0, 0, true, true);
+            eventCallback.spawnStaticVfx(damageAnimation, playerFixture.getBody().getPosition().x, playerFixture.getBody().getPosition().y, 0, 0, true, true);
 
-            // TODO: Implement safe position teleportation for Spikes.
+            if ("spikes".equals(hazardData)) {
+                session.pendingRespawn = true;
+            }
         }
     }
 
@@ -137,7 +178,7 @@ public class WorldContactListener implements ContactListener {
                     // Apply Void Heart modifier
                     int spellDamage = inventory.isEquipped(CharmType.VOID_HEART) ? 2 : 1;
                     enemy.takeDamage(spellDamage);
-                    vfxCallback.spawnStaticVfx(damageAnimation, hazardFix.getBody().getPosition().x, hazardFix.getBody().getPosition().y, 0, 0, true, true);
+                    eventCallback.spawnStaticVfx(damageAnimation, hazardFix.getBody().getPosition().x, hazardFix.getBody().getPosition().y, 0, 0, true, true);
                 }
             }
         }
@@ -161,10 +202,10 @@ public class WorldContactListener implements ContactListener {
 
                 // Power Slam Shockwaves usually deal 2 damage (double a standard hit)
                 player.takeDamage(2, knockbackDirX);
-            } else if ("ground".equals(hazardData) || "spikes".equals(hazardData)) {
+            }/* else if ("ground".equals(hazardData) || "spikes".equals(hazardData)) {
                 // Destroy the shockwave if it hits a wall
-                // shockwave.setToDestroy = true;
-            }
+                shockwave.setToDestroy = true;
+            }*/
         }
     }
 

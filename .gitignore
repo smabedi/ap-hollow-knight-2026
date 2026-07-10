@@ -68,6 +68,7 @@ www-test/
 ### Personal Tools ###
 /personal/
 /saves/
+docs/colored-project-documentation.pdf
 
 ## Eclipse:
 .classpath

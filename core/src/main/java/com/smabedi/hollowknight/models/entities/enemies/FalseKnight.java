@@ -9,7 +9,7 @@ import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
-import com.smabedi.hollowknight.models.entities.items.VfxCallback;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class FalseKnight extends Enemy {
@@ -24,12 +24,12 @@ public class FalseKnight extends Enemy {
     private int recentDamageCount = 0;
     private float damageTimer = 0f;
     public boolean facingRight = false;
-    private final VfxCallback vfxCallback;
+    private final EventCallback eventCallback;
     private final Animation<TextureRegion> damageAnimation;
 
-    public FalseKnight(World world, float x, float y, VfxCallback vfxCallback, Animation<TextureRegion> damageAnimation) {
-        super(world, x, y, Constants.FalseKnight.HP);
-        this.vfxCallback = vfxCallback;
+    public FalseKnight(World world, float x, float y, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
+        super(world, x, y, Constants.FalseKnight.HP, eventCallback);
+        this.eventCallback = eventCallback;
         this.damageAnimation = damageAnimation;
         define();
     }
@@ -169,8 +169,6 @@ public class FalseKnight extends Enemy {
                                 new Shockwave(world, pos.x, pos.y, 1);
                                 new Shockwave(world, pos.x, pos.y, -1);
                             }
-
-                            // TODO: Add Camera Shake Call Here
                             actionExecuted = true;
                         }
                     }
@@ -205,7 +203,7 @@ public class FalseKnight extends Enemy {
                     if (isGrounded() && b2body.getLinearVelocity().y <= 0.1f) {
                         currentSubState = BossSubState.RECOVERY;
                         subStateTimer = 0.5f; // Land recovery
-                        // TODO: Add Minor Camera Shake Call Here
+                        eventCallback.addCameraTrauma(0.75f);
                     }
                 } else if (currentSubState == BossSubState.RECOVERY) {
                     b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Plant feet upon landing
@@ -232,6 +230,8 @@ public class FalseKnight extends Enemy {
                     subStateTimer -= dt; // Decrement timeout
 
                     float dist = Math.abs(player.b2body.getPosition().x - b2body.getPosition().x);
+
+                    eventCallback.setCameraTrauma(0.5f);
 
                     // ADDED: Stop if he reaches you, OR if the timer runs out, OR if he hits a wall (x velocity drops)
                     if (dist < 2.0f || subStateTimer <= 0 || Math.abs(b2body.getLinearVelocity().x) < 0.5f) {
@@ -267,7 +267,7 @@ public class FalseKnight extends Enemy {
         final boolean[] grounded = {false};
 
         // Shoot a raycast from the boss's center to slightly below its feet
-        world.rayCast((fixture, point, normal, fraction) -> {
+        world.rayCast((fixture, _, _, _) -> {
             if ("ground".equals(fixture.getUserData())) {
                 grounded[0] = true;
                 return 0; // Terminate query early, we found the ground
@@ -324,9 +324,20 @@ public class FalseKnight extends Enemy {
                 // Apply 1 damage, pushing the player away based on boss direction
                 player.takeDamage(1, direction);
                 Vector2 playerPos = player.b2body.getPosition();
-                vfxCallback.spawnStaticVfx(damageAnimation, playerPos.x, playerPos.y, 0, 0, player.facingRight, true);
+                eventCallback.spawnStaticVfx(damageAnimation, playerPos.x, playerPos.y, 0, 0, player.facingRight, true);
             }
             return true;
         }, lowerX, lowerY, upperX, upperY);
+
+        eventCallback.addCameraTrauma(0.75f);
+        if (currentMove == BossMove.POWER_SLAM) {
+            eventCallback.addCameraTrauma(0.75f); // Harder shake for Power Slam
+        }
+    }
+
+    @Override
+    public void die() {
+        super.die();
+        eventCallback.onBossDeath();
     }
 }

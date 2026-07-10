@@ -49,7 +49,7 @@ public class SaveCard extends Table {
             Label masksLabel = new Label(Assets.getString("mask") + ": " + session.health, skin);
             Label geoLabel = new Label(Assets.getString("soul") + ": " + session.soul, skin);
             Label locationLabel = new Label(session.location.getName(), skin);
-            Label timeLabel = new Label(session.playtime + " " + Assets.getString("min"), skin);
+            Label timeLabel = new Label(session.playtime / 60 + " " + Assets.getString("min"), skin);
 
             Table statsTable = new Table();
             statsTable.add(masksLabel).left().row();

@@ -44,6 +44,13 @@ public final class Constants {
         public static final float PPM = 100f;
     }
 
+    public static final class Camera {
+        public static final float MAX_SHAKE_OFFSET_X = 0.5f;
+        public static final float MAX_SHAKE_OFFSET_Y = 0.5f;
+        public static final float TRAUMA_DECAY = 0.75f;
+        public static final float TRAUMA_MAX = 1.5f;
+    }
+
     public static final class Knight {
         public static final int WIDTH = 50;
         public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
@@ -180,10 +187,6 @@ public final class Constants {
     }
 
     public static final class Cheats {
-        // TODO: Fetch these from the tiled map later
-        public static final float BOSS_ARENA_X = 5f;
-        public static final float BOSS_ARENA_Y = 5f;
-
         public static final class Keys {
             public static final int MODIFIER = Input.Keys.CONTROL_LEFT;
             public static final int GOD_MODE = Input.Keys.G;
