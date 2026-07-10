@@ -156,4 +156,8 @@ public class HuskHornhead extends Enemy {
         this.currentState = HornheadState.WALKING;
         this.stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
     }
+
+    public HornheadState getCurrentState() {
+        return currentState;
+    }
 }

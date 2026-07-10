@@ -393,11 +393,9 @@ public class PlayerController {
                 // Only damage them if they are alive AND haven't been hit this dash
                 if (!enemy.isDead() && !enemiesHitDuringDash.contains(enemy, true)) {
                     // Sharp Shadow deals exactly 1 damage (standard nail damage)
+                    enemy.applyKnockback(0, 2f);
                     enemy.takeDamage(1);
                     vfxCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
-
-                    // Slight upward knockback so they don't get stuck inside us
-                    enemy.applyKnockback(0, 2f);
 
                     // Add them to the list so they don't get hit on the next frame
                     enemiesHitDuringDash.add(enemy);
@@ -492,8 +490,8 @@ public class PlayerController {
                     int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
                     float knockbackMulti = inventory.isEquipped(CharmType.HEAVY_BLOW) ? 2f : 1f;
 
-                    enemy.takeDamage(damage);
                     enemy.applyKnockback(direction * 3f * knockbackMulti, 1f);
+                    enemy.takeDamage(damage);
                     vfxCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
                     if (!(enemy instanceof Zote)) {

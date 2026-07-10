@@ -16,6 +16,7 @@ public class Zote implements IDamageable {
     private boolean movingRight = true;
     private int dialogueIndex = 0;
     private boolean hasFinishedIntro = false;
+    private float talkTimer = 0f;
 
     public Zote(World world, float x, float y) {
         this.world = world;
@@ -41,6 +42,8 @@ public class Zote implements IDamageable {
     }
 
     public void update(float dt, Knight player) {
+        if (talkTimer > 0) talkTimer -= dt;
+
         if (stunTimer > 0) {
             stunTimer -= dt;
             Vector2 vel = b2body.getLinearVelocity();
@@ -53,6 +56,7 @@ public class Zote implements IDamageable {
 
             Vector2 center = b2body.getWorldCenter();
             float direction = player.b2body.getPosition().x > b2body.getPosition().x ? 1f : -1f;
+            movingRight = direction > 0;
 
             // 1. Raycast for Walls
             Vector2 wallRayEnd = new Vector2(center.x + (direction * 1.5f * Constants.Zote.WIDTH_HALVED_SCALED), center.y);
@@ -96,6 +100,8 @@ public class Zote implements IDamageable {
     public String getNextDialogue() {
         if (isAngry) return null;
 
+        talkTimer = 0.1f;
+
         String textToDisplay;
         if (!hasFinishedIntro) {
             textToDisplay = Assets.getString("zote_dialog_" + dialogueIndex);
@@ -133,4 +139,12 @@ public class Zote implements IDamageable {
 
     @Override public void die() {}
     @Override public boolean isDead() { return false; }
+
+    public boolean isTalking() {
+        return talkTimer > 0;
+    }
+
+    public boolean isFacingRight() {
+        return movingRight;
+    }
 }

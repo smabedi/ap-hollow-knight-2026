@@ -87,14 +87,26 @@ public class CrystalGuardian extends Enemy {
                 }
                 break;
 
+
             case PREPPING_LASER:
                 b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
                 stateTimer -= dt;
-
                 if (stateTimer <= 0) {
+                    // Preserving your exact fireLaser call (with whatever inputs you originally had, e.g., dt, player, etc.)
                     fireLaser(player, center, direction);
                     System.out.println("Crystal Guardian: ENRAGED!");
+                    currentState = GuardianState.FIRING_LASER;
+                    // Set countdown to the length of the laser animation (e.g., 0.6 seconds)
+                    stateTimer = 1f;
+                }
+                break;
+
+            case FIRING_LASER:
+                b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Stand still!
+                stateTimer -= dt; // Countdown while firing
+                if (stateTimer <= 0) {
                     currentState = GuardianState.ENRAGED;
+                    // Reset timer to whatever ENRAGED needs (or 0 if it counts up)
                     stateTimer = Constants.Enemy.CrystalGuardian.ENRAGE_DURATION;
                 }
                 break;
@@ -192,5 +204,13 @@ public class CrystalGuardian extends Enemy {
         super.respawn();
         this.currentState = GuardianState.IDLE;
         this.facingRight = originalFacingRight;
+    }
+
+    public GuardianState getCurrentState() {
+        return currentState;
+    }
+
+    public boolean isFacingRight() {
+        return facingRight;
     }
 }

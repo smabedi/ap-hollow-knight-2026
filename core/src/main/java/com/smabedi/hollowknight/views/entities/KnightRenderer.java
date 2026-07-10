@@ -8,7 +8,7 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.knight.KnightState;
 
-public class KnightRenderer {
+public class KnightRenderer implements EntityRenderer {
     private final Knight player;
     private float stateTimer = 0f;
     private KnightState lastRenderedState = KnightState.IDLE;
@@ -48,6 +48,7 @@ public class KnightRenderer {
         castVoidSpiritAnim = new Animation<>(0.1f, atlas.findRegions("knight_cast_level"), Animation.PlayMode.NORMAL);
     }
 
+    @Override
     public void render(Batch batch, float dt) {
         if (player.currentState != lastRenderedState) {
             stateTimer = 0;
