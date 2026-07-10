@@ -7,6 +7,7 @@ import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public abstract class Enemy implements IDamageable {
@@ -19,14 +20,16 @@ public abstract class Enemy implements IDamageable {
     protected float startY;
     protected float respawnDistance = Constants.Enemy.RESPAWN_DISTANCE;
     protected float stunTimer = 0f;
+    protected EventCallback eventCallback;
 
-    public Enemy(World world, float x, float y, int maxHp) {
+    public Enemy(World world, float x, float y, int maxHp, EventCallback eventCallback) {
         this.world = world;
         this.startX = x;
         this.startY = y;
         this.maxHp = maxHp;
         this.hp = maxHp;
         this.dead = false;
+        this.eventCallback = eventCallback;
     }
 
     public abstract void defineShape();
@@ -101,6 +104,8 @@ public abstract class Enemy implements IDamageable {
         // but reset Y so the pop-up is a consistent height every time.
         b2body.setLinearVelocity(b2body.getLinearVelocity().x, 0);
         b2body.applyLinearImpulse(new Vector2(0, Constants.Enemy.DEATH_KNOCKBACK), b2body.getWorldCenter(), true);
+
+        eventCallback.onEnemyDeath();
     }
 
     @Override

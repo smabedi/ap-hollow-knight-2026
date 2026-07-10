@@ -5,6 +5,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class CrystalGuardian extends Enemy {
@@ -13,8 +14,8 @@ public class CrystalGuardian extends Enemy {
     private boolean facingRight;
     private final boolean originalFacingRight; // To remember which way to look when returning
 
-    public CrystalGuardian(World world, float x, float y, boolean startsFacingRight) {
-        super(world, x, y, Constants.Enemy.CrystalGuardian.HP);
+    public CrystalGuardian(World world, float x, float y, boolean startsFacingRight, EventCallback eventCallback) {
+        super(world, x, y, Constants.Enemy.CrystalGuardian.HP, eventCallback);
         this.facingRight = startsFacingRight;
         this.originalFacingRight = startsFacingRight;
         this.currentState = GuardianState.IDLE;
@@ -158,7 +159,6 @@ public class CrystalGuardian extends Enemy {
             center.y
         );
 
-        // TODO: In the Visuals step later, we will use 'laserEnd' to draw a bright pink line on the screen!
         world.rayCast((fixture, _, _, fraction) -> {
             Object data = fixture.getUserData();
 

@@ -3,13 +3,14 @@ package com.smabedi.hollowknight.models.entities.enemies;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class Crawlid extends Enemy {
     private boolean movingRight = true;
 
-    public Crawlid(World world, float x, float y) {
-        super(world, x, y, Constants.Enemy.Crawlid.HP);
+    public Crawlid(World world, float x, float y, EventCallback eventCallback) {
+        super(world, x, y, Constants.Enemy.Crawlid.HP, eventCallback);
         define();
     }
 

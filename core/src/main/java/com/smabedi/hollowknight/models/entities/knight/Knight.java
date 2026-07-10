@@ -1,10 +1,9 @@
 package com.smabedi.hollowknight.models.entities.knight;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
-import com.smabedi.hollowknight.config.GameSettings;
+import com.smabedi.hollowknight.controllers.EventCallback;
 
 public class Knight {
     public World world;
@@ -40,11 +39,13 @@ public class Knight {
     public KnightState currentState = KnightState.IDLE;
     public KnightState previousState = KnightState.IDLE;
     public boolean isAttackingDown = false;
+    private final EventCallback eventCallback;
 
-    public Knight(World world, float startX, float startY, int currentHealth, int currentSoul) {
+    public Knight(World world, float startX, float startY, int currentHealth, int currentSoul, EventCallback eventCallback) {
         this.world = world;
         this.health = currentHealth;
         this.soul = currentSoul;
+        this.eventCallback = eventCallback;
         defineKnight(startX, startY);
     }
 
@@ -159,6 +160,7 @@ public class Knight {
         if (health > Constants.Knight.MAX_HEALTH) {
             health = Constants.Knight.MAX_HEALTH;
         }
+        eventCallback.addCameraTrauma(0.5f);
         System.out.println("Healed! HP: " + health);
     }
 
@@ -173,16 +175,21 @@ public class Knight {
             System.out.println("Emergency Heal prevented death! Taking knockback.");
         }
 
+        eventCallback.setCameraTrauma(1f);
         health -= amount;
         // Interrupt focus if we get hit!
         isFocusing = false;
         focusTimer = 0f;
 
         if (health <= 0) {
-            health = 0;
-            isDead = true;
             System.out.println("Knight has died!");
-            // TODO: Trigger respawn logic later.
+
+            // 1. Reset state for resurrection
+            health = Constants.Knight.MAX_HEALTH;
+            isDead = false;
+
+            // 2. Fire events
+            eventCallback.onPlayerDeath();
         } else {
             // Give 1 second of invincibility
             iFrameTimer = Constants.Knight.I_FRAME_DURATION;

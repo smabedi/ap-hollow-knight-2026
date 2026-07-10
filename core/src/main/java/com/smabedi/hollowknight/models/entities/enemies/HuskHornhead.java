@@ -5,6 +5,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class HuskHornhead extends Enemy {
@@ -12,8 +13,8 @@ public class HuskHornhead extends Enemy {
     private float stateTimer;
     private boolean movingRight = true;
 
-    public HuskHornhead(World world, float x, float y) {
-        super(world, x, y, Constants.Enemy.HuskHornhead.HP);
+    public HuskHornhead(World world, float x, float y, EventCallback eventCallback) {
+        super(world, x, y, Constants.Enemy.HuskHornhead.HP, eventCallback);
         this.currentState = HornheadState.WALKING;
         this.stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
         define();
@@ -83,7 +84,7 @@ public class HuskHornhead extends Enemy {
             final boolean[] sawPlayer = {false};
 
             // Notice we are using 'fraction' here now
-            world.rayCast((fixture, p, n, fraction) -> {
+            world.rayCast((fixture, _, _, fraction) -> {
                 Object userData = fixture.getUserData();
 
                 if ("ground".equals(userData) || "spikes".equals(userData)) {

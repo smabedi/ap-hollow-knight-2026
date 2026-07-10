@@ -139,7 +139,6 @@ public class GameUI {
     public void togglePause() {
         boolean isPaused = pauseMenu.isVisible();
         pauseMenu.setVisible(!isPaused);
-        // TODO: Tell the PlayScreen's update() loop to stop stepping the world here.
     }
 
     public void showDialog(String text) {

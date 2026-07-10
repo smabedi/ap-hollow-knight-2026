@@ -3,13 +3,14 @@ package com.smabedi.hollowknight.models.entities.enemies;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
+import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class Mossfly extends Enemy {
     private boolean isHidden = true; // Starts disguised as a bush
 
-    public Mossfly(World world, float x, float y) {
-        super(world, x, y, Constants.Enemy.Mossfly.HP);
+    public Mossfly(World world, float x, float y, EventCallback eventCallback) {
+        super(world, x, y, Constants.Enemy.Mossfly.HP, eventCallback);
         define();
     }
 
