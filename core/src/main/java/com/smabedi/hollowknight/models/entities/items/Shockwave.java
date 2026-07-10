@@ -5,6 +5,7 @@ import com.smabedi.hollowknight.config.Constants;
 
 public class Shockwave {
     public Body b2body;
+    public float stateTimer = 0;
     public boolean isDestroyed = false;
     public boolean setToDestroy = false;
 

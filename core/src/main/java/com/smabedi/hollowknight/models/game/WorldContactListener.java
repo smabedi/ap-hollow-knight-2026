@@ -163,7 +163,7 @@ public class WorldContactListener implements ContactListener {
                 player.takeDamage(2, knockbackDirX);
             } else if ("ground".equals(hazardData) || "spikes".equals(hazardData)) {
                 // Destroy the shockwave if it hits a wall
-                shockwave.setToDestroy = true;
+                // shockwave.setToDestroy = true;
             }
         }
     }

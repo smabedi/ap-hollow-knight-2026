@@ -1,5 +1,7 @@
 package com.smabedi.hollowknight.models.entities.enemies;
 
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -7,6 +9,7 @@ import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
+import com.smabedi.hollowknight.models.entities.items.VfxCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class FalseKnight extends Enemy {
@@ -20,9 +23,14 @@ public class FalseKnight extends Enemy {
     private boolean actionExecuted = false; // Prevents the 60fps multi-impulse bug
     private int recentDamageCount = 0;
     private float damageTimer = 0f;
+    public boolean facingRight = false;
+    private final VfxCallback vfxCallback;
+    private final Animation<TextureRegion> damageAnimation;
 
-    public FalseKnight(World world, float x, float y) {
+    public FalseKnight(World world, float x, float y, VfxCallback vfxCallback, Animation<TextureRegion> damageAnimation) {
         super(world, x, y, Constants.FalseKnight.HP);
+        this.vfxCallback = vfxCallback;
+        this.damageAnimation = damageAnimation;
         define();
     }
 
@@ -47,196 +55,227 @@ public class FalseKnight extends Enemy {
     public void update(float dt, Knight player) {
         if (dead) return;
 
-        // Decay the recent damage memory
+        // Manage rapid-damage memory
         if (damageTimer > 0) {
             damageTimer -= dt;
             if (damageTimer <= 0) recentDamageCount = 0;
         }
 
-        // --- 1. Stun Phase Interrupt (Ice-Sliding Fix) ---
+        // 1. Stun Phase Logic
         if (currentPhase == BossPhase.STUNNED) {
-            stunTimer -= dt;
-
-            // Apply heavy dampening to horizontal momentum so he halts naturally
-            Vector2 vel = b2body.getLinearVelocity();
-            b2body.setLinearVelocity(vel.x * 0.9f, vel.y);
-
-            if (stunTimer <= 0) {
-                currentPhase = BossPhase.PHASE_2;
-                System.out.println("False Knight: Enraged! Phase 2 Initiated!");
-                decideNextMove(player);
-            }
+            handleStunPhase(dt);
             return;
         }
 
-        // --- 2. State Machine Execution ---
+        // 2. Face the player if idling
+        if (currentMove == BossMove.IDLE) {
+            facingRight = player.b2body.getPosition().x > b2body.getPosition().x;
+            subStateTimer = 0f;
+        }
+
+        // 3. Action Logic
         moveTimer -= dt;
-        if (moveTimer <= 0) {
+        if (currentMove == BossMove.IDLE && moveTimer <= 0) {
             decideNextMove(player);
-        } else {
+        } else if (currentMove != BossMove.IDLE) {
             executeCurrentMove(dt, player);
         }
     }
 
-    private void decideNextMove(Knight player) {
-        float distToPlayer = Math.abs(player.b2body.getPosition().x - b2body.getPosition().x);
-        BossMove nextMove = BossMove.IDLE;
+    private void handleStunPhase(float dt) {
+        stunTimer -= dt;
+        b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
 
-        // 1. Strict Document Rule: Trigger Defensive Leap if taking heavy rapid damage
-        if (recentDamageCount >= 3 && lastMove != BossMove.DEFENSIVE_LEAP) {
-            nextMove = BossMove.DEFENSIVE_LEAP;
-            recentDamageCount = 0; // Reset memory after leaping away
+        if (currentSubState == BossSubState.STUN_HIT) {
+            subStateTimer -= dt;
+            if (subStateTimer <= 0) currentSubState = BossSubState.NONE; // Return to stun idle
         }
 
-        // 2. Distance & Probability Logic with Anti-Spam
-        while (nextMove == BossMove.IDLE || nextMove == lastMove) {
-            int rand = MathUtils.random(1, 100);
-
-            if (distToPlayer < 3f) { // CLOSE RANGE
-                if (currentPhase == BossPhase.PHASE_2 && rand <= 20) {
-                    nextMove = BossMove.POWER_SLAM;
-                } else if (rand <= 60) {
-                    nextMove = BossMove.MACE_SLAM;
-                } else if (rand <= 75) {
-                    nextMove = BossMove.DEFENSIVE_LEAP; // Still allow natural retreats
-                } else {
-                    nextMove = BossMove.CHARGE;
-                }
-            } else { // LONG RANGE
-                if (currentPhase == BossPhase.PHASE_2 && rand <= 20) {
-                    nextMove = BossMove.POWER_SLAM;
-                } else if (rand <= 50) {
-                    nextMove = BossMove.CHARGE;
-                } else if (rand <= 85) {
-                    nextMove = BossMove.OFFENSIVE_LEAP;
-                } else {
-                    nextMove = BossMove.MACE_SLAM;
-                }
+        if (stunTimer <= 0 && currentSubState != BossSubState.RECOVERY) {
+            currentSubState = BossSubState.RECOVERY; // Trigger stun_recover animation
+            subStateTimer = 1.5f; // Wait for the recover animation to finish
+        } else if (currentSubState == BossSubState.RECOVERY) {
+            subStateTimer -= dt;
+            if (subStateTimer <= 0) {
+                currentPhase = BossPhase.PHASE_2;
+                currentMove = BossMove.IDLE;
+                currentSubState = BossSubState.NONE;
+                // Faster recovery after charging
+                moveTimer = 0.5f;
             }
         }
+    }
+
+    private void decideNextMove(Knight player) {
+        float distance = Math.abs(player.b2body.getPosition().x - b2body.getPosition().x);
+        boolean tookRapidDamage = (recentDamageCount >= 3 && damageTimer > 0);
+
+        BossMove nextMove = BossMove.IDLE;
+        int safetyNet = 0; // Prevents an infinite loop if conditions force a specific move
+
+        // DO-WHILE LOOP: Force a re-roll if it picks the last move
+        do {
+            if (tookRapidDamage && distance < 4f) {
+                nextMove = BossMove.DEFENSIVE_LEAP;
+            } else if (distance > 5f) {
+                nextMove = MathUtils.randomBoolean(0.6f) ? BossMove.CHARGE : BossMove.OFFENSIVE_LEAP;
+            } else {
+                if (currentPhase == BossPhase.PHASE_2) {
+                    float rand = MathUtils.random();
+                    if (rand < 0.3f) nextMove = BossMove.POWER_SLAM;
+                    else if (rand < 0.85f) nextMove = BossMove.MACE_SLAM;
+                    else nextMove = BossMove.DEFENSIVE_LEAP;
+                } else {
+                    nextMove = MathUtils.randomBoolean(0.85f) ? BossMove.MACE_SLAM : BossMove.DEFENSIVE_LEAP;
+                }
+            }
+            safetyNet++;
+        } while (nextMove == lastMove && safetyNet < 5);
+
+        if (nextMove == BossMove.DEFENSIVE_LEAP) recentDamageCount = 0;
 
         currentMove = nextMove;
-        lastMove = currentMove;
-        actionExecuted = false; // Reset the impulse lock
+        lastMove = currentMove; // PROPERLY ASSIGN lastMove!
 
-        // Setup initial sub-state logic
         currentSubState = BossSubState.WIND_UP;
-        float speedModifier = (currentPhase == BossPhase.PHASE_2) ? 0.7f : 1.0f;
-
-        switch (currentMove) {
-            case MACE_SLAM:
-                moveTimer = 1.5f * speedModifier;
-                subStateTimer = 0.5f * speedModifier; // 0.5s to raise mace
-                break;
-            case POWER_SLAM:
-                moveTimer = 2.5f * speedModifier;
-                subStateTimer = 0.8f * speedModifier; // Slower, heavier windup
-                break;
-            case CHARGE:
-                moveTimer = 2.0f * speedModifier;
-                subStateTimer = 0.3f * speedModifier; // Brief roar before charge
-                break;
-            case OFFENSIVE_LEAP:
-            case DEFENSIVE_LEAP:
-                moveTimer = 1.5f * speedModifier;
-                subStateTimer = 0.2f * speedModifier; // Brief crouch before jump
-                break;
-            default:
-                moveTimer = 1f;
-                subStateTimer = 0f;
-                currentSubState = BossSubState.ACTIVE;
-                break;
-        }
-
-        System.out.println("False Knight using: " + currentMove.name() + " | Phase: " + currentPhase.name());
+        subStateTimer = (currentPhase == BossPhase.PHASE_2) ? 0.3f : 0.6f;
+        actionExecuted = false;
     }
 
     private void executeCurrentMove(float dt, Knight player) {
-        float direction = player.b2body.getPosition().x > b2body.getPosition().x ? 1f : -1f;
-        subStateTimer -= dt;
+        float direction = facingRight ? 1f : -1f;
 
-        // Sub-state progression logic
-        if (subStateTimer <= 0) {
-            if (currentSubState == BossSubState.WIND_UP) {
-                currentSubState = BossSubState.ACTIVE;
-                subStateTimer = getActiveDuration();
-            } else if (currentSubState == BossSubState.ACTIVE) {
-                currentSubState = BossSubState.RECOVERY;
-                subStateTimer = getRecoveryDuration();
-            }
-        }
-
-        // Halt movement during Wind-Up and Recovery phases
-        if (currentSubState == BossSubState.WIND_UP || currentSubState == BossSubState.RECOVERY) {
-            b2body.setLinearVelocity(b2body.getLinearVelocity().x * 0.8f, b2body.getLinearVelocity().y);
-            return;
-        }
-
-        // --- ACTIVE Phase Execution ---
-        if (currentSubState == BossSubState.ACTIVE) {
-            switch (currentMove) {
-                case CHARGE:
-                    float chargeSpeed = (currentPhase == BossPhase.PHASE_2) ? 6f : 4f;
-                    b2body.setLinearVelocity(direction * chargeSpeed, b2body.getLinearVelocity().y);
-                    break;
-
-                case OFFENSIVE_LEAP:
-                    if (!actionExecuted && isGrounded()) {
-                        b2body.setLinearVelocity(0, 0); // Clear residual velocity
-                        b2body.applyLinearImpulse(new Vector2(direction * 5f, 8f), b2body.getWorldCenter(), true);
-                        actionExecuted = true;
+        switch (currentMove) {
+            case MACE_SLAM:
+            case POWER_SLAM:
+                if (currentSubState == BossSubState.WIND_UP) {
+                    subStateTimer -= dt;
+                    b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+                    if (subStateTimer <= 0) {
+                        // FIX: Use setLinearVelocity to ignore the boss's massive weight!
+                        b2body.setLinearVelocity(direction * 3f, 6f);
+                        currentSubState = BossSubState.ACTIVE;
                     }
-                    break;
+                } else if (currentSubState == BossSubState.ACTIVE) {
+                    // Waiting to hit the ground. Calling the METHOD isGrounded() now!
+                    if (isGrounded() && b2body.getLinearVelocity().y <= 0.1f) {
+                        currentSubState = BossSubState.ATTACK; // Smashing the ground
+                        subStateTimer = 0.3f; // duration of the smash hit frame
+                        if (!actionExecuted) {
+                            executeMaceHitbox(player, direction); // Executes the QAABB!
 
-                case DEFENSIVE_LEAP:
-                    if (!actionExecuted && isGrounded()) {
-                        b2body.setLinearVelocity(0, 0);
-                        b2body.applyLinearImpulse(new Vector2(-direction * 6f, 5f), b2body.getWorldCenter(), true);
-                        actionExecuted = true;
+                            if (currentMove == BossMove.POWER_SLAM) {
+                                Vector2 pos = b2body.getPosition();
+                                new Shockwave(world, pos.x, pos.y, 1);
+                                new Shockwave(world, pos.x, pos.y, -1);
+                            }
+
+                            // TODO: Add Camera Shake Call Here
+                            actionExecuted = true;
+                        }
                     }
-                    break;
-
-                case MACE_SLAM:
-                    if (!actionExecuted) {
-                        executeMaceHitbox(player, direction);
-                        actionExecuted = true;
+                } else if (currentSubState == BossSubState.ATTACK) {
+                    subStateTimer -= dt;
+                    if (subStateTimer <= 0) {
+                        currentSubState = BossSubState.RECOVERY;
+                        subStateTimer = 0.8f; // duration of pulling mace back up
                     }
-                    break;
-
-                case POWER_SLAM:
-                    if (!actionExecuted) {
-                        // Spawn Shockwave on slam execution
-                        Vector2 pos = b2body.getPosition();
-                        new Shockwave(world, pos.x, pos.y, 1);
-                        new Shockwave(world, pos.x, pos.y, -1);
-                        actionExecuted = true;
-                        // TODO: Trigger heavy camera shake here
+                } else if (currentSubState == BossSubState.RECOVERY) {
+                    subStateTimer -= dt;
+                    if (subStateTimer <= 0) {
+                        currentMove = BossMove.IDLE;
+                        // Halve the breathing room between attacks in Phase 2
+                        moveTimer = (currentPhase == BossPhase.PHASE_2) ? 0.5f : 1.0f;
                     }
-                    break;
+                }
+                break;
 
-                default:
-                    break;
-            }
+            case OFFENSIVE_LEAP:
+            case DEFENSIVE_LEAP:
+                if (currentSubState == BossSubState.WIND_UP) {
+                    b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Plant feet before leaping
+                    subStateTimer -= dt;
+                    if (subStateTimer <= 0) {
+                        float leapDir = currentMove == BossMove.OFFENSIVE_LEAP ? direction : -direction;
+                        b2body.setLinearVelocity(leapDir * 3f, 6f);
+                        currentSubState = BossSubState.ACTIVE;
+                    }
+                } else if (currentSubState == BossSubState.ACTIVE) {
+                    // Use the method here too!
+                    if (isGrounded() && b2body.getLinearVelocity().y <= 0.1f) {
+                        currentSubState = BossSubState.RECOVERY;
+                        subStateTimer = 0.5f; // Land recovery
+                        // TODO: Add Minor Camera Shake Call Here
+                    }
+                } else if (currentSubState == BossSubState.RECOVERY) {
+                    b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Plant feet upon landing
+                    subStateTimer -= dt;
+                    if (subStateTimer <= 0) {
+                        currentMove = BossMove.IDLE;
+                        // Almost instant recovery after leaping in Phase 2
+                        moveTimer = (currentPhase == BossPhase.PHASE_2) ? 0.2f : 0.5f;
+                    }
+                }
+                break;
+
+            case CHARGE:
+                if (currentSubState == BossSubState.WIND_UP) {
+                    b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Plant feet before running
+                    subStateTimer -= dt;
+                    if (subStateTimer <= 0) {
+                        currentSubState = BossSubState.ACTIVE;
+                        subStateTimer = 2.5f; // ADDED: Hard timeout so he doesn't run forever!
+                    }
+                } else if (currentSubState == BossSubState.ACTIVE) {
+                    // Almost double the running speed in Phase 2
+                    b2body.setLinearVelocity(direction * (currentPhase == BossPhase.PHASE_2 ? 7f : 4f), b2body.getLinearVelocity().y);
+                    subStateTimer -= dt; // Decrement timeout
+
+                    float dist = Math.abs(player.b2body.getPosition().x - b2body.getPosition().x);
+
+                    // ADDED: Stop if he reaches you, OR if the timer runs out, OR if he hits a wall (x velocity drops)
+                    if (dist < 2.0f || subStateTimer <= 0 || Math.abs(b2body.getLinearVelocity().x) < 0.5f) {
+                        currentSubState = BossSubState.RECOVERY;
+                        subStateTimer = 0.6f;
+                    }
+                } else if (currentSubState == BossSubState.RECOVERY) {
+                    b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+                    subStateTimer -= dt;
+                    if (subStateTimer <= 0) {
+                        currentMove = BossMove.IDLE;
+                        moveTimer = 1.0f;
+                    }
+                }
+                break;
         }
     }
 
-    private float getActiveDuration() {
-        return switch (currentMove) {
-            case MACE_SLAM -> 0.2f;
-            case POWER_SLAM -> 0.3f;
-            case CHARGE -> 1.2f;
-            default -> 0.1f; // Leaps are instant impulses
-        };
+    public BossPhase getCurrentPhase() {
+        return currentPhase;
     }
 
-    private float getRecoveryDuration() {
-        // The rest of the moveTimer handles the remainder, but this provides a structured window
-        return 0.5f;
+    public BossMove getCurrentMove() {
+        return currentMove;
+    }
+
+    public BossSubState getCurrentSubState() {
+        return currentSubState;
     }
 
     private boolean isGrounded() {
-        // Simple check to ensure impulses only fire from the floor
-        return b2body.getLinearVelocity().y == 0;
+        Vector2 pos = b2body.getPosition();
+        final boolean[] grounded = {false};
+
+        // Shoot a raycast from the boss's center to slightly below its feet
+        world.rayCast((fixture, point, normal, fraction) -> {
+            if ("ground".equals(fixture.getUserData())) {
+                grounded[0] = true;
+                return 0; // Terminate query early, we found the ground
+            }
+            return 1; // Continue checking
+        }, pos, new Vector2(pos.x, pos.y - Constants.FalseKnight.HEIGHT_HALVED_SCALED - 0.2f));
+
+        return grounded[0];
     }
 
     @Override
@@ -248,6 +287,11 @@ public class FalseKnight extends Enemy {
         damageTimer = 2.0f; // Boss remembers hits for 2 seconds
 
         System.out.println("False Knight hit! HP: " + hp);
+
+        if (currentPhase == BossPhase.STUNNED) {
+            currentSubState = BossSubState.STUN_HIT;
+            subStateTimer = 0.2f;
+        }
 
         // Stun Phase Shift (50% HP)
         if (hp <= maxHp / 2 && currentPhase == BossPhase.PHASE_1) {
@@ -266,7 +310,7 @@ public class FalseKnight extends Enemy {
         Vector2 center = b2body.getWorldCenter();
 
         // Define the area of the slam in front of the boss
-        float slamReachX = 2.5f;
+        float slamReachX = 3f;
         float slamHeightY = 1.5f;
 
         float lowerX = direction == 1f ? center.x : center.x - slamReachX;
@@ -279,6 +323,8 @@ public class FalseKnight extends Enemy {
             if ("knight".equals(fixture.getUserData())) {
                 // Apply 1 damage, pushing the player away based on boss direction
                 player.takeDamage(1, direction);
+                Vector2 playerPos = player.b2body.getPosition();
+                vfxCallback.spawnStaticVfx(damageAnimation, playerPos.x, playerPos.y, 0, 0, player.facingRight, true);
             }
             return true;
         }, lowerX, lowerY, upperX, upperY);

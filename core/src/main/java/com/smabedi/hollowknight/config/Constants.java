@@ -26,6 +26,8 @@ public final class Constants {
             public static final String ROOT = "textures/";
             public static final String KNIGHT_ATLAS = ROOT + "knight/knight.atlas";
             public static final String VFX_ATLAS = ROOT + "vfx/vfx.atlas";
+            public static final String ENTITY_ATLAS = ROOT + "entities/entities.atlas";
+            public static final String BOSS_ATLAS = ROOT + "boss/boss.atlas";
         }
     }
 
@@ -111,22 +113,23 @@ public final class Constants {
 
     public static final class FalseKnight {
         public static final int HP = 40;
-        public static final int WIDTH = 120;
+        public static final int WIDTH = 200;
         public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
-        public static final int HEIGHT = 160;
+        public static final int HEIGHT = 300;
         public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
         public static final float FRICTION = 0.5f;
         public static final float DENSITY = 5f; // Heavy, hard to knock back
 
         public static final class ShockWave {
-            public static final float WIDTH = 0.8f;
-            public static final float HEIGHT = 0.4f;
+            public static final float WIDTH = 1f;
+            public static final float HEIGHT = 0.6f;
             public static final float SPEED = 8f;
         }
     }
 
     public static final class Enemy {
         public static final float RESPAWN_DISTANCE = 20f;
+        public static final float DEATH_KNOCKBACK = 5f;
 
         public static final class Crawlid {
             public static final int HP = 2;
@@ -151,9 +154,9 @@ public final class Constants {
             public static final int HP = 4;
             public static final float WALK_SPEED = 1f;
             public static final float CHARGE_SPEED = 5f;
-            public static final int WIDTH = 50;
+            public static final int WIDTH = 80;
             public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
-            public static final int HEIGHT = 80;
+            public static final int HEIGHT = 120;
             public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
             public static final float FRICTION = 0.2f;
             public static final float VISION_RANGE = 8f; // How far it sees in front of itself
@@ -165,9 +168,9 @@ public final class Constants {
             public static final int HP = 6;
             public static final float CHARGE_SPEED = 5.5f;
             public static final float RETURN_SPEED = 2f;
-            public static final int WIDTH = 60;
+            public static final int WIDTH = 80;
             public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
-            public static final int HEIGHT = 70;
+            public static final int HEIGHT = 120;
             public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
             public static final float FRICTION = 0.2f;
             public static final float VISION_RANGE = 12f; // Long range laser sight!

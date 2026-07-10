@@ -49,6 +49,8 @@ public class Assets {
         getManager().load(Constants.Paths.SKIN, Skin.class);
         getManager().load(Constants.Paths.Textures.KNIGHT_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
+        getManager().load(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
+        getManager().load(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
         getManager().finishLoading();
     }
 
@@ -62,6 +64,18 @@ public class Assets {
 
     public static TextureAtlas getVfxAtlas() {
         return getManager().get(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
+    }
+
+    public static TextureAtlas getEntityAtlas() {
+        return getManager().get(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
+    }
+
+    public static TextureAtlas getBossAtlas() {
+        return getManager().get(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
+    }
+
+    public static Animation<TextureRegion> getShockwaveVfx() {
+        return new Animation<>(0.2f, getVfxAtlas().findRegions("shockwave"), Animation.PlayMode.NORMAL);
     }
 
     public static Animation<TextureRegion> getNormalDashVfx() {

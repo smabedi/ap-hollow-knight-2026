@@ -32,7 +32,7 @@ import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.models.game.WorldContactListener;
-import com.smabedi.hollowknight.views.entities.KnightRenderer;
+import com.smabedi.hollowknight.views.entities.*;
 
 public class GameScreen implements Screen {
     private final OrthographicCamera camera;
@@ -45,7 +45,9 @@ public class GameScreen implements Screen {
     private Knight player;
     private KnightRenderer knightRenderer;
     private Array<Enemy> enemies;
+    private Array<EntityRenderer> entityRenderers;
     private Zote zote;
+    private ZoteRenderer zoteRenderer;
     private GameUI gameUI;
     private PlayerController playerController;
     private final Box2DDebugRenderer b2dr;
@@ -54,7 +56,6 @@ public class GameScreen implements Screen {
     private CheatController cheatController;
     private final Array<Body> bodyBuffer = new Array<>();
     public static final Array<VfxInstance> vfxList = new Array<>();
-    private Animation<TextureRegion> damageAnimation;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -84,6 +85,9 @@ public class GameScreen implements Screen {
         camera.position.set(viewport.getWorldWidth() / 2f, viewport.getWorldHeight() / 2f, 0);
         batch = new SpriteBatch();
 
+        entityRenderers = new Array<>();
+        TextureAtlas entityAtlas = Assets.getEntityAtlas();
+
         assert map != null;
         new B2WorldCreator(world, map);
 
@@ -92,7 +96,7 @@ public class GameScreen implements Screen {
         };
         TextureAtlas knightAtlas = Assets.getKnightAtlas();
 
-        damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
+        Animation<TextureRegion> damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
         enemies = new Array<>();
         for (MapObject object : map.getLayers().get("spawns").getObjects()) {
 
@@ -105,8 +109,35 @@ public class GameScreen implements Screen {
                     player = new Knight(world, x, y, session.health, session.soul);
                     knightRenderer = new KnightRenderer(player, Assets.getKnightAtlas());
                 }
-                case "crawlid" -> enemies.add(new Crawlid(world, x, y));
-                case "mossfly" -> enemies.add(new Mossfly(world, x, y));
+                case "crawlid" -> {
+                    Crawlid crawlid = new Crawlid(world, x, y);
+                    enemies.add(crawlid);
+                    entityRenderers.add(new CrawlidRenderer(crawlid, entityAtlas));
+                }
+                case "mossfly" -> {
+                    Mossfly mossfly = new Mossfly(world, x, y);
+                    enemies.add(mossfly);
+                    entityRenderers.add(new MossflyRenderer(mossfly, entityAtlas));
+                }
+                case "hornhead" -> {
+                    HuskHornhead hornhead = new HuskHornhead(world, x, y);
+                    enemies.add(hornhead);
+                    entityRenderers.add(new HuskHornheadRenderer(hornhead, entityAtlas));
+                }
+                case "crystal_guardian" -> {
+                    CrystalGuardian guardian = new CrystalGuardian(world, x, y, false); // false = starts facing left
+                    enemies.add(guardian);
+                    entityRenderers.add(new CrystalGuardianRenderer(guardian, entityAtlas));
+                }
+                case "boss" -> { // Match the Type string from your Tiled map
+                    FalseKnight boss = new FalseKnight(world, x, y, vfxCallback, damageAnimation);
+                    enemies.add(boss); // Bosses extend Enemy, so they fit in the AI update loop naturally
+                    entityRenderers.add(new FalseKnightRenderer(boss, Assets.getBossAtlas()));
+                }
+                case "zote" -> {
+                    zote = new Zote(world, x, y);
+                    zoteRenderer = new ZoteRenderer(zote, Assets.getEntityAtlas());
+                }
             }
         }
 
@@ -164,9 +195,13 @@ public class GameScreen implements Screen {
                 } else if (!sprit.isDestroyed) {
                     sprit.stateTimer += scaledDt;
                 }
-            } else if (userData instanceof Shockwave wave && wave.setToDestroy && !wave.isDestroyed) {
-                world.destroyBody(body);
-                wave.isDestroyed = true;
+            } else if (userData instanceof Shockwave wave) {
+                if (wave.setToDestroy && !wave.isDestroyed) {
+                    world.destroyBody(body);
+                    wave.isDestroyed = true;
+                } else if (!wave.isDestroyed) {
+                    wave.stateTimer += scaledDt;
+                }
             }
         }
 
@@ -239,9 +274,21 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        // Draw the player!
+        // Draw the player
         float renderDelta = delta * timeScale;
+
+        // Draw enemies and Zote first so they appear behind the Knight if they overlap
+        //noinspection GDXJavaUnsafeIterator
+        for (EntityRenderer entityRenderer : entityRenderers) {
+            entityRenderer.render(batch, renderDelta);
+        }
+
         knightRenderer.render(batch, renderDelta);
+
+        // Draw Zote
+        if (zoteRenderer != null) {
+            zoteRenderer.render(batch, renderDelta);
+        }
 
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 
@@ -274,11 +321,11 @@ public class GameScreen implements Screen {
         //noinspection GDXJavaUnsafeIterator
         for (Body body : bodyBuffer) {
             Object userData = body.getUserData();
+
             if (userData instanceof VengefulSpirit sprit && !sprit.isDestroyed) {
                 Animation<TextureRegion> anim = sprit.isVoid ? Assets.getVoidSpiritProjectile() : Assets.getSpiritProjectile();
                 TextureRegion frame = anim.getKeyFrame(sprit.stateTimer);
 
-                // Assuming raw asset faces Right. Flips safely without mutating the texture.
                 boolean needsFlip = !sprit.facingRight;
                 if (frame.isFlipX() != needsFlip) frame.flip(true, false);
 
@@ -286,6 +333,30 @@ public class GameScreen implements Screen {
                 float h = frame.getRegionHeight() / Constants.World.PPM;
 
                 batch.draw(frame, body.getPosition().x - (w / 2f), body.getPosition().y - (h / 2f), w, h);
+            }
+
+            // 2. FALSE KNIGHT SHOCKWAVE
+            else if (userData instanceof Shockwave wave && !wave.isDestroyed) {
+                Animation<TextureRegion> anim = Assets.getShockwaveVfx();
+
+                // Increment timer (if you aren't already doing it in a Shockwave.update() method)
+                wave.stateTimer += renderDelta;
+
+                TextureRegion frame = anim.getKeyFrame(wave.stateTimer);
+
+                // Shockwave asset faces Right by default. Check Box2D velocity for direction!
+                boolean movingRight = body.getLinearVelocity().x > 0;
+                boolean needsFlip = !movingRight;
+
+                if (frame.isFlipX() != needsFlip) frame.flip(true, false);
+
+                float w = frame.getRegionWidth() / Constants.World.PPM;
+                float h = frame.getRegionHeight() / Constants.World.PPM;
+
+                // Center it on the Box2D body
+                batch.draw(frame, body.getPosition().x - (w / 2f), body.getPosition().y - (h / 2f) + 0.5f, w, h);
+
+                if (anim.isAnimationFinished(wave.stateTimer)) { wave.setToDestroy = true; }
             }
         }
 

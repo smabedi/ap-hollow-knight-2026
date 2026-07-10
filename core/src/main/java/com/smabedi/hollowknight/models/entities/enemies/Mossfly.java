@@ -82,4 +82,8 @@ public class Mossfly extends Enemy {
         this.isHidden = true;
         this.b2body.setGravityScale(1f); // Reset gravity so it falls back down
     }
+
+    public boolean isHidden() {
+        return isHidden;
+    }
 }

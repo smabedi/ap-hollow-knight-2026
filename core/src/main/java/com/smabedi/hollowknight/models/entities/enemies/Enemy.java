@@ -92,9 +92,15 @@ public abstract class Enemy implements IDamageable {
     public void die() {
         dead = true;
         System.out.println(this.getClass().getSimpleName() + " died! Turning into a corpse.");
-        // NOTE: Do not destroy the body here!
-        // Our PlayerController and ContactListener already check `if (!enemy.isDead())`
-        // so the corpse will simply be ignored by attacks and player collisions automatically.
+
+        // 1. Reset gravity scale (crucial for flying enemies so they fall to the floor)
+        b2body.setGravityScale(1f);
+
+        // 2. The Death Knock-up!
+        // We preserve the X velocity (so weapon knockback still carries it backward)
+        // but reset Y so the pop-up is a consistent height every time.
+        b2body.setLinearVelocity(b2body.getLinearVelocity().x, 0);
+        b2body.applyLinearImpulse(new Vector2(0, Constants.Enemy.DEATH_KNOCKBACK), b2body.getWorldCenter(), true);
     }
 
     @Override
