@@ -28,7 +28,7 @@ public class FalseKnight extends Enemy {
     private final Animation<TextureRegion> damageAnimation;
 
     public FalseKnight(World world, float x, float y, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
-        super(world, x, y, Constants.FalseKnight.HP, eventCallback);
+        super(world, x, y, Constants.FalseKnight.HP, eventCallback, EnemyType.FALSE_KNIGHT);
         this.eventCallback = eventCallback;
         this.damageAnimation = damageAnimation;
         define();

@@ -117,7 +117,7 @@
   <object id="48" name="player_spawn" type="player" x="1006.17" y="1551.85">
    <point/>
   </object>
-  <object id="51" name="crawlid_0" type="crawlidNO" x="984.25" y="2345.5">
+  <object id="51" name="crawlid_0" type="crawlid" x="984.25" y="2345.5">
    <point/>
   </object>
   <object id="54" name="mossfly_0" type="mossflyNO" x="2341" y="1890">
@@ -130,14 +130,14 @@
    <point/>
   </object>
  </objectgroup>
- <objectgroup id="19" name="camera_bounds" class="arena_rect">
+ <objectgroup id="19" name="camera_bounds" class="arena_rect" visible="0">
   <object id="72" x="841.333" y="1728" width="1608" height="973.333"/>
  </objectgroup>
- <objectgroup id="22" name="safe_spots"/>
- <objectgroup id="20" name="arena_sensors">
+ <objectgroup id="22" name="safe_spots" visible="0"/>
+ <objectgroup id="20" name="arena_sensors" visible="0">
   <object id="69" x="1244" y="2314.67" width="852" height="385.333"/>
  </objectgroup>
- <objectgroup id="21" name="arena_gates">
+ <objectgroup id="21" name="arena_gates" visible="0">
   <object id="71" x="2033.33" y="2270.67" width="42.6667" height="434.667"/>
  </objectgroup>
 </map>

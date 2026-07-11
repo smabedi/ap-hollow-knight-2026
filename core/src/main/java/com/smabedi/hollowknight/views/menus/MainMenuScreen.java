@@ -35,6 +35,13 @@ public class MainMenuScreen extends MenuScreen {
         TextButton achievementsBtn = new TextButton(Assets.getString("achievements"), skin);
         mainOptionsWrapper.add(achievementsBtn).row();
 
+        achievementsBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                ScreenManager.setMenuScreen(ScreenType.ACHIEVEMENTS);
+            }
+        });
+
         TextButton quitGameBtn = new TextButton(Assets.getString("quit_game"), skin);
         mainOptionsWrapper.add(quitGameBtn).row();
 
@@ -51,6 +58,14 @@ public class MainMenuScreen extends MenuScreen {
 
         TextButton guideBtn = new TextButton(Assets.getString("guide"), skin);
         guideBtnWrapper.add(guideBtn).width(150);
+
+        // Add this ClickListener:
+        guideBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                ScreenManager.setMenuScreen(ScreenType.GUIDE);
+            }
+        });
 
         Table settingsBtnWrapper = new Table();
         settingsBtnWrapper.top().right().pad(50);

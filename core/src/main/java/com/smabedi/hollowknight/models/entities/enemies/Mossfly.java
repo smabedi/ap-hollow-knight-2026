@@ -10,7 +10,7 @@ public class Mossfly extends Enemy {
     private boolean isHidden = true; // Starts disguised as a bush
 
     public Mossfly(World world, float x, float y, EventCallback eventCallback) {
-        super(world, x, y, Constants.Enemy.Mossfly.HP, eventCallback);
+        super(world, x, y, Constants.Enemy.Mossfly.HP, eventCallback, EnemyType.MOSSFLY);
         define();
     }
 

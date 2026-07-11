@@ -22,6 +22,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
+import com.smabedi.hollowknight.controllers.AchievementManager;
 import com.smabedi.hollowknight.controllers.CheatController;
 import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
@@ -59,6 +60,7 @@ public class GameScreen implements Screen {
     private final Array<Body> bodyBuffer = new Array<>();
     public static final Array<VfxInstance> vfxList = new Array<>();
     private AmbientParticles ambientParticles;
+    private AchievementManager achievementManager;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -130,7 +132,8 @@ public class GameScreen implements Screen {
             @Override
             public void onBossDeath() {
                 session.isArenaLocked = false;
-                System.out.println("Boos died. Arena unlocked.");
+                achievementManager.evaluateBossDefeat();
+                System.out.println("Boss died. Arena unlocked.");
             }
 
             @Override
@@ -142,8 +145,9 @@ public class GameScreen implements Screen {
             }
 
             @Override
-            public void onEnemyDeath() {
+            public void onEnemyDeath(EnemyType enemyType) {
                 session.enemyKillCounter++;
+                achievementManager.evaluateEnemyKill(enemyType);
             }
         };
 
@@ -229,6 +233,7 @@ public class GameScreen implements Screen {
         }
 
         gameUI = new GameUI(session, player);
+        achievementManager = new AchievementManager(session, gameUI);
         playerController = new PlayerController(player, session.inventory, gameUI, eventCallback, damageAnimation);
         cheatController = new CheatController(player, gameUI, this, session);
 
@@ -430,7 +435,8 @@ public class GameScreen implements Screen {
         float shakeOffsetX = 0f;
         float shakeOffsetY = 0f;
 
-        if (session.shakeTrauma > 0) {
+        // Add the !gameUI.isPaused() check here:
+        if (session.shakeTrauma > 0 && !gameUI.isPaused()) {
             float shake = session.shakeTrauma * session.shakeTrauma * session.shakeTrauma;
             shakeOffsetX = Constants.Camera.MAX_SHAKE_OFFSET_X * shake * MathUtils.random(-1f, 1f);
             shakeOffsetY = Constants.Camera.MAX_SHAKE_OFFSET_Y * shake * MathUtils.random(-1f, 1f);
@@ -474,8 +480,8 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        // Draw the player
-        float renderDelta = delta * timeScale;
+        // Set to 0f if paused, freezing all entity animations & particles
+        float renderDelta = gameUI.isPaused() ? 0f : (delta * timeScale);
 
         // Draw enemies and Zote first so they appear behind the Knight if they overlap
         //noinspection GDXJavaUnsafeIterator
@@ -664,5 +670,33 @@ public class GameScreen implements Screen {
 
         // Tell LibGDX to use our fresh multiplexer!
         Gdx.input.setInputProcessor(multiplexer);
+    }
+
+    public void rebuildUI() {
+        // Remember the current states
+        boolean wasPaused = gameUI != null && gameUI.isPaused();
+        boolean wasInventoryOpen = gameUI != null && gameUI.isInventoryOpen();
+
+        if (gameUI != null) {
+            gameUI.dispose();
+        }
+
+        // Rebuild with new language strings
+        gameUI = new GameUI(session, player);
+
+        // --- NEW: Update the controllers with the fresh UI reference! ---
+        if (cheatController != null) cheatController.setGameUI(gameUI);
+        if (playerController != null) playerController.setGameUI(gameUI);
+        if (achievementManager != null) achievementManager.setGameUI(gameUI);
+
+        // Restore the states
+        if (wasInventoryOpen) {
+            gameUI.toggleInventory();
+        } else if (wasPaused) {
+            gameUI.togglePause();
+        }
+
+        // Rebind the input multiplexer so the new GameUI stage receives clicks
+        setupInputProcessors();
     }
 }

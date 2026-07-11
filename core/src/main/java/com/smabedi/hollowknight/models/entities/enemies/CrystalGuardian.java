@@ -15,7 +15,7 @@ public class CrystalGuardian extends Enemy {
     private final boolean originalFacingRight; // To remember which way to look when returning
 
     public CrystalGuardian(World world, float x, float y, boolean startsFacingRight, EventCallback eventCallback) {
-        super(world, x, y, Constants.Enemy.CrystalGuardian.HP, eventCallback);
+        super(world, x, y, Constants.Enemy.CrystalGuardian.HP, eventCallback, EnemyType.CRYSTAL_GUARDIAN);
         this.facingRight = startsFacingRight;
         this.originalFacingRight = startsFacingRight;
         this.currentState = GuardianState.IDLE;

@@ -14,7 +14,7 @@ public class HuskHornhead extends Enemy {
     private boolean movingRight = true;
 
     public HuskHornhead(World world, float x, float y, EventCallback eventCallback) {
-        super(world, x, y, Constants.Enemy.HuskHornhead.HP, eventCallback);
+        super(world, x, y, Constants.Enemy.HuskHornhead.HP, eventCallback, EnemyType.HUSK_HORNHEAD);
         this.currentState = HornheadState.WALKING;
         this.stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
         define();

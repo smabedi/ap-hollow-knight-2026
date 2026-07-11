@@ -24,7 +24,6 @@ public class GameSettings {
     public static final String KEY_ATTACK = "key_attack";
     public static final String KEY_DASH = "key_dash";
     public static final String KEY_FOCUS = "key_focus";
-    public static final String KEY_MAP = "key_map";
     public static final String KEY_INVENTORY = "key_inventory";
 
     public static void load() {
@@ -81,7 +80,6 @@ public class GameSettings {
         prefs.putInteger(KEY_ATTACK, Input.Keys.X);
         prefs.putInteger(KEY_DASH, Input.Keys.C);
         prefs.putInteger(KEY_FOCUS, Input.Keys.A);
-        prefs.putInteger(KEY_MAP, Input.Keys.TAB);
         prefs.putInteger(KEY_INVENTORY, Input.Keys.I);
         prefs.flush();
     }
@@ -110,6 +108,15 @@ public class GameSettings {
 
     public static void setLanguage(String lang) {
         prefs.putString(LANGUAGE, lang);
+        prefs.flush();
+    }
+
+    public static boolean isAchievementUnlocked(String achievementId) {
+        return prefs.getBoolean("achv_" + achievementId, false);
+    }
+
+    public static void unlockAchievement(String achievementId) {
+        prefs.putBoolean("achv_" + achievementId, true);
         prefs.flush();
     }
 }

@@ -10,7 +10,7 @@ public class Crawlid extends Enemy {
     private boolean movingRight = true;
 
     public Crawlid(World world, float x, float y, EventCallback eventCallback) {
-        super(world, x, y, Constants.Enemy.Crawlid.HP, eventCallback);
+        super(world, x, y, Constants.Enemy.Crawlid.HP, eventCallback, EnemyType.CRAWLID);
         define();
     }
 

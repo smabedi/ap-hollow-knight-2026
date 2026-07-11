@@ -202,4 +202,9 @@ public class Knight {
             System.out.println("Knight took damage! HP: " + health);
         }
     }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean isCasting() {
+        return spritCastTimer > 0 || wraithsTimer > 0;
+    }
 }

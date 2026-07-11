@@ -80,7 +80,15 @@ public class DatabaseManager {
 
             if (rs.next()) {
                 String blob = rs.getString("session_blob");
-                return json.fromJson(GameSession.class, blob); // Deserialize JSON string back to object
+                GameSession session = json.fromJson(GameSession.class, blob); // Deserialize JSON string back to object
+
+                // Enforce One Shot, One Kill constraint:
+                // If a player loads a save, it is no longer a single sitting.
+                if (session != null) {
+                    session.isOneSitting = false;
+                }
+
+                return session;
             }
         } catch (Exception e) {
             System.err.println("Failed to load session: " + e.getMessage());
