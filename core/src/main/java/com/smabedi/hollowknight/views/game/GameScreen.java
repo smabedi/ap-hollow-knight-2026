@@ -17,6 +17,7 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Assets;
@@ -35,7 +36,10 @@ import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
 import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.models.game.WorldContactListener;
+import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.entities.*;
+
+import static com.badlogic.gdx.utils.Timer.schedule;
 
 public class GameScreen implements Screen {
     private final OrthographicCamera camera;
@@ -134,6 +138,18 @@ public class GameScreen implements Screen {
                 session.isArenaLocked = false;
                 achievementManager.evaluateBossDefeat();
                 System.out.println("Boss died. Arena unlocked.");
+
+                // Freeze the player to prevent them from moving during the transition delay
+                player.isGodMode = true;
+                player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
+
+                // 1-Second Delay before transitioning to the End Game Screen
+                schedule(new Timer.Task() {
+                    @Override
+                    public void run() {
+                        ScreenManager.setEndGameScreen(session);
+                    }
+                }, 1.0f);
             }
 
             @Override
@@ -538,7 +554,11 @@ public class GameScreen implements Screen {
                 float w = frame.getRegionWidth() / Constants.World.PPM;
                 float h = frame.getRegionHeight() / Constants.World.PPM;
 
+                if (!sprit.isVoid) //noinspection GDXJavaFlushInsideLoop
+                    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
                 batch.draw(frame, body.getPosition().x - (w / 2f), body.getPosition().y - (h / 2f), w, h);
+                if (!sprit.isVoid) //noinspection GDXJavaFlushInsideLoop
+                    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
             }
 
             // 2. FALSE KNIGHT SHOCKWAVE

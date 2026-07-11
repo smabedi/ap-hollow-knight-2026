@@ -42,6 +42,13 @@ public final class ScreenManager {
         main.setScreen(currentGameScreen);
     }
 
+    public static void setEndGameScreen(GameSession session) {
+        clearGameScreen();
+
+        EndGameScreen endGameScreen = new EndGameScreen(session);
+        main.setScreen(endGameScreen);
+    }
+
     public static boolean isGameActive() {
         return currentGameScreen != null;
     }

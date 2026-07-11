@@ -29,6 +29,16 @@ public final class Constants {
             public static final String ENTITY_ATLAS = ROOT + "entities/entities.atlas";
             public static final String BOSS_ATLAS = ROOT + "boss/boss.atlas";
         }
+
+        public static final class Videos {
+            public static final String ROOT = "videos/";
+            public static final String WIN = ROOT + "eternal-ordeal.webm";
+        }
+
+        public static final class Sounds {
+            public static final String ROOT = "sounds/";
+            public static final String WIN = ROOT + "win.mp3";
+        }
     }
 
     public static final class UI {
