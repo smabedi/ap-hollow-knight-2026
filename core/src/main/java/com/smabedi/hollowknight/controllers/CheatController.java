@@ -13,7 +13,7 @@ import com.smabedi.hollowknight.views.game.LocationType;
 
 public class CheatController extends InputAdapter {
     private final Knight player;
-    private final GameUI gameUI;
+    private GameUI gameUI;
     private final GameScreen gameScreen;
     private final GameSession session;
 
@@ -98,5 +98,9 @@ public class CheatController extends InputAdapter {
             }
         }
         return false;
+    }
+
+    public void setGameUI(GameUI gameUI) {
+        this.gameUI = gameUI;
     }
 }

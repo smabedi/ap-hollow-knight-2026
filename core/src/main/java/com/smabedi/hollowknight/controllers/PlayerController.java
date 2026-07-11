@@ -25,7 +25,7 @@ public class PlayerController {
     private final Vector2 rayEnd = new Vector2();
     private final Array<IDamageable> enemiesHitDuringDash = new Array<>();
     private final Array<IDamageable> enemiesHitDuringAttack = new Array<>();
-    private final GameUI gameUI;
+    private GameUI gameUI;
     private boolean wasZoteNearby = false;
     private final EventCallback eventCallback;
     private final Animation<TextureRegion> damageAnimation;
@@ -219,10 +219,14 @@ public class PlayerController {
 
         if (Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_LEFT))) {
             targetVelX = -Constants.Knight.MAX_SPEED;
-            player.facingRight = false;
+            if (!player.isCasting()) {
+                player.facingRight = false;
+            }
         } else if (Gdx.input.isKeyPressed(GameSettings.getKey(GameSettings.KEY_RIGHT))) {
             targetVelX = Constants.Knight.MAX_SPEED;
-            player.facingRight = true;
+            if (!player.isCasting()) {
+                player.facingRight = true;
+            }
         }
 
         // --- FIXED VARIABLE JUMP HEIGHT ---
@@ -539,5 +543,9 @@ public class PlayerController {
         };
 
         player.world.QueryAABB(wraithsCallback, lowerX, lowerY, upperX, upperY);
+    }
+
+    public void setGameUI(GameUI gameUI) {
+        this.gameUI = gameUI;
     }
 }

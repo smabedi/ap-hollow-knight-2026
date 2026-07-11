@@ -1,5 +1,6 @@
 package com.smabedi.hollowknight.views.game;
 
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -68,37 +69,85 @@ public class GameUI {
         pauseMenu.defaults().pad(10);
 
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(0, 0, 0, 0.6f));
+        pixmap.setColor(new Color(0, 0, 0, 0.85f)); // Darkened slightly for better readability
         pixmap.fill();
         Texture transparentBlack = new Texture(pixmap);
         pauseMenu.setBackground(new TextureRegionDrawable(new TextureRegion(transparentBlack)));
         pixmap.dispose();
 
         Label title = new Label(Assets.getString("paused"), skin);
-        pauseMenu.add(title).row();
+        pauseMenu.add(title).padBottom(20).row();
 
-        TextButton backBtn = new TextButton(Assets.getString("back"), skin);
-        pauseMenu.add(backBtn).row();
-
-        backBtn.addListener(new ClickListener() {
+        // --- BUTTONS ---
+        TextButton continueBtn = new TextButton(Assets.getString("continue"), skin);
+        continueBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                // 1. Sync the live runtime data back into the persistent data model
+                togglePause();
+            }
+        });
+        pauseMenu.add(continueBtn).width(200).row();
+
+        TextButton settingsBtn = new TextButton(Assets.getString("settings"), skin);
+        settingsBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                // SettingsMenuScreen will lay over the game.
+                // We don't dispose the game screen here, just switch contexts.
+                ScreenManager.setMenuScreen(ScreenType.SETTINGS);
+            }
+        });
+        pauseMenu.add(settingsBtn).width(200).row();
+
+        TextButton quitBtn = new TextButton(Assets.getString("save_and_quit"), skin);
+        quitBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
                 session.health = player.health;
                 session.soul = player.soul;
-
-                // Save pure Box2D meters directly
                 session.playerX = player.b2body.getPosition().x;
                 session.playerY = player.b2body.getPosition().y;
 
-                // 2. Execute the SQLite save
                 DatabaseManager.saveSession(session);
 
-                // 3. Safely exit to the main menu
+                // Clear the active game before returning to the main menu!
+                ScreenManager.clearGameScreen();
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
             }
         });
-        // TODO: Add Resume, Settings, Quit buttons here.
+        pauseMenu.add(quitBtn).width(200).padBottom(30).row();
+
+        // --- CHEAT CODES DISPLAY ---
+        Table cheatsTable = new Table();
+        cheatsTable.defaults().pad(5).left();
+
+        Label cheatsTitle = new Label("--- " + Assets.getString("cheat_codes") + " ---", skin);
+        cheatsTitle.setColor(Color.GOLD);
+        cheatsTable.add(cheatsTitle).center().padBottom(10).row();
+
+        cheatsTable.add(new Label(Assets.getString("guide_cheat_boss") + ": "
+            + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
+            + Input.Keys.toString(Constants.Cheats.Keys.BOSS_TELEPORT), skin)).row();
+        cheatsTable.add(new Label(Assets.getString("guide_cheat_noclip") + ": "
+            + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
+            + Input.Keys.toString(Constants.Cheats.Keys.SPECTATOR_MODE), skin)).row();
+        cheatsTable.add(new Label(Assets.getString("guide_cheat_heal") + ": "
+            + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
+            + Input.Keys.toString(Constants.Cheats.Keys.EMERGENCY_HEAL), skin)).row();
+        cheatsTable.add(new Label(Assets.getString("guide_cheat_soul") + ": "
+            + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
+            + Input.Keys.toString(Constants.Cheats.Keys.REFILL_SOUL), skin)).row();
+        cheatsTable.add(new Label(Assets.getString("guide_cheat_god") + ": "
+            + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
+            + Input.Keys.toString(Constants.Cheats.Keys.GOD_MODE), skin)).row();
+        cheatsTable.add(new Label(Assets.getString("guide_cheat_dilation") + ": "
+            + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
+            + Input.Keys.toString(Constants.Cheats.Keys.TIME_DILATION), skin)).row();
+
+/*        ScrollPane scrollPane = new ScrollPane(cheatsTable, skin);
+        scrollPane.setFadeScrollBars(false);
+        pauseMenu.add(scrollPane).height(150).width(350).row();*/
+        pauseMenu.add(cheatsTable).height(150).width(350).row();
 
         pauseMenu.setVisible(false);
         stage.addActor(pauseMenu);

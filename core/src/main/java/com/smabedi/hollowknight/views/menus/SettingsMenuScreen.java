@@ -94,7 +94,7 @@ public class SettingsMenuScreen extends MenuScreen {
                 if (!newLangCode.equals(GameSettings.getLanguage())) {
                     GameSettings.setLanguage(newLangCode);
                     Assets.getInstance().reloadLanguage();
-                    ScreenManager.dispose();
+                    ScreenManager.reloadLanguage();
                     ScreenManager.setMenuScreen(ScreenType.SETTINGS);
                 }
             }
@@ -117,7 +117,6 @@ public class SettingsMenuScreen extends MenuScreen {
         addKeybindRow(keysTable, Assets.getString("attack"), GameSettings.KEY_ATTACK);
         addKeybindRow(keysTable, Assets.getString("dash"), GameSettings.KEY_DASH);
         addKeybindRow(keysTable, Assets.getString("focus_cast"), GameSettings.KEY_FOCUS);
-        addKeybindRow(keysTable, Assets.getString("map"), GameSettings.KEY_MAP);
         addKeybindRow(keysTable, Assets.getString("inventory"), GameSettings.KEY_INVENTORY);
 
         ScrollPane scrollPane = new ScrollPane(keysTable, skin);
@@ -137,7 +136,11 @@ public class SettingsMenuScreen extends MenuScreen {
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                ScreenManager.setMenuScreen(ScreenType.MAIN);
+                if (ScreenManager.isGameActive()) {
+                    ScreenManager.resumeGame();
+                } else {
+                    ScreenManager.setMenuScreen(ScreenType.MAIN);
+                }
             }
         });
 

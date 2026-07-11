@@ -4,9 +4,7 @@ import com.badlogic.gdx.Screen;
 import com.smabedi.hollowknight.Main;
 import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.game.GameScreen;
-import com.smabedi.hollowknight.views.menus.MainMenuScreen;
-import com.smabedi.hollowknight.views.menus.SettingsMenuScreen;
-import com.smabedi.hollowknight.views.menus.StartGameMenuScreen;
+import com.smabedi.hollowknight.views.menus.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,6 +12,8 @@ import java.util.Map;
 public final class ScreenManager {
     private static Main main;
     private static final Map<ScreenType, Screen> screens = new HashMap<>();
+    @SuppressWarnings("GDXJavaStaticResource")
+    private static GameScreen currentGameScreen;
 
     private ScreenManager() {
     }
@@ -28,6 +28,8 @@ public final class ScreenManager {
                 case MAIN -> new MainMenuScreen();
                 case START_GAME -> new StartGameMenuScreen();
                 case SETTINGS -> new SettingsMenuScreen();
+                case GUIDE -> new GuideMenuScreen();
+                case ACHIEVEMENTS -> new AchievementsMenuScreen(); // Added routing
             };
             screens.put(type, newScreen);
         }
@@ -36,8 +38,38 @@ public final class ScreenManager {
     }
 
     public static void setGameScreen(GameSession session) {
-        GameScreen gameScreen = new GameScreen(session);
-        main.setScreen(gameScreen);
+        currentGameScreen = new GameScreen(session);
+        main.setScreen(currentGameScreen);
+    }
+
+    public static boolean isGameActive() {
+        return currentGameScreen != null;
+    }
+
+    public static void resumeGame() {
+        if (currentGameScreen != null) {
+            main.setScreen(currentGameScreen);
+        }
+    }
+
+    public static void clearGameScreen() {
+        if (currentGameScreen != null) {
+            currentGameScreen.dispose();
+            currentGameScreen = null;
+        }
+    }
+
+    public static void reloadLanguage() {
+        // 1. Dispose and clear ONLY the menus so they regenerate with the new strings
+        for (Screen screen : screens.values()) {
+            screen.dispose();
+        }
+        screens.clear();
+
+        // 2. Rebuild the HUD/Pause menu if a game is currently active
+        if (currentGameScreen != null) {
+            currentGameScreen.rebuildUI();
+        }
     }
 
     public static void dispose() {
@@ -45,5 +77,6 @@ public final class ScreenManager {
             screen.dispose();
         }
         screens.clear();
+        clearGameScreen();
     }
 }

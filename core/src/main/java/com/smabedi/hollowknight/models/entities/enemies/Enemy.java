@@ -21,8 +21,9 @@ public abstract class Enemy implements IDamageable {
     protected float respawnDistance = Constants.Enemy.RESPAWN_DISTANCE;
     protected float stunTimer = 0f;
     protected EventCallback eventCallback;
+    protected EnemyType type;
 
-    public Enemy(World world, float x, float y, int maxHp, EventCallback eventCallback) {
+    public Enemy(World world, float x, float y, int maxHp, EventCallback eventCallback, EnemyType type) {
         this.world = world;
         this.startX = x;
         this.startY = y;
@@ -30,6 +31,7 @@ public abstract class Enemy implements IDamageable {
         this.hp = maxHp;
         this.dead = false;
         this.eventCallback = eventCallback;
+        this.type = type;
     }
 
     public abstract void defineShape();
@@ -105,7 +107,7 @@ public abstract class Enemy implements IDamageable {
         b2body.setLinearVelocity(b2body.getLinearVelocity().x, 0);
         b2body.applyLinearImpulse(new Vector2(0, Constants.Enemy.DEATH_KNOCKBACK), b2body.getWorldCenter(), true);
 
-        eventCallback.onEnemyDeath();
+        eventCallback.onEnemyDeath(type);
     }
 
     @Override
