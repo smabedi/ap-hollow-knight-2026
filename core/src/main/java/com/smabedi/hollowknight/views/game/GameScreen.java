@@ -17,9 +17,11 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.controllers.AchievementManager;
@@ -37,6 +39,8 @@ import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.models.game.WorldContactListener;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.entities.*;
+
+import static com.badlogic.gdx.utils.Timer.schedule;
 
 public class GameScreen implements Screen {
     private final OrthographicCamera camera;
@@ -98,15 +102,12 @@ public class GameScreen implements Screen {
         ambientParticles = new AmbientParticles(location);
 
         // 2. Handle Music Swaps
-        // TODO: BGM management here.
-        // (Assuming you have an AudioManager or getMusic() in your Assets class)
         switch (location) {
-            case FORGOTTEN_CROSSROADS -> {
-                // e.g., AudioManager.playMusic(Assets.getMusic("crossroads_bgm"));
-            }
-            case GREENPATH -> {
-                // e.g., AudioManager.playMusic(Assets.getMusic("greenpath_bgm"));
-            }
+            case FORGOTTEN_CROSSROADS ->
+                AudioManager.playMusic(Constants.Paths.Sounds.BGM_CROSSROADS, true);
+            case GREENPATH ->
+                AudioManager.playMusic(Constants.Paths.Sounds.BGM_GREENPATH, true);
+
         }
 
         entityRenderers = new Array<>();
@@ -142,7 +143,7 @@ public class GameScreen implements Screen {
                 player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
 
                 // 1-Second Delay before transitioning to the End Game Screen
-                com.badlogic.gdx.utils.Timer.schedule(new com.badlogic.gdx.utils.Timer.Task() {
+                schedule(new Timer.Task() {
                     @Override
                     public void run() {
                         // postRunnable forces this block to execute safely on the
@@ -296,10 +297,9 @@ public class GameScreen implements Screen {
 
         // Scale timers and inputs
         float scaledDt = dt * timeScale;
+
         playerController.handleInput(scaledDt);
-
         player.update(scaledDt);
-
         session.update(scaledDt, dt);
 
         for (int i = vfxList.size - 1; i >= 0; i--) {

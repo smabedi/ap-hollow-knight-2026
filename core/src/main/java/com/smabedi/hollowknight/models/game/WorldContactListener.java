@@ -3,6 +3,7 @@ package com.smabedi.hollowknight.models.game;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.physics.box2d.*;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.IDamageable;
@@ -39,6 +40,8 @@ public class WorldContactListener implements ContactListener {
             if (!session.isArenaLocked) {
                 session.isArenaLocked = true;
                 System.out.println("Boss Arena Locked!");
+                AudioManager.playSfx(Constants.Paths.Sounds.BOSS_TRANSITION);
+                AudioManager.playMusic(Constants.Paths.Sounds.BGM_BOSS, true);
             }
         }
 

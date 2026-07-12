@@ -2,6 +2,8 @@ package com.smabedi.hollowknight.config;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -52,6 +54,19 @@ public class Assets {
         getManager().load(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.HUD_ATLAS, TextureAtlas.class);
+        getManager().load(Constants.Paths.Videos.BACKGROUND, TextureAtlas.class);
+        getManager().load(Constants.Paths.Sounds.BGM_MENU, Music.class);
+        getManager().load(Constants.Paths.Sounds.BGM_CROSSROADS, Music.class);
+        getManager().load(Constants.Paths.Sounds.BGM_GREENPATH, Music.class);
+        getManager().load(Constants.Paths.Sounds.BGM_BOSS, Music.class);
+        getManager().load(Constants.Paths.Sounds.BGM_WIN, Music.class);
+        getManager().load(Constants.Paths.Sounds.BOSS_TRANSITION, Sound.class);
+//        getManager().load(Constants.Paths.Sounds.SFX_NAIL_SLASH, Sound.class);
+//        getManager().load(Constants.Paths.Sounds.SFX_DASH, Sound.class);
+//        getManager().load(Constants.Paths.Sounds.SFX_DAMAGE, Sound.class);
+//        getManager().load(Constants.Paths.Sounds.SFX_FOCUS, Sound.class);
+//        getManager().load(Constants.Paths.Sounds.SFX_SPELL_CAST, Sound.class);
+//        getManager().load(Constants.Paths.Sounds.SFX_ZOTE, Sound.class);
         getManager().finishLoading();
     }
 
@@ -77,6 +92,10 @@ public class Assets {
 
     public static TextureAtlas getHudAtlas() {
         return getManager().get(Constants.Paths.Textures.HUD_ATLAS, TextureAtlas.class);
+    }
+
+    public static TextureAtlas getBackgroundAtlas() {
+        return getManager().get(Constants.Paths.Videos.BACKGROUND, TextureAtlas.class);
     }
 
     public static Animation<TextureRegion> getShockwaveVfx() {
