@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.I18NBundle;
+import com.ray3k.stripe.FreeTypeSkinLoader;
 
 import java.util.Locale;
 
@@ -47,13 +48,14 @@ public class Assets {
         );
     }
 
-    public static void loadAssets() {
+    public static void queueAssets() {
+        getManager().setLoader(Skin.class, new FreeTypeSkinLoader(getManager().getFileHandleResolver()));
         getManager().load(Constants.Paths.SKIN, Skin.class);
         getManager().load(Constants.Paths.Textures.KNIGHT_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
-        getManager().load(Constants.Paths.Textures.HUD_ATLAS, TextureAtlas.class);
+        getManager().load(Constants.Paths.Textures.UI_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Videos.BACKGROUND, TextureAtlas.class);
         getManager().load(Constants.Paths.Sounds.BGM_MENU, Music.class);
         getManager().load(Constants.Paths.Sounds.BGM_CROSSROADS, Music.class);
@@ -67,7 +69,6 @@ public class Assets {
 //        getManager().load(Constants.Paths.Sounds.SFX_FOCUS, Sound.class);
 //        getManager().load(Constants.Paths.Sounds.SFX_SPELL_CAST, Sound.class);
 //        getManager().load(Constants.Paths.Sounds.SFX_ZOTE, Sound.class);
-        getManager().finishLoading();
     }
 
     public static Skin getSkin() {
@@ -90,8 +91,8 @@ public class Assets {
         return getManager().get(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
     }
 
-    public static TextureAtlas getHudAtlas() {
-        return getManager().get(Constants.Paths.Textures.HUD_ATLAS, TextureAtlas.class);
+    public static TextureAtlas getUiAtlas() {
+        return getManager().get(Constants.Paths.Textures.UI_ATLAS, TextureAtlas.class);
     }
 
     public static TextureAtlas getBackgroundAtlas() {

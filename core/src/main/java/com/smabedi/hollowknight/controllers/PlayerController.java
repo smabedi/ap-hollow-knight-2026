@@ -37,7 +37,6 @@ public class PlayerController {
         this.eventCallback = eventCallback;
         this.damageAnimation = damageAnimation;
 
-        // HACK: Added for debug, remove later.
         inventory.addOwnedCharm(CharmType.SOUL_CATCHER);
         inventory.addOwnedCharm(CharmType.DASHMASTER);
         inventory.addOwnedCharm(CharmType.UNBREAKABLE_STRENGTH);

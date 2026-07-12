@@ -11,6 +11,7 @@ import com.smabedi.hollowknight.models.entities.enemies.HuskHornhead;
 public class HuskHornheadRenderer implements EntityRenderer {
     private final HuskHornhead hornhead;
     private float stateTimer = 0f;
+    private boolean facingRight = true;
 
     // Visual states diverge slightly from logical states to allow for transition animations
     private enum VisualState { IDLE, WALK, ANTICIPATE, ATTACK, DEAD }
@@ -75,9 +76,15 @@ public class HuskHornheadRenderer implements EntityRenderer {
         // 3. Flipping logic (Default asset faces LEFT)
         float velX = hornhead.b2body.getLinearVelocity().x;
 
-        if (velX > 0 && !currentFrame.isFlipX()) {
+        if (velX > 0.2f) {
+            facingRight = true;
+        } else if (velX < -0.2f) {
+            facingRight = false;
+        }
+
+        if (facingRight && !currentFrame.isFlipX()) {
             currentFrame.flip(true, false);
-        } else if (velX < 0 && currentFrame.isFlipX()) {
+        } else if (!facingRight && currentFrame.isFlipX()) {
             currentFrame.flip(true, false);
         }
 

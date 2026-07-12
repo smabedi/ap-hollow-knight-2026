@@ -175,7 +175,7 @@ public class Knight {
             System.out.println("Emergency Heal prevented death! Taking knockback.");
         }
 
-        eventCallback.setCameraTrauma(1f);
+        eventCallback.setCameraTrauma(0.75f);
         health -= amount;
         // Interrupt focus if we get hit!
         isFocusing = false;

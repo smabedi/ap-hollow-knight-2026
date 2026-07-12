@@ -1,4 +1,4 @@
-name=hud
+name=ui
 filename=
 output=.
 
@@ -12,7 +12,7 @@ filterMag=Nearest
 filterMin=Nearest
 ignoreBlankImages=true
 maxHeight=2048
-maxWidth=2048
+maxWidth=4096
 minHeight=16
 minWidth=16
 paddingX=2
@@ -34,7 +34,7 @@ prettyPrint=false
 legacyOutput=false
 
 scaleFactors=[{suffix:"",factor:1,resampling:bicubic}]
-inputFiles=[{path:../../../../E4 resources/animation/HUD/atlas,type:Input,dirFilePrefix:null,recursive:false,flattenPaths:false}]
+inputFiles=[{path:../../../../E4 resources/animation/HUD/atlas,type:Input,dirFilePrefix:null,recursive:false,flattenPaths:false},{path:../../../../E4 resources/Hollow Knight sprites/atlas,type:Input,dirFilePrefix:null,recursive:false,flattenPaths:false},{path:../logo.png,type:Input,regionName:null}]
 keepInputFileExtensions=false
 
 

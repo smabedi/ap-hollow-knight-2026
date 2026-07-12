@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
@@ -67,6 +68,8 @@ public class GameScreen implements Screen {
     public static final Array<VfxInstance> vfxList = new Array<>();
     private AmbientParticles ambientParticles;
     private AchievementManager achievementManager;
+    private final com.badlogic.gdx.graphics.glutils.ShaderProgram worldShader;
+    private float currentSaturation = 1f;
 
     public GameScreen(GameSession session) {
         this.session = session;
@@ -78,6 +81,53 @@ public class GameScreen implements Screen {
 
         // The Debug Renderer draws colored outlines around the hitboxes, for now.
         b2dr = new Box2DDebugRenderer();
+
+        // --- COMPILE POST-PROCESSING SHADER ---
+        String vertexShader =
+            """
+                attribute vec4 a_position;
+                attribute vec4 a_color;
+                attribute vec2 a_texCoord0;
+                uniform mat4 u_projTrans;
+                varying vec4 v_color;
+                varying vec2 v_texCoords;
+                void main() {
+                    v_color = a_color;
+                    v_color.a = v_color.a * (255.0/254.0);
+                    v_texCoords = a_texCoord0;
+                    gl_Position = u_projTrans * a_position;
+                }""";
+
+        String fragmentShader =
+            """
+                #ifdef GL_ES
+                #define LOWP lowp
+                precision mediump float;
+                #else
+                #define LOWP
+                #endif
+                varying LOWP vec4 v_color;
+                varying vec2 v_texCoords;
+                uniform sampler2D u_texture;
+                uniform float u_brightness;
+                uniform float u_saturation;
+                void main() {
+                    vec4 color = v_color * texture2D(u_texture, v_texCoords);
+                    // Apply Brightness
+                    color.rgb *= u_brightness;
+                    // Apply Saturation
+                    float luminance = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                    vec3 grayscale = vec3(luminance);
+                    color.rgb = mix(grayscale, color.rgb, u_saturation);
+                    gl_FragColor = color;
+                }""";
+
+        ShaderProgram.pedantic = false;
+        worldShader = new ShaderProgram(vertexShader, fragmentShader);
+
+        if (!worldShader.isCompiled()) {
+            System.err.println("Shader Compilation Failed: " + worldShader.getLog());
+        }
 
         loadMap(session.location);
     }
@@ -150,7 +200,7 @@ public class GameScreen implements Screen {
                         // next main OpenGL render frame, avoiding native threading collisions!
                         Gdx.app.postRunnable(() -> ScreenManager.setEndGameScreen(session));
                     }
-                }, 1.0f);
+                }, 1f);
             }
 
             @Override
@@ -478,6 +528,32 @@ public class GameScreen implements Screen {
         float viewHeight = camera.viewportHeight + (overscan * 2);
 
         // =========================================================
+        // SHADER CALCULATIONS (Brightness & Health Saturation)
+        // =========================================================
+        float targetSaturation = 1f;
+
+        if (player != null) {
+            if (player.health == 2) {
+                targetSaturation = 0.5f; // 50% saturation
+            } else if (player.health <= 1) {
+                targetSaturation = 0.1f; // 10% saturation
+            }
+        }
+
+        // Lerp the saturation for a smooth fade effect
+        float transitionSpeed = 1.5f; // Adjust to make the fade faster or slower
+        currentSaturation = MathUtils.lerp(currentSaturation, targetSaturation, delta * transitionSpeed);
+
+        // Bind the shader and inject our variables
+        worldShader.bind();
+        worldShader.setUniformf("u_brightness", GameSettings.getBrightness());
+        worldShader.setUniformf("u_saturation", currentSaturation);
+
+        // Lock the shader onto our renderers
+        renderer.getBatch().setShader(worldShader);
+        batch.setShader(worldShader);
+
+        // =========================================================
         // PASS 1: BACKGROUNDS (Slow Parallax)
         // =========================================================
         camera.position.set(anchorX + (travelX * 0.5f) + shakeOffsetX, anchorY + (travelY * 0.5f) + shakeOffsetY, 0);
@@ -615,6 +691,11 @@ public class GameScreen implements Screen {
         // FIXED: Removed batch.begin() and batch.end() here because AmbientParticles handles it internally!
         ambientParticles.updateAndRender(renderDelta, camera, batch);
 
+        // --- SHADER RESET ---
+        // Wipe the shader so the HUD, Overlays, and Menus render normally!
+        batch.setShader(null);
+        renderer.getBatch().setShader(null);
+
         // =========================================================
         // PASS 5: PURE VIEW HUD OVERLAY
         // =========================================================
@@ -674,6 +755,7 @@ public class GameScreen implements Screen {
         gameUI.dispose();
         b2dr.dispose();
         if (hudRenderer != null) hudRenderer.dispose();
+        if (worldShader != null) worldShader.dispose();
     }
 
     private void setupInputProcessors() {

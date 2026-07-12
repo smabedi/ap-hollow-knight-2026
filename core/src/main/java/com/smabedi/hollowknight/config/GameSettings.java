@@ -3,6 +3,7 @@ package com.smabedi.hollowknight.config;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Preferences;
+import com.smabedi.hollowknight.models.entities.enemies.EnemyType;
 
 public class GameSettings {
     private static final String PREF_NAME = "hollow_knight_settings";
@@ -14,6 +15,7 @@ public class GameSettings {
     public static final String SFX_MUTE = "sfx_mute";
     public static final String BRIGHTNESS = "brightness";
     public static final String LANGUAGE = "language"; // "en" for English and "fr" for French
+    public static final String MENU_THEME = "menu_theme";
 
     // Keybind Keys
     public static final String KEY_LEFT = "key_left";
@@ -34,6 +36,11 @@ public class GameSettings {
             resetControls();
             setBrightness(1f);
             setLanguage("en");
+            setMenuTheme("theme_void");
+            for (EnemyType type : EnemyType.values()) {
+                prefs.putBoolean("killed_" + type.name(), false);
+            }
+            prefs.flush();
         }
     }
 
@@ -118,5 +125,24 @@ public class GameSettings {
     public static void unlockAchievement(String achievementId) {
         prefs.putBoolean("achv_" + achievementId, true);
         prefs.flush();
+    }
+
+    public static String getMenuTheme() {
+        return prefs.getString(MENU_THEME, "theme_void");
+    }
+
+    public static void setMenuTheme(String theme) {
+        prefs.putString(MENU_THEME, theme);
+        prefs.flush();
+    }
+
+    // Add these two methods to your GameSettings class
+    public static void registerEnemyKill(String enemyName) {
+        prefs.putBoolean("killed_" + enemyName, true);
+        prefs.flush();
+    }
+
+    public static boolean hasKilledEnemy(String enemyName) {
+        return prefs.getBoolean("killed_" + enemyName, false);
     }
 }

@@ -11,11 +11,14 @@ import com.smabedi.hollowknight.views.menus.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.smabedi.hollowknight.views.ScreenType.START_GAME;
+
 public final class ScreenManager {
     private static Main main;
     private static final Map<ScreenType, Screen> screens = new HashMap<>();
     @SuppressWarnings("GDXJavaStaticResource")
     private static GameScreen currentGameScreen;
+    @SuppressWarnings("GDXJavaStaticResource")
     private static EndGameScreen currentEndGameScreen;
 
     private ScreenManager() {
@@ -34,7 +37,7 @@ public final class ScreenManager {
                 case START_GAME -> new StartGameMenuScreen();
                 case SETTINGS -> new SettingsMenuScreen();
                 case GUIDE -> new GuideMenuScreen();
-                case ACHIEVEMENTS -> new AchievementsMenuScreen(); // Added routing
+                case ACHIEVEMENTS -> new AchievementsMenuScreen();
             };
             screens.put(type, newScreen);
         }
@@ -72,6 +75,9 @@ public final class ScreenManager {
         if (currentGameScreen != null) {
             currentGameScreen.dispose();
             currentGameScreen = null;
+        }
+        if (screens.containsKey(START_GAME)) {
+            reloadLanguage();
         }
     }
 

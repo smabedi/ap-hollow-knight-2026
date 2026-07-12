@@ -19,10 +19,19 @@ public class AchievementManager {
     }
 
     public void evaluateEnemyKill(EnemyType enemyType) {
-        session.killedEnemyTypes.add(enemyType);
+        // Log the kill globally
+        GameSettings.registerEnemyKill(enemyType.name());
 
-        // Dynamically checks against the total number of enum values!
-        if (session.killedEnemyTypes.size() >= EnemyType.values().length) {
+        // Check if ALL types have been killed across any save file
+        boolean allKilled = true;
+        for (EnemyType type : EnemyType.values()) {
+            if (!GameSettings.hasKilledEnemy(type.name())) {
+                allKilled = false;
+                break;
+            }
+        }
+
+        if (allKilled) {
             unlock("TRUE_HUNTER");
         }
     }
