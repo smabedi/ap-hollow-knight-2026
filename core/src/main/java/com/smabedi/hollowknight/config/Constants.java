@@ -13,8 +13,8 @@ public final class Constants {
         public static final String LANG_MANAGEMENT = "i18n/";
         public static final String STRINGS = LANG_MANAGEMENT + "strings";
         public static final String MAPS = "maps/";
-        public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads.tmx";
-        public static final String GREENPATH = MAPS + "greenpath.tmx";
+        public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads_test.tmx";
+        public static final String GREENPATH = MAPS + "greenpath_test.tmx";
 
         public static final class Saves {
             public static final String ROOT = "saves/";
@@ -28,6 +28,7 @@ public final class Constants {
             public static final String VFX_ATLAS = ROOT + "vfx/vfx.atlas";
             public static final String ENTITY_ATLAS = ROOT + "entities/entities.atlas";
             public static final String BOSS_ATLAS = ROOT + "boss/boss.atlas";
+            public static final String HUD_ATLAS = ROOT + "hud/hud.atlas";
         }
 
         public static final class Videos {

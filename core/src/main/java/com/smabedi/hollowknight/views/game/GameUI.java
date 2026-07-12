@@ -144,9 +144,6 @@ public class GameUI {
             + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
             + Input.Keys.toString(Constants.Cheats.Keys.TIME_DILATION), skin)).row();
 
-/*        ScrollPane scrollPane = new ScrollPane(cheatsTable, skin);
-        scrollPane.setFadeScrollBars(false);
-        pauseMenu.add(scrollPane).height(150).width(350).row();*/
         pauseMenu.add(cheatsTable).height(150).width(350).row();
 
         pauseMenu.setVisible(false);

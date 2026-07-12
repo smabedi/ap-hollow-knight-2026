@@ -86,6 +86,7 @@ public class EndGameScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
+                dispose();
             }
         });
         root.add(mainMenuBtn).width(200);

@@ -51,6 +51,7 @@ public class Assets {
         getManager().load(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
         getManager().load(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
+        getManager().load(Constants.Paths.Textures.HUD_ATLAS, TextureAtlas.class);
         getManager().finishLoading();
     }
 
@@ -72,6 +73,10 @@ public class Assets {
 
     public static TextureAtlas getBossAtlas() {
         return getManager().get(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
+    }
+
+    public static TextureAtlas getHudAtlas() {
+        return getManager().get(Constants.Paths.Textures.HUD_ATLAS, TextureAtlas.class);
     }
 
     public static Animation<TextureRegion> getShockwaveVfx() {
