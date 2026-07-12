@@ -8,10 +8,12 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
@@ -22,6 +24,7 @@ import com.smabedi.hollowknight.models.inventory.CharmType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
+import com.smabedi.hollowknight.views.customelements.IconTextItem;
 
 import static com.badlogic.gdx.math.Interpolation.pow2In;
 import static com.badlogic.gdx.math.Interpolation.pow2Out;
@@ -39,7 +42,7 @@ public class GameUI {
     private Label charmDescription;
     private Table charmsGrid;
     private Table toastContainer;
-    private TextureRegionDrawable toastBackground;
+    private TextureRegionDrawable blackBackground;
     private Table dialogBox;
     private Label dialogTextLabel;
     private String targetText = "";
@@ -76,6 +79,7 @@ public class GameUI {
         pixmap.dispose();
 
         Label title = new Label(Assets.getString("paused"), skin);
+        title.setColor(Color.GOLD);
         pauseMenu.add(title).padBottom(20).row();
 
         // --- BUTTONS ---
@@ -123,7 +127,7 @@ public class GameUI {
 
         Label cheatsTitle = new Label("--- " + Assets.getString("cheat_codes") + " ---", skin);
         cheatsTitle.setColor(Color.GOLD);
-        cheatsTable.add(cheatsTitle).center().padBottom(10).row();
+        cheatsTable.add(cheatsTitle).center().padTop(50).padBottom(10).row();
 
         cheatsTable.add(new Label(Assets.getString("guide_cheat_boss") + ": "
             + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
@@ -156,7 +160,7 @@ public class GameUI {
         dialogBox.setFillParent(true);
 
         // Dark background for readability
-        dialogBox.setBackground(toastBackground); // Reusing the toast background
+        dialogBox.setBackground(blackBackground); // Reusing the toast background
 
         dialogTextLabel = new Label("", skin);
         dialogTextLabel.setWrap(true);
@@ -173,7 +177,7 @@ public class GameUI {
         pixmap.setColor(new Color(0, 0, 0, 0.6f));
         pixmap.fill();
         Texture bgTex = new Texture(pixmap);
-        toastBackground = new TextureRegionDrawable(new TextureRegion(bgTex));
+        blackBackground = new TextureRegionDrawable(new TextureRegion(bgTex));
         pixmap.dispose();
 
         toastContainer = new Table();
@@ -218,10 +222,9 @@ public class GameUI {
     public void showToast(String message) {
         // 1. Create the core toast box
         Table toastBox = new Table();
-        toastBox.setBackground(toastBackground);
-        toastBox.padRight(10).padBottom(10);
 
         Label toastLabel = new Label(message, skin);
+        toastLabel.setColor(Color.GOLD);
         toastLabel.setAlignment(right);
 
         toastBox.add(toastLabel).align(right);
@@ -286,6 +289,7 @@ public class GameUI {
         pixmap.dispose();
 
         Label title = new Label(Assets.getString("inventory"), skin);
+        title.setColor(Color.GOLD);
         inventoryMenu.add(title).row();
 
         notchLabel = new Label("", skin);
@@ -294,9 +298,9 @@ public class GameUI {
         charmsGrid = new Table();
         inventoryMenu.add(charmsGrid).expandX().fillX().row();
 
-        charmDescription = new Label(Assets.getString("select_a_charm"), skin);
+        charmDescription = new Label(Assets.getString("select_a_charm"), skin, "small");
         charmDescription.setWrap(true);
-        charmDescription.setAlignment(com.badlogic.gdx.utils.Align.center);
+        charmDescription.setAlignment(Align.center);
         inventoryMenu.add(charmDescription).width(800).padTop(30);
 
         inventoryMenu.setVisible(false);
@@ -312,15 +316,20 @@ public class GameUI {
         for (CharmType charm : inventory.getOwnedCharms()) {
             boolean isEquipped = inventory.isEquipped(charm);
 
-            // Append (EQ) if equipped for basic visual feedback
-            String btnText = charm.getName() + (isEquipped ? " (EQ)" : "");
-            TextButton charmBtn = new TextButton(btnText, skin);
+            // Determine the exact region name based on the equipped state
+            String regionName = charm.getLangKey() + (isEquipped ? "" : "_deactive");
 
-            if (isEquipped) {
-                charmBtn.setColor(Color.LIME); // Highlight equipped charms
-            }
+            // Fetch the correct icon from the HUD atlas
+            TextureRegion charmIcon = Assets.getUiAtlas().findRegion(regionName);
 
-            charmBtn.addListener(new ClickListener() {
+            // Instantiate the custom actor with vertical layout (icon on top, name below)
+            // We pass null for the description so it doesn't render text next to it
+            IconTextItem charmElement = new IconTextItem(charmIcon, charm.getName(), null, skin, true, !isEquipped);
+
+            // Ensure the Table catches the click events
+            charmElement.setTouchable(Touchable.enabled);
+
+            charmElement.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
                     if (isEquipped) {
@@ -328,12 +337,15 @@ public class GameUI {
                     } else {
                         inventory.equipCharm(charm);
                     }
+                    // Update the dedicated description label located elsewhere in your UI
                     charmDescription.setText(charm.getDescription());
-                    refreshInventoryUI(); // Rebuild the grid to update colors/text
+
+                    // Rebuild the grid to instantly refresh the icon textures
+                    refreshInventoryUI();
                 }
             });
 
-            charmsGrid.add(charmBtn).width(200).height(50).pad(10);
+            charmsGrid.add(charmElement).pad(15);
             col++;
             if (col >= 4) { // 4 charms per row
                 col = 0;

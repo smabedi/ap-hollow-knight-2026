@@ -12,7 +12,7 @@ public enum CharmType {
     SHARP_SHADOW,
     VOID_HEART;
 
-    private String getLangKey() {
+    public String getLangKey() {
         return this.name().toLowerCase();
     }
 

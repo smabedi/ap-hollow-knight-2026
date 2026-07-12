@@ -54,7 +54,7 @@ public class HudRenderer {
         this.uiViewport = new ExtendViewport(Constants.UI.DEFAULT_WIDTH, Constants.UI.DEFAULT_HEIGHT, uiCamera);
 
         // 2. Load Textures directly from your HUD Atlas
-        TextureAtlas atlas = Assets.getHudAtlas();
+        TextureAtlas atlas = Assets.getUiAtlas();
         this.baseBar = atlas.findRegion("healthbar");
         this.maskCircle = atlas.findRegion("healthbar_mask");
         this.eyes = atlas.findRegion("healthbar_eyes");

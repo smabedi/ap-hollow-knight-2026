@@ -41,7 +41,11 @@ public class SettingsMenuScreen extends MenuScreen {
         leftCol.add(volSlider).width(200).padLeft(20).row();
 
         Table audioToggles = new Table();
-        CheckBox sfxCheck = new CheckBox(Assets.getString("sfx"), skin);
+
+        Label muteLabel = new Label(Assets.getString("audio"), skin);
+
+
+        CheckBox sfxCheck = new CheckBox(" " + Assets.getString("sfx"), skin);
         sfxCheck.setChecked(GameSettings.shouldPlaySFX());
 
         sfxCheck.addListener(new ChangeListener() {
@@ -51,7 +55,7 @@ public class SettingsMenuScreen extends MenuScreen {
             }
         });
 
-        CheckBox musicCheck = new CheckBox(Assets.getString("music"), skin);
+        CheckBox musicCheck = new CheckBox(" " + Assets.getString("music"), skin);
         musicCheck.setChecked(GameSettings.shouldPlayMusic());
 
         musicCheck.addListener(new ChangeListener() {
@@ -61,12 +65,13 @@ public class SettingsMenuScreen extends MenuScreen {
             }
         });
 
-        TextButton resetAudioBtn = new TextButton(Assets.getString("reset"), skin);
+        TextButton resetAudioBtn = new TextButton(Assets.getString("reset"), skin, "small");
 
-        audioToggles.add(sfxCheck).padRight(15);
-        audioToggles.add(musicCheck).padRight(15);
-        audioToggles.add(resetAudioBtn);
-        leftCol.add(audioToggles).colspan(2).padTop(20).padBottom(30).row();
+        audioToggles.add(muteLabel).padRight(65);
+        audioToggles.add(sfxCheck).padRight(65);
+        audioToggles.add(musicCheck).padRight(65);
+        audioToggles.add(resetAudioBtn).width(70);
+        leftCol.add(audioToggles).left().colspan(2).padTop(20).padBottom(30).row();
 
         leftCol.add(new Label(Assets.getString("brightness"), skin)).left();
         Slider brightSlider = new Slider(0f, 2f, 0.1f, false, skin);
@@ -103,6 +108,48 @@ public class SettingsMenuScreen extends MenuScreen {
 
         mainColumns.add(leftCol).padRight(50);
 
+        leftCol.add(new Label(Assets.getString("menu_theme"), skin)).left().padTop(30).row();
+        SelectBox<String> themeBox = new SelectBox<>(skin);
+
+        // Populate the localized display names
+        themeBox.setItems(
+            Assets.getString("theme_void"),
+            Assets.getString("theme_void_heart"),
+            Assets.getString("theme_grimm_troupe"),
+            Assets.getString("theme_eternal_ordeal")
+        );
+
+        // Map the stored raw key back to the localized display name for the default selection
+        String currentThemeKey = GameSettings.getMenuTheme();
+        themeBox.setSelected(Assets.getString(currentThemeKey));
+
+        themeBox.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                String selectedDisplay = themeBox.getSelected();
+                String newThemeKey = "theme_void"; // Fallback
+
+                // Reverse-map the localized string back to the raw key
+                if (selectedDisplay.equals(Assets.getString("theme_void_heart"))) {
+                    newThemeKey = "theme_void_heart";
+                } else if (selectedDisplay.equals(Assets.getString("theme_grimm_troupe"))) {
+                    newThemeKey = "theme_grimm_troupe";
+                } else if (selectedDisplay.equals(Assets.getString("theme_eternal_ordeal"))) {
+                    newThemeKey = "theme_eternal_ordeal";
+                }
+
+                if (!newThemeKey.equals(GameSettings.getMenuTheme())) {
+                    GameSettings.setMenuTheme(newThemeKey);
+
+                    // Re-run the screen clear sequence to enforce the new background safely
+                    ScreenManager.reloadLanguage();
+                    ScreenManager.setMenuScreen(ScreenType.SETTINGS);
+                }
+            }
+        });
+
+        leftCol.add(themeBox).width(200).padTop(10).padLeft(20).row();
+
         Table rightCol = new Table();
         rightCol.top().right();
 
@@ -120,7 +167,7 @@ public class SettingsMenuScreen extends MenuScreen {
         addKeybindRow(keysTable, Assets.getString("inventory"), GameSettings.KEY_INVENTORY);
 
         ScrollPane scrollPane = new ScrollPane(keysTable, skin);
-        rightCol.add(scrollPane).height(200).width(300).row();
+        rightCol.add(scrollPane).height(200).width(450).row();
 
         TextButton resetKeysBtn = new TextButton(Assets.getString("reset_keyboard"), skin);
         rightCol.add(resetKeysBtn).padTop(20).fillX();
@@ -188,7 +235,7 @@ public class SettingsMenuScreen extends MenuScreen {
         table.add(new Label(labelName, skin)).left().expandX();
 
         int currentKeyCode = GameSettings.getKey(actionKey);
-        TextButton keyBtn = new TextButton(Input.Keys.toString(currentKeyCode), skin);
+        TextButton keyBtn = new TextButton(Input.Keys.toString(currentKeyCode), skin, "small");
         table.add(keyBtn).width(100).right().row();
 
         keyBtn.addListener(new ClickListener() {

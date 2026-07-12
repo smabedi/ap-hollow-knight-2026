@@ -1,11 +1,8 @@
 package com.smabedi.hollowknight.models.game;
 
 import com.smabedi.hollowknight.config.Constants;
-import com.smabedi.hollowknight.models.entities.enemies.EnemyType;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.game.LocationType;
-
-import java.util.HashSet;
 
 public class GameSession {
     public int slotIndex;
@@ -43,7 +40,6 @@ public class GameSession {
     public boolean pendingTransition = false;
     public LocationType nextLocation;
     public boolean pendingBossTeleport = false;
-    public HashSet<EnemyType> killedEnemyTypes = new HashSet<>();
     public transient boolean isOneSitting = true;
 
     // Default constructor required for LibGDX JSON deserialization
@@ -81,9 +77,9 @@ public class GameSession {
 
         // 2. Increment Playtime
         playtimeAccumulator += dt;
-        if (playtimeAccumulator >= 1.0f) {
+        if (playtimeAccumulator >= 1f) {
             playtime++; // Add one second
-            playtimeAccumulator -= 1.0f; // Carry over any extra fractions of a second
+            playtimeAccumulator -= 1f; // Carry over any extra fractions of a second
         }
     }
 

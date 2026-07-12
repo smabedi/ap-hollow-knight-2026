@@ -33,7 +33,7 @@ public class EndGameScreen implements Screen {
     public EndGameScreen(GameSession session) {
         this.session = session;
         this.skin = Assets.getSkin();
-        this.videoAnimation = new Animation<>(0.1f, Assets.getBackgroundAtlas().findRegions("eternal-ordeal"), Animation.PlayMode.LOOP);
+        this.videoAnimation = new Animation<>(0.1f, Assets.getBackgroundAtlas().findRegions("eternal_ordeal"), Animation.PlayMode.LOOP);
 
         ScreenViewport viewport = new ScreenViewport();
         viewport.setUnitsPerPixel(1f / Constants.UI.UPP);

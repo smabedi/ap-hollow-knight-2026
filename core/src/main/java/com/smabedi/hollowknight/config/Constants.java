@@ -28,7 +28,10 @@ public final class Constants {
             public static final String VFX_ATLAS = ROOT + "vfx/vfx.atlas";
             public static final String ENTITY_ATLAS = ROOT + "entities/entities.atlas";
             public static final String BOSS_ATLAS = ROOT + "boss/boss.atlas";
-            public static final String HUD_ATLAS = ROOT + "hud/hud.atlas";
+            public static final String UI_ROOT = ROOT + "ui/";
+            public static final String UI_ATLAS = UI_ROOT + "ui.atlas";
+            public static final String CURSOR = UI_ROOT + "cursor.png";
+            public static final String SPLASH_LOGO = UI_ROOT + "loading.png";
         }
 
         public static final class Videos {
@@ -38,6 +41,7 @@ public final class Constants {
 
         public static final class Sounds {
             public static final String ROOT = "sounds/";
+            public static final String SPLASH = ROOT + "splash_sound.wav";
             public static final String BGM_MENU = ROOT + "menu.mp3";
             public static final String BGM_CROSSROADS = ROOT + "crossroads.mp3";
             public static final String BGM_GREENPATH = ROOT + "greenpath.mp3";

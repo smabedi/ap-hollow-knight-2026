@@ -183,7 +183,7 @@ public class FalseKnight extends Enemy {
                     if (subStateTimer <= 0) {
                         currentMove = BossMove.IDLE;
                         // Halve the breathing room between attacks in Phase 2
-                        moveTimer = (currentPhase == BossPhase.PHASE_2) ? 0.5f : 1.0f;
+                        moveTimer = (currentPhase == BossPhase.PHASE_2) ? 0.5f : 1f;
                     }
                 }
                 break;
@@ -234,7 +234,7 @@ public class FalseKnight extends Enemy {
                     eventCallback.setCameraTrauma(0.5f);
 
                     // ADDED: Stop if he reaches you, OR if the timer runs out, OR if he hits a wall (x velocity drops)
-                    if (dist < 2.0f || subStateTimer <= 0 || Math.abs(b2body.getLinearVelocity().x) < 0.5f) {
+                    if (dist < 2f || subStateTimer <= 0 || Math.abs(b2body.getLinearVelocity().x) < 0.5f) {
                         currentSubState = BossSubState.RECOVERY;
                         subStateTimer = 0.6f;
                     }
@@ -243,7 +243,7 @@ public class FalseKnight extends Enemy {
                     subStateTimer -= dt;
                     if (subStateTimer <= 0) {
                         currentMove = BossMove.IDLE;
-                        moveTimer = 1.0f;
+                        moveTimer = 1f;
                     }
                 }
                 break;
@@ -284,7 +284,7 @@ public class FalseKnight extends Enemy {
 
         hp -= amount;
         recentDamageCount++;
-        damageTimer = 2.0f; // Boss remembers hits for 2 seconds
+        damageTimer = 2f; // Boss remembers hits for 2 seconds
 
         System.out.println("False Knight hit! HP: " + hp);
 

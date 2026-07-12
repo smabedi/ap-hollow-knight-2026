@@ -1,7 +1,9 @@
 package com.smabedi.hollowknight.views.menus;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -19,11 +21,24 @@ public class MainMenuScreen extends MenuScreen {
 
         Table mainOptionsWrapper = new Table();
         mainOptionsWrapper.center();
-        mainOptionsWrapper.defaults().width(300).spaceBottom(50);
+        // Removed global width constraint so the logo can render at full size
+        mainOptionsWrapper.defaults().spaceBottom(50);
         stack.add(mainOptionsWrapper);
 
+        // --- INJECT CUSTOM LOGO ---
+        TextureRegion logoRegion = Assets.getUiAtlas().findRegion("logo");
+        Image logoImage = new Image(logoRegion);
+
+        // Force the high-res image to scale down and maintain its aspect ratio
+        logoImage.setScaling(com.badlogic.gdx.utils.Scaling.fit);
+
+        // Constrain the layout cell so it doesn't push your buttons off the screen
+        // (Tweak the 900 and 250 values to get the exact size you want)
+        mainOptionsWrapper.add(logoImage).width(900).height(250).padBottom(60).row();
+
+        // --- BUTTONS ---
         TextButton startGameBtn = new TextButton(Assets.getString("start_game"), skin);
-        mainOptionsWrapper.add(startGameBtn).row();
+        mainOptionsWrapper.add(startGameBtn).width(300).row(); // Restored 300 width constraint directly to the button
 
         startGameBtn.addListener(new ClickListener() {
             @Override
@@ -33,7 +48,7 @@ public class MainMenuScreen extends MenuScreen {
         });
 
         TextButton achievementsBtn = new TextButton(Assets.getString("achievements"), skin);
-        mainOptionsWrapper.add(achievementsBtn).row();
+        mainOptionsWrapper.add(achievementsBtn).width(300).row(); // Restored 300 width constraint
 
         achievementsBtn.addListener(new ClickListener() {
             @Override
@@ -43,7 +58,7 @@ public class MainMenuScreen extends MenuScreen {
         });
 
         TextButton quitGameBtn = new TextButton(Assets.getString("quit_game"), skin);
-        mainOptionsWrapper.add(quitGameBtn).row();
+        mainOptionsWrapper.add(quitGameBtn).width(300).row(); // Restored 300 width constraint
 
         quitGameBtn.addListener(new ClickListener() {
             @Override
@@ -52,6 +67,7 @@ public class MainMenuScreen extends MenuScreen {
             }
         });
 
+        // --- CORNER MENU BUTTONS ---
         Table guideBtnWrapper = new Table();
         guideBtnWrapper.top().left().pad(50);
         stack.add(guideBtnWrapper);
@@ -59,7 +75,6 @@ public class MainMenuScreen extends MenuScreen {
         TextButton guideBtn = new TextButton(Assets.getString("guide"), skin);
         guideBtnWrapper.add(guideBtn).width(150);
 
-        // Add this ClickListener:
         guideBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
