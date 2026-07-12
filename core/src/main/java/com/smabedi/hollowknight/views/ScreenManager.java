@@ -2,6 +2,8 @@ package com.smabedi.hollowknight.views;
 
 import com.badlogic.gdx.Screen;
 import com.smabedi.hollowknight.Main;
+import com.smabedi.hollowknight.config.AudioManager;
+import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.game.GameScreen;
 import com.smabedi.hollowknight.views.menus.*;
@@ -14,6 +16,7 @@ public final class ScreenManager {
     private static final Map<ScreenType, Screen> screens = new HashMap<>();
     @SuppressWarnings("GDXJavaStaticResource")
     private static GameScreen currentGameScreen;
+    private static EndGameScreen currentEndGameScreen;
 
     private ScreenManager() {
     }
@@ -23,6 +26,8 @@ public final class ScreenManager {
     }
 
     public static void setMenuScreen(ScreenType type) {
+        AudioManager.playMusic(Constants.Paths.Sounds.BGM_MENU, true);
+
         if (!screens.containsKey(type)) {
             Screen newScreen = switch (type) {
                 case MAIN -> new MainMenuScreen();
@@ -45,8 +50,12 @@ public final class ScreenManager {
     public static void setEndGameScreen(GameSession session) {
         clearGameScreen();
 
-        EndGameScreen endGameScreen = new EndGameScreen(session);
-        main.setScreen(endGameScreen);
+        if (currentEndGameScreen != null) {
+            currentEndGameScreen.dispose();
+        }
+
+        currentEndGameScreen = new EndGameScreen(session);
+        main.setScreen(currentEndGameScreen);
     }
 
     public static boolean isGameActive() {

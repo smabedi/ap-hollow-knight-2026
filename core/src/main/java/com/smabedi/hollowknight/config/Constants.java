@@ -33,12 +33,23 @@ public final class Constants {
 
         public static final class Videos {
             public static final String ROOT = "videos/";
-            public static final String WIN = ROOT + "eternal-ordeal.webm";
+            public static final String BACKGROUND = ROOT + "background.atlas";
         }
 
         public static final class Sounds {
             public static final String ROOT = "sounds/";
-            public static final String WIN = ROOT + "win.mp3";
+            public static final String BGM_MENU = ROOT + "menu.mp3";
+            public static final String BGM_CROSSROADS = ROOT + "crossroads.mp3";
+            public static final String BGM_GREENPATH = ROOT + "greenpath.mp3";
+            public static final String BGM_BOSS = ROOT + "boss.mp3";
+            public static final String BGM_WIN = ROOT + "win.mp3";
+            public static final String BOSS_TRANSITION = ROOT + "boss_transition.wav";
+//            public static final String SFX_NAIL_SLASH = ROOT + "nail_slash.mp3";
+//            public static final String SFX_DASH = ROOT + "dash.mp3";
+//            public static final String SFX_DAMAGE = ROOT + "take_damage.mp3";
+//            public static final String SFX_FOCUS = ROOT + "focus_heal.mp3";
+//            public static final String SFX_SPELL_CAST = ROOT + "spell_cast.mp3";
+//            public static final String SFX_ZOTE = ROOT + "zote_grumble.mp3";
         }
     }
 
