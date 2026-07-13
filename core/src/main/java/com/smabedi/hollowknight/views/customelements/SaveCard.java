@@ -5,8 +5,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.smabedi.hollowknight.config.Assets;
-import com.smabedi.hollowknight.models.game.GameSession;
+import com.smabedi.hollowknight.config.AudioManager;
+import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.repositories.DatabaseManager;
+import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.game.LocationType;
 
@@ -48,6 +50,7 @@ public class SaveCard extends Table {
                     GameSession newSession = new GameSession(slotIndex);
                     DatabaseManager.saveSession(newSession);
                     ScreenManager.setGameScreen(newSession);
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
                 }
             });
         } else {
@@ -74,6 +77,7 @@ public class SaveCard extends Table {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
                     ScreenManager.setGameScreen(session);
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
                 }
             });
         }
@@ -89,6 +93,7 @@ public class SaveCard extends Table {
                 public void clicked(InputEvent event, float x, float y) {
                     DatabaseManager.deleteSession(slotIndex);
                     clearSaveAndRefresh();
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
                 }
             });
         } else {

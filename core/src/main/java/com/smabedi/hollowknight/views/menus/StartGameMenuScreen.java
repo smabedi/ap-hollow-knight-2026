@@ -7,10 +7,12 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.smabedi.hollowknight.config.Assets;
-import com.smabedi.hollowknight.models.game.GameSession;
+import com.smabedi.hollowknight.config.AudioManager;
+import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.repositories.DatabaseManager;
-import com.smabedi.hollowknight.views.ScreenType;
+import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.ScreenManager;
+import com.smabedi.hollowknight.views.ScreenType;
 import com.smabedi.hollowknight.views.customelements.SaveCard;
 
 public class StartGameMenuScreen extends MenuScreen {
@@ -54,6 +56,7 @@ public class StartGameMenuScreen extends MenuScreen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
     }

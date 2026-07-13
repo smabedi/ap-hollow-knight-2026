@@ -48,27 +48,64 @@ public class Assets {
         );
     }
 
+    public static <T> void load(String fileName, Class<T> type) {
+        getManager().load(fileName, type);
+    }
+
     public static void queueAssets() {
         getManager().setLoader(Skin.class, new FreeTypeSkinLoader(getManager().getFileHandleResolver()));
-        getManager().load(Constants.Paths.SKIN, Skin.class);
-        getManager().load(Constants.Paths.Textures.KNIGHT_ATLAS, TextureAtlas.class);
-        getManager().load(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
-        getManager().load(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
-        getManager().load(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
-        getManager().load(Constants.Paths.Textures.UI_ATLAS, TextureAtlas.class);
-        getManager().load(Constants.Paths.Videos.BACKGROUND, TextureAtlas.class);
-        getManager().load(Constants.Paths.Sounds.BGM_MENU, Music.class);
-        getManager().load(Constants.Paths.Sounds.BGM_CROSSROADS, Music.class);
-        getManager().load(Constants.Paths.Sounds.BGM_GREENPATH, Music.class);
-        getManager().load(Constants.Paths.Sounds.BGM_BOSS, Music.class);
-        getManager().load(Constants.Paths.Sounds.BGM_WIN, Music.class);
-        getManager().load(Constants.Paths.Sounds.BOSS_TRANSITION, Sound.class);
-//        getManager().load(Constants.Paths.Sounds.SFX_NAIL_SLASH, Sound.class);
-//        getManager().load(Constants.Paths.Sounds.SFX_DASH, Sound.class);
-//        getManager().load(Constants.Paths.Sounds.SFX_DAMAGE, Sound.class);
-//        getManager().load(Constants.Paths.Sounds.SFX_FOCUS, Sound.class);
-//        getManager().load(Constants.Paths.Sounds.SFX_SPELL_CAST, Sound.class);
-//        getManager().load(Constants.Paths.Sounds.SFX_ZOTE, Sound.class);
+        load(Constants.Paths.SKIN, Skin.class);
+        load(Constants.Paths.Textures.KNIGHT_ATLAS, TextureAtlas.class);
+        load(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
+        load(Constants.Paths.Textures.ENTITY_ATLAS, TextureAtlas.class);
+        load(Constants.Paths.Textures.BOSS_ATLAS, TextureAtlas.class);
+        load(Constants.Paths.Textures.UI_ATLAS, TextureAtlas.class);
+        load(Constants.Paths.Videos.BACKGROUND, TextureAtlas.class);
+        load(Constants.Paths.Sounds.BGM_MENU, Music.class);
+        load(Constants.Paths.Sounds.BGM_CROSSROADS, Music.class);
+        load(Constants.Paths.Sounds.BGM_GREENPATH, Music.class);
+        load(Constants.Paths.Sounds.BGM_BOSS, Music.class);
+        load(Constants.Paths.Sounds.BGM_WIN, Music.class);
+        load(Constants.Paths.Sounds.SFX_BOSS_TRANSITION, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FOCUS, Sound.class);
+        load(Constants.Paths.Sounds.SFX_DAMAGE, Sound.class);
+        load(Constants.Paths.Sounds.SFX_DASH, Sound.class);
+        load(Constants.Paths.Sounds.SFX_JUMP, Sound.class);
+        load(Constants.Paths.Sounds.SFX_RUN, Sound.class);
+        load(Constants.Paths.Sounds.SFX_LAND, Sound.class);
+        load(Constants.Paths.Sounds.SFX_SPELL_CAST, Sound.class);
+        load(Constants.Paths.Sounds.SFX_VOID_SPELL_CAST, Sound.class);
+        load(Constants.Paths.Sounds.SFX_WALL_SLIDE, Sound.class);
+        load(Constants.Paths.Sounds.SFX_NOTIFICATION, Sound.class);
+        load(Constants.Paths.Sounds.SFX_ACHIEVEMENT, Sound.class);
+        load(Constants.Paths.Sounds.SFX_ZOTE_ATTACK, Sound.class);
+        load(Constants.Paths.Sounds.SFX_UI_BUTTON, Sound.class);
+        load(Constants.Paths.Sounds.SFX_MOSSFLY_FLY, Sound.class);
+        load(Constants.Paths.Sounds.SFX_ENEMY_WALKING, Sound.class);
+        load(Constants.Paths.Sounds.SFX_GUARDIAN_RUNNING_LOOP, Sound.class);
+        load(Constants.Paths.Sounds.SFX_LASER_BURST, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_STUN_HIT, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_ARMOR_HIT, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_OPEN_ARMOR_HIT, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_SWING, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_STRIKE, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_POWER_STRIKE, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_JUMP, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_LAND, Sound.class);
+        load(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, Sound.class);
+        load(Constants.Paths.Sounds.SFX_SOUL_FULL, Sound.class);
+        for (String path : Constants.Paths.Sounds.SFX_FK_ROAR) {
+            load(path, Sound.class);
+        }
+        for (String path : Constants.Paths.Sounds.SFX_SOUL_PICKUP) {
+            load(path, Sound.class);
+        }
+        for (String path : Constants.Paths.Sounds.SFX_ZOTE) {
+            load(path, Sound.class);
+        }
+        for (String path : Constants.Paths.Sounds.SFX_SLASH) {
+            load(path, Sound.class);
+        }
     }
 
     public static Skin getSkin() {

@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.views.ScreenManager;
@@ -88,6 +89,7 @@ public class GuideMenuScreen extends MenuScreen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
         root.add(backBtn).width(150).padBottom(30);

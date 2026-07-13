@@ -77,6 +77,7 @@ public class EndGameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
                 dispose();
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
         root.add(mainMenuBtn).width(200);

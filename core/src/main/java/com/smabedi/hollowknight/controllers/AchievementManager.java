@@ -1,6 +1,8 @@
 package com.smabedi.hollowknight.controllers;
 
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
+import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.enemies.EnemyType;
 import com.smabedi.hollowknight.models.game.GameSession;
@@ -55,6 +57,7 @@ public class AchievementManager {
             GameSettings.unlockAchievement(achievementId);
             // Directly trigger the toast in the UI
             gameUI.showToast(Assets.getString("achievements") + ": " + Assets.getString("achv_" + achievementId));
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_ACHIEVEMENT);
         }
     }
 

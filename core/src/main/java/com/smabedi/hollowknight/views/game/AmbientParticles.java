@@ -15,7 +15,7 @@ public class AmbientParticles implements Disposable {
     private final LocationType location;
     private final int maxParticles;
 
-    // A simple internal class to track individual particles
+
     private static class Particle {
         float x, y, size, life, maxLife;
         float vx, vy, swayPhase, swaySpeed;
@@ -25,10 +25,10 @@ public class AmbientParticles implements Disposable {
     public AmbientParticles(LocationType location) {
         this.location = location;
 
-        // Generate a smooth 16x16 soft-edged circle
+
         Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
         float radius = 8f;
-        float coreRadius = 4.5f; // The center will be 100% solid up to this radius
+        float coreRadius = 4.5f;
         float centerX = 8f;
         float centerY = 8f;
 

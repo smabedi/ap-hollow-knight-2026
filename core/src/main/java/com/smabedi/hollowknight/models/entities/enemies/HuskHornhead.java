@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -105,6 +106,22 @@ public class HuskHornhead extends Enemy {
             }
         }
 
+        // --- SPATIAL AUDIO LOGIC ---
+        boolean isMoving = (currentState == HornheadState.WALKING || currentState == HornheadState.CHARGING);
+
+        if (isMoving) {
+            if (loopSoundId == -1) {
+                loopSoundId = AudioManager.loopSpatialSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 15f);
+            } else {
+                AudioManager.updateSpatialSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 15f);
+            }
+        } else {
+            if (loopSoundId != -1) {
+                AudioManager.stopSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId);
+                loopSoundId = -1;
+            }
+        }
+
         // --- 3. HornheadState MACHINE LOGIC ---
         switch (currentState) {
             case WALKING:
@@ -150,12 +167,24 @@ public class HuskHornhead extends Enemy {
         }
     }
 
+    @Override
+    public void die() {
+        super.die();
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId);
+            loopSoundId = -1;
+        }
+    }
 
     @Override
     public void respawn() {
         super.respawn();
         this.currentState = HornheadState.WALKING;
         this.stateTimer = Constants.Enemy.HuskHornhead.WALK_DURATION;
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId);
+            loopSoundId = -1;
+        }
     }
 
     public HornheadState getCurrentState() {

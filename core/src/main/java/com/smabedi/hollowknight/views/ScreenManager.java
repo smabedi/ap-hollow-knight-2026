@@ -79,6 +79,7 @@ public final class ScreenManager {
         if (screens.containsKey(START_GAME)) {
             reloadLanguage();
         }
+        AudioManager.stopAllSfx();
     }
 
     public static void reloadLanguage() {
