@@ -6,8 +6,8 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.smabedi.hollowknight.config.Constants;
-import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.controllers.EventCallback;
+import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public abstract class Enemy implements IDamageable {
@@ -22,6 +22,7 @@ public abstract class Enemy implements IDamageable {
     protected float stunTimer = 0f;
     protected EventCallback eventCallback;
     protected EnemyType type;
+    protected long loopSoundId = -1;
 
     public Enemy(World world, float x, float y, int maxHp, EventCallback eventCallback, EnemyType type) {
         this.world = world;

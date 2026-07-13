@@ -8,9 +8,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
+import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
-import com.smabedi.hollowknight.views.ScreenType;
 import com.smabedi.hollowknight.views.ScreenManager;
+import com.smabedi.hollowknight.views.ScreenType;
 
 public class SettingsMenuScreen extends MenuScreen {
     private String actionToBind = null;
@@ -52,6 +54,7 @@ public class SettingsMenuScreen extends MenuScreen {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 GameSettings.setSfxMute(!sfxCheck.isChecked());
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
 
@@ -62,6 +65,7 @@ public class SettingsMenuScreen extends MenuScreen {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 GameSettings.setMusicMute(!musicCheck.isChecked());
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
 
@@ -188,6 +192,7 @@ public class SettingsMenuScreen extends MenuScreen {
                 } else {
                     ScreenManager.setMenuScreen(ScreenType.MAIN);
                 }
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
 
@@ -198,6 +203,7 @@ public class SettingsMenuScreen extends MenuScreen {
                 volSlider.setValue(GameSettings.getMusicVolume());
                 sfxCheck.setChecked(GameSettings.shouldPlaySFX());
                 musicCheck.setChecked(GameSettings.shouldPlayMusic());
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
 
@@ -206,6 +212,7 @@ public class SettingsMenuScreen extends MenuScreen {
             public void clicked(InputEvent event, float x, float y) {
                 GameSettings.resetControls();
                 ScreenManager.setMenuScreen(ScreenType.SETTINGS);
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
 
@@ -244,6 +251,7 @@ public class SettingsMenuScreen extends MenuScreen {
                 actionToBind = actionKey;
                 buttonToUpdate = keyBtn;
                 keyBtn.setText(Assets.getString("press_key"));
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
     }

@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -54,6 +55,22 @@ public class CrystalGuardian extends Enemy {
 
         Vector2 center = b2body.getWorldCenter();
         float direction = facingRight ? 1f : -1f;
+
+        // --- SPATIAL AUDIO LOGIC ---
+        boolean isMoving = (currentState == GuardianState.ENRAGED || currentState == GuardianState.RETURNING);
+
+        if (isMoving) {
+            if (loopSoundId == -1) {
+                loopSoundId = AudioManager.loopSpatialSfx(Constants.Paths.Sounds.SFX_GUARDIAN_RUNNING_LOOP, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 20f);
+            } else {
+                AudioManager.updateSpatialSfx(Constants.Paths.Sounds.SFX_GUARDIAN_RUNNING_LOOP, loopSoundId, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 20f);
+            }
+        } else {
+            if (loopSoundId != -1) {
+                AudioManager.stopSfx(Constants.Paths.Sounds.SFX_GUARDIAN_RUNNING_LOOP, loopSoundId);
+                loopSoundId = -1;
+            }
+        }
 
         switch (currentState) {
             case IDLE:
@@ -172,6 +189,8 @@ public class CrystalGuardian extends Enemy {
 
             return -1;
         }, center, laserEnd);
+
+        AudioManager.playSpatialSfx(Constants.Paths.Sounds.SFX_LASER_BURST, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 20f);
     }
 
     private boolean isPathBlocked(Vector2 center, float direction) {
@@ -200,10 +219,23 @@ public class CrystalGuardian extends Enemy {
     }
 
     @Override
+    public void die() {
+        super.die();
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_GUARDIAN_RUNNING_LOOP, loopSoundId);
+            loopSoundId = -1;
+        }
+    }
+
+    @Override
     public void respawn() {
         super.respawn();
         this.currentState = GuardianState.IDLE;
         this.facingRight = originalFacingRight;
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_GUARDIAN_RUNNING_LOOP, loopSoundId);
+            loopSoundId = -1;
+        }
     }
 
     public GuardianState getCurrentState() {

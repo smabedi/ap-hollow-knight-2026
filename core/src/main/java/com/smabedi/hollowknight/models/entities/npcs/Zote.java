@@ -3,6 +3,7 @@ package com.smabedi.hollowknight.models.entities.npcs;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -127,6 +128,7 @@ public class Zote implements IDamageable {
             System.out.println("Zote: Curse you! Have at thee!");
             isAngry = true;
             angryTimer = Constants.Zote.ANGRY_TIME;
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_ZOTE_ATTACK);
         }
         stunTimer = 0.5f;
     }

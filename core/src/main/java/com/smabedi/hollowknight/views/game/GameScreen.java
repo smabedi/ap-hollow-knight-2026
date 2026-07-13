@@ -14,7 +14,6 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
@@ -60,7 +59,6 @@ public class GameScreen implements Screen {
     private GameUI gameUI;
     private HudRenderer hudRenderer;
     private PlayerController playerController;
-    private final Box2DDebugRenderer b2dr;
     private SpriteBatch batch;
     public float timeScale = 1f;
     private CheatController cheatController;
@@ -68,7 +66,7 @@ public class GameScreen implements Screen {
     public static final Array<VfxInstance> vfxList = new Array<>();
     private AmbientParticles ambientParticles;
     private AchievementManager achievementManager;
-    private final com.badlogic.gdx.graphics.glutils.ShaderProgram worldShader;
+    private final ShaderProgram worldShader;
     private float currentSaturation = 1f;
 
     public GameScreen(GameSession session) {
@@ -78,9 +76,6 @@ public class GameScreen implements Screen {
             Constants.UI.DEFAULT_WIDTH / Constants.World.PPM,
             Constants.UI.DEFAULT_HEIGHT / Constants.World.PPM,
             camera);
-
-        // The Debug Renderer draws colored outlines around the hitboxes, for now.
-        b2dr = new Box2DDebugRenderer();
 
         // --- COMPILE POST-PROCESSING SHADER ---
         String vertexShader =
@@ -407,6 +402,7 @@ public class GameScreen implements Screen {
         // 1. UI Check: Did we just discover a new checkpoint?
         if (session.safeSpotUpdated) {
             gameUI.showToast(Assets.getString("checkpoint_reached"));
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
             session.safeSpotUpdated = false; // Consume the flag
         }
 
@@ -421,6 +417,7 @@ public class GameScreen implements Screen {
 
             // You can add a localization string for "You Died!" later
             gameUI.showToast(Assets.getString("death_respawning"));
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
 
             session.pendingDeathRespawn = false;
         }
@@ -430,6 +427,7 @@ public class GameScreen implements Screen {
             player.b2body.setLinearVelocity(0, 0);
 
             gameUI.showToast(Assets.getString("checkpoint_respawning"));
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
 
             session.pendingRespawn = false;
         }
@@ -554,7 +552,7 @@ public class GameScreen implements Screen {
         batch.setShader(worldShader);
 
         // =========================================================
-        // PASS 1: BACKGROUNDS (Slow Parallax)
+        // PASS 1: BACKGROUND (Slow Parallax)
         // =========================================================
         camera.position.set(anchorX + (travelX * 0.5f) + shakeOffsetX, anchorY + (travelY * 0.5f) + shakeOffsetY, 0);
         camera.update();
@@ -567,7 +565,20 @@ public class GameScreen implements Screen {
         renderer.render(new int[]{0});
 
         // =========================================================
-        // PASS 2: TERRAINS (Normal Speed)
+        // PASS 2: BACK (Slightly Slow Parallax)
+        // =========================================================
+        camera.position.set(anchorX + (travelX * 0.75f) + shakeOffsetX, anchorY + (travelY * 0.75f) + shakeOffsetY, 0);
+        camera.update();
+
+        renderer.setView(camera.combined,
+            camera.position.x - (camera.viewportWidth / 2) - overscan,
+            camera.position.y - (camera.viewportHeight / 2) - overscan,
+            viewWidth, viewHeight
+        );
+        renderer.render(new int[]{1, 2, 3});
+
+        // =========================================================
+        // PASS 3: MID (Normal Speed)
         // =========================================================
         camera.position.set(realX + shakeOffsetX, realY + shakeOffsetY, 0);
         camera.update();
@@ -577,10 +588,10 @@ public class GameScreen implements Screen {
             camera.position.y - (camera.viewportHeight / 2) - overscan,
             viewWidth, viewHeight
         );
-        renderer.render(new int[]{1, 2, 3, 4, 5});
+        renderer.render(new int[]{4, 5, 6});
 
         // =========================================================
-        // PASS 3: DRAW ENTITIES & PROJECTILES
+        // PASS 4: DRAW ENTITIES & PROJECTILES
         // =========================================================
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
@@ -671,7 +682,7 @@ public class GameScreen implements Screen {
         batch.end();
 
         // =========================================================
-        // PASS 4: FOREGROUNDS (Fast Parallax)
+        // PASS 5: FOREGROUNDS (Fast Parallax)
         // =========================================================
         camera.position.set((realX * 1.3f) + shakeOffsetX, (realY * 1.3f) + shakeOffsetY, 0);
         camera.update();
@@ -681,7 +692,7 @@ public class GameScreen implements Screen {
             camera.position.y - (camera.viewportHeight / 2) - overscan,
             viewWidth, viewHeight
         );
-        renderer.render(new int[]{6, 7});
+        renderer.render(new int[]{7, 8, 9});
 
         // --- RENDER AMBIENT PARTICLES (Foreground Parallax) ---
         camera.position.set((realX * 1.5f) + shakeOffsetX, (realY * 1.5f) + shakeOffsetY, 0);
@@ -697,7 +708,7 @@ public class GameScreen implements Screen {
         renderer.getBatch().setShader(null);
 
         // =========================================================
-        // PASS 5: PURE VIEW HUD OVERLAY
+        // PASS 6: PURE VIEW HUD OVERLAY
         // =========================================================
         if (hudRenderer != null) {
             hudRenderer.update(delta);
@@ -710,12 +721,10 @@ public class GameScreen implements Screen {
         }
 
         // =========================================================
-        // PASS 6: DEBUG & SCENE2D UI
+        // PASS 7: SCENE2D UI
         // =========================================================
         camera.position.set(realX, realY, 0);
         camera.update();
-
-        b2dr.render(world, camera.combined);
 
         if (gameUI != null) {
             gameUI.stage.getViewport().apply();
@@ -753,7 +762,6 @@ public class GameScreen implements Screen {
         renderer.dispose();
         world.dispose();
         gameUI.dispose();
-        b2dr.dispose();
         if (hudRenderer != null) hudRenderer.dispose();
         if (worldShader != null) worldShader.dispose();
     }

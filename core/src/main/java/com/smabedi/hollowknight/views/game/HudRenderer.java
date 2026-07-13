@@ -163,7 +163,7 @@ public class HudRenderer {
         batch.draw(fboRegion, hudX, hudY);
         batch.draw(glass, hudX, hudY);
 
-        // Draw Health Masks horizontally next to it
+
         float maskStartX = hudX + baseBar.getRegionWidth() / 2f;
         float maskY = hudY + (baseBar.getRegionHeight() / 2f) - (maskFull.getRegionHeight() / 2f) + 15f;
 

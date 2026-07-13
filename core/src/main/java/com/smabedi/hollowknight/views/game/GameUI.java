@@ -16,6 +16,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.repositories.DatabaseManager;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -88,6 +89,7 @@ public class GameUI {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 togglePause();
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
         pauseMenu.add(continueBtn).width(200).row();
@@ -99,6 +101,7 @@ public class GameUI {
                 // SettingsMenuScreen will lay over the game.
                 // We don't dispose the game screen here, just switch contexts.
                 ScreenManager.setMenuScreen(ScreenType.SETTINGS);
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
         pauseMenu.add(settingsBtn).width(200).row();
@@ -117,6 +120,7 @@ public class GameUI {
                 // Clear the active game before returning to the main menu!
                 ScreenManager.clearGameScreen();
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
         });
         pauseMenu.add(quitBtn).width(200).padBottom(30).row();
@@ -342,6 +346,7 @@ public class GameUI {
 
                     // Rebuild the grid to instantly refresh the icon textures
                     refreshInventoryUI();
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
                 }
             });
 

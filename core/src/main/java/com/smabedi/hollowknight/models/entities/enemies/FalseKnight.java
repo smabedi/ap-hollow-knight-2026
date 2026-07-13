@@ -7,9 +7,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
-import com.smabedi.hollowknight.models.entities.items.Shockwave;
 import com.smabedi.hollowknight.controllers.EventCallback;
+import com.smabedi.hollowknight.models.entities.items.Shockwave;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class FalseKnight extends Enemy {
@@ -26,6 +27,7 @@ public class FalseKnight extends Enemy {
     public boolean facingRight = false;
     private final EventCallback eventCallback;
     private final Animation<TextureRegion> damageAnimation;
+    private long runLoopId = -1;
 
     public FalseKnight(World world, float x, float y, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
         super(world, x, y, Constants.FalseKnight.HP, eventCallback, EnemyType.FALSE_KNIGHT);
@@ -94,6 +96,7 @@ public class FalseKnight extends Enemy {
         if (stunTimer <= 0 && currentSubState != BossSubState.RECOVERY) {
             currentSubState = BossSubState.RECOVERY; // Trigger stun_recover animation
             subStateTimer = 1.5f; // Wait for the recover animation to finish
+//            AudioManager.playSfx(Constants.Paths.Sounds.SFX_FK_ROAR);
         } else if (currentSubState == BossSubState.RECOVERY) {
             subStateTimer -= dt;
             if (subStateTimer <= 0) {
@@ -155,6 +158,8 @@ public class FalseKnight extends Enemy {
                         // FIX: Use setLinearVelocity to ignore the boss's massive weight!
                         b2body.setLinearVelocity(direction * 3f, 6f);
                         currentSubState = BossSubState.ACTIVE;
+                        AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_ROAR, 0.9f, 1.1f); // Swing liftoff
+                        AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_SWING, 0.9f, 1.1f); // Swing liftoff
                     }
                 } else if (currentSubState == BossSubState.ACTIVE) {
                     // Waiting to hit the ground. Calling the METHOD isGrounded() now!
@@ -162,6 +167,13 @@ public class FalseKnight extends Enemy {
                         currentSubState = BossSubState.ATTACK; // Smashing the ground
                         subStateTimer = 0.3f; // duration of the smash hit frame
                         if (!actionExecuted) {
+                            // Audio: Differentiate the impacts
+                            if (currentMove == BossMove.POWER_SLAM) {
+                                AudioManager.playSfx(Constants.Paths.Sounds.SFX_FK_POWER_STRIKE);
+                            } else {
+                                AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_STRIKE, 0.9f, 1.1f);
+                            }
+
                             executeMaceHitbox(player, direction); // Executes the QAABB!
 
                             if (currentMove == BossMove.POWER_SLAM) {
@@ -197,6 +209,7 @@ public class FalseKnight extends Enemy {
                         float leapDir = currentMove == BossMove.OFFENSIVE_LEAP ? direction : -direction;
                         b2body.setLinearVelocity(leapDir * 3f, 6f);
                         currentSubState = BossSubState.ACTIVE;
+                        AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_JUMP, 0.9f, 1.1f); // Jump liftoff
                     }
                 } else if (currentSubState == BossSubState.ACTIVE) {
                     // Use the method here too!
@@ -204,6 +217,7 @@ public class FalseKnight extends Enemy {
                         currentSubState = BossSubState.RECOVERY;
                         subStateTimer = 0.5f; // Land recovery
                         eventCallback.addCameraTrauma(0.75f);
+                        AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_LAND, 0.85f, 1.15f); // Heavy Landing
                     }
                 } else if (currentSubState == BossSubState.RECOVERY) {
                     b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Plant feet upon landing
@@ -223,20 +237,34 @@ public class FalseKnight extends Enemy {
                     if (subStateTimer <= 0) {
                         currentSubState = BossSubState.ACTIVE;
                         subStateTimer = 2.5f; // ADDED: Hard timeout so he doesn't run forever!
+
+                        // Audio: Start the looping charge sound
+                        if (runLoopId == -1) {
+                            runLoopId = AudioManager.loopSpatialSfx(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 30f);
+                        }
                     }
                 } else if (currentSubState == BossSubState.ACTIVE) {
                     // Almost double the running speed in Phase 2
                     b2body.setLinearVelocity(direction * (currentPhase == BossPhase.PHASE_2 ? 7f : 4f), b2body.getLinearVelocity().y);
                     subStateTimer -= dt; // Decrement timeout
 
-                    float dist = Math.abs(player.b2body.getPosition().x - b2body.getPosition().x);
+                    // Audio: Update the spatial panning while he runs!
+                    if (runLoopId != -1) {
+                        AudioManager.updateSpatialSfx(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, runLoopId, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 30f);
+                    }
 
+                    float dist = Math.abs(player.b2body.getPosition().x - b2body.getPosition().x);
                     eventCallback.setCameraTrauma(0.5f);
 
                     // ADDED: Stop if he reaches you, OR if the timer runs out, OR if he hits a wall (x velocity drops)
                     if (dist < 2f || subStateTimer <= 0 || Math.abs(b2body.getLinearVelocity().x) < 0.5f) {
                         currentSubState = BossSubState.RECOVERY;
                         subStateTimer = 0.6f;
+                        // Audio: End the loop upon crashing or stopping
+                        if (runLoopId != -1) {
+                            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, runLoopId);
+                            runLoopId = -1;
+                        }
                     }
                 } else if (currentSubState == BossSubState.RECOVERY) {
                     b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
@@ -284,13 +312,17 @@ public class FalseKnight extends Enemy {
 
         hp -= amount;
         recentDamageCount++;
-        damageTimer = 2f; // Boss remembers hits for 2 seconds
+        damageTimer = 2f;
 
         System.out.println("False Knight hit! HP: " + hp);
 
+        // Audio: Differentiate between armor hits and the exposed maggot
         if (currentPhase == BossPhase.STUNNED) {
             currentSubState = BossSubState.STUN_HIT;
             subStateTimer = 0.2f;
+            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_STUN_HIT, 0.9f, 1.15f);
+        } else {
+            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_ARMOR_HIT, 0.8f, 1.2f);
         }
 
         // Stun Phase Shift (50% HP)
@@ -298,8 +330,15 @@ public class FalseKnight extends Enemy {
             currentPhase = BossPhase.STUNNED;
             stunTimer = 4f;
             currentMove = BossMove.IDLE;
-            currentSubState = BossSubState.NONE; // Abort animations
+            currentSubState = BossSubState.NONE;
             actionExecuted = false;
+
+            // Audio: Armor breaks open! Stop his run loop instantly if he was charging.
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_FK_OPEN_ARMOR_HIT);
+            if (runLoopId != -1) {
+                AudioManager.stopSfx(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, runLoopId);
+                runLoopId = -1;
+            }
             System.out.println("False Knight Stunned! Armor is open!");
         } else if (hp <= 0) {
             die();
@@ -338,6 +377,15 @@ public class FalseKnight extends Enemy {
     @Override
     public void die() {
         super.die();
+        AudioManager.playSfx(Constants.Paths.Sounds.SFX_FK_OPEN_ARMOR_HIT);
+        AudioManager.playSfx(Constants.Paths.Sounds.SFX_FK_ROAR);
+
+        // Safety kill-switch for the run loop
+        if (runLoopId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, runLoopId);
+            runLoopId = -1;
+        }
+
         eventCallback.onBossDeath();
     }
 }

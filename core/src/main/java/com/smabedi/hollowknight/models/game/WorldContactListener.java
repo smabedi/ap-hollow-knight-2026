@@ -40,13 +40,17 @@ public class WorldContactListener implements ContactListener {
             if (!session.isArenaLocked) {
                 session.isArenaLocked = true;
                 System.out.println("Boss Arena Locked!");
-                AudioManager.playSfx(Constants.Paths.Sounds.BOSS_TRANSITION);
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_BOSS_TRANSITION);
                 AudioManager.playMusic(Constants.Paths.Sounds.BGM_BOSS, true);
             }
         }
 
         // Ground and Wall Sensors
         if (isContact(fixA, fixB, "foot_sensor", "ground")) {
+            // Only play the heavy landing thud if the Knight was previously airborne
+            if (!player.isGrounded) {
+                AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_LAND, 0.9f, 1.1f);
+            }
             player.isGrounded = true;
             player.canDoubleJump = true;
             player.canDash = true;

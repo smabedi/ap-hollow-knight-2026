@@ -1,7 +1,10 @@
 package com.smabedi.hollowknight.models.entities.enemies;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -36,6 +39,14 @@ public class Crawlid extends Enemy {
             Vector2 vel = b2body.getLinearVelocity();
             b2body.setLinearVelocity(vel.x * 0.9f, vel.y);
             return; // Stop AI logic
+        }
+
+        // Initialize the loop if it hasn't started yet
+        if (loopSoundId == -1) {
+            loopSoundId = AudioManager.loopSpatialSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 12f);
+        } else {
+            // Update panning and volume dynamically
+            AudioManager.updateSpatialSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 12f);
         }
 
         // Stun logic
@@ -77,5 +88,23 @@ public class Crawlid extends Enemy {
 
         // We only overwrite the X velocity, preserving the Y velocity (gravity/falling)
         b2body.setLinearVelocity(velocityX, b2body.getLinearVelocity().y);
+    }
+
+    @Override
+    public void die() {
+        super.die();
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId);
+            loopSoundId = -1;
+        }
+    }
+
+    @Override
+    public void respawn() {
+        super.respawn();
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId);
+            loopSoundId = -1;
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.game.GameSession;
@@ -35,12 +36,14 @@ public class CheatController extends InputAdapter {
                     player.isGodMode = !player.isGodMode;
                     gameUI.showToast(Assets.getString("god_mode") + ": " +
                         (player.isGodMode ? Assets.getString("on") : Assets.getString("off")));
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     return true;
 
                 // 2. Refill Soul
                 case Constants.Cheats.Keys.REFILL_SOUL:
                     player.soul = Constants.Knight.MAX_SOUL;
                     gameUI.showToast(Assets.getString("soul_refilled"));
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     return true;
 
                 // 3. Emergency Heal (Safety Net Toggle)
@@ -48,6 +51,7 @@ public class CheatController extends InputAdapter {
                     player.emergencyHealArmed = !player.emergencyHealArmed;
                     gameUI.showToast(Assets.getString("emergency_auto_heal") + ": " +
                         (player.emergencyHealArmed ? Assets.getString("armed") : Assets.getString("disarmed")));
+                    AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     return true;
 
                 // 4. Boss Arena Teleport
@@ -59,12 +63,14 @@ public class CheatController extends InputAdapter {
                         session.pendingBossTeleport = true;
                         session.isArenaLocked = false; // Ensure camera unlocks
                         gameUI.showToast("Warping to Greenpath...");
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     } else {
                         // We are already in Greenpath, just teleport instantly.
                         player.b2body.setTransform(session.bossTeleportX, session.bossTeleportY, 0);
                         session.lastSafeX = session.bossTeleportX;
                         session.lastSafeY = session.bossTeleportY;
                         gameUI.showToast(Assets.getString("teleported_to_false_knight_arena"));
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     }
                     return true;
 
@@ -73,9 +79,11 @@ public class CheatController extends InputAdapter {
                     if (gameScreen.timeScale == 1f) {
                         gameScreen.timeScale = 0.3f; // 30% speed
                         gameUI.showToast(Assets.getString("time_dilation") + ": " + Assets.getString("activated"));
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     } else {
                         gameScreen.timeScale = 1f; // Normal speed
                         gameUI.showToast(Assets.getString("time_dilation") + ": " + Assets.getString("deactivated"));
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     }
                     return true;
 
@@ -86,6 +94,7 @@ public class CheatController extends InputAdapter {
                         player.b2body.setGravityScale(0f); // Float
                         for (Fixture fix : player.b2body.getFixtureList()) fix.setSensor(true); // Phase through walls
                         gameUI.showToast(Assets.getString("spectator_mode") + ": " + Assets.getString("on"));
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     } else {
                         player.b2body.setGravityScale(1f); // Fall
                         for (Fixture fix : player.b2body.getFixtureList()) {
@@ -93,6 +102,7 @@ public class CheatController extends InputAdapter {
                             if ("knight".equals(fix.getUserData())) fix.setSensor(false);
                         }
                         gameUI.showToast(Assets.getString("spectator_mode") + ": " + Assets.getString("off"));
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     }
                     return true;
             }

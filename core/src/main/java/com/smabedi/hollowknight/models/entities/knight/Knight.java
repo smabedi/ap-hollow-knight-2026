@@ -2,6 +2,7 @@ package com.smabedi.hollowknight.models.entities.knight;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 
@@ -40,6 +41,8 @@ public class Knight {
     public KnightState previousState = KnightState.IDLE;
     public boolean isAttackingDown = false;
     private final EventCallback eventCallback;
+    public long walkLoopId = -1;
+    public long wallSlideLoopId = -1;
 
     public Knight(World world, float startX, float startY, int currentHealth, int currentSoul, EventCallback eventCallback) {
         this.world = world;
@@ -58,6 +61,26 @@ public class Knight {
 
         previousState = currentState;
         currentState = getState();
+
+        // --- WALKING LOOP ---
+        if (currentState == KnightState.WALKING && !isDead) {
+            if (walkLoopId == -1) {
+                walkLoopId = AudioManager.loopSfx(Constants.Paths.Sounds.SFX_RUN);
+            }
+        } else if (walkLoopId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_RUN, walkLoopId);
+            walkLoopId = -1;
+        }
+
+        // --- WALL SLIDE LOOP ---
+        if (currentState == KnightState.WALL_SLIDING && !isDead) {
+            if (wallSlideLoopId == -1) {
+                wallSlideLoopId = AudioManager.loopSfx(Constants.Paths.Sounds.SFX_WALL_SLIDE);
+            }
+        } else if (wallSlideLoopId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_WALL_SLIDE, wallSlideLoopId);
+            wallSlideLoopId = -1;
+        }
     }
 
     private KnightState getState() {
@@ -148,6 +171,13 @@ public class Knight {
     }
 
     public void addSoul(int amount) {
+        // Only play the sound if the orb isn't already maxed out
+        if (soul < Constants.Knight.MAX_SOUL) {
+            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_SOUL_PICKUP, 0.9f, 1.1f);
+        } else {
+            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_SOUL_FULL, 0.9f, 1.1f);
+        }
+
         soul += amount;
         if (soul > Constants.Knight.MAX_SOUL) {
             soul = Constants.Knight.MAX_SOUL;
@@ -161,6 +191,7 @@ public class Knight {
             health = Constants.Knight.MAX_HEALTH;
         }
         eventCallback.addCameraTrauma(0.5f);
+        AudioManager.playSfx(Constants.Paths.Sounds.SFX_FOCUS);
         System.out.println("Healed! HP: " + health);
     }
 
@@ -184,6 +215,17 @@ public class Knight {
         if (health <= 0) {
             System.out.println("Knight has died!");
 
+            // Instantly kill the walking loop on death
+            if (walkLoopId != -1) {
+                AudioManager.stopSfx(Constants.Paths.Sounds.SFX_RUN, walkLoopId);
+                walkLoopId = -1;
+            }
+
+            if (wallSlideLoopId != -1) {
+                AudioManager.stopSfx(Constants.Paths.Sounds.SFX_WALL_SLIDE, wallSlideLoopId);
+                wallSlideLoopId = -1;
+            }
+
             // 1. Reset state for resurrection
             health = Constants.Knight.MAX_HEALTH;
             isDead = false;
@@ -193,6 +235,7 @@ public class Knight {
         } else {
             // Give 1 second of invincibility
             iFrameTimer = Constants.Knight.I_FRAME_DURATION;
+            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_DAMAGE, 0.85f, 1.15f);
             b2body.setLinearVelocity(0, 0);
             b2body.applyLinearImpulse(
                 new Vector2(knockbackDirX * Constants.Knight.KNOCKBACK_FORCE_X, Constants.Knight.KNOCKBACK_FORCE_Y),

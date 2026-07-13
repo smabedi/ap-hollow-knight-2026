@@ -1,7 +1,10 @@
 package com.smabedi.hollowknight.models.entities.enemies;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.World;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
@@ -60,10 +63,16 @@ public class Mossfly extends Enemy {
             if (distanceToPlayer <= aggroRadius) {
                 isHidden = false;
                 System.out.println("Mossfly aggro triggered! Commencing chase.");
+                // START THE LOOP: Triggered exactly when aggro breaks
+                loopSoundId = AudioManager.loopSpatialSfx(Constants.Paths.Sounds.SFX_MOSSFLY_FLY, myPos, playerPos, 15f);
             }
         }
         // STATE 2: Actively chasing the Knight
         else {
+            // UPDATE THE LOOP: Adjust volume/pan dynamically as it chases the Knight
+            if (loopSoundId != -1) {
+                AudioManager.updateSpatialSfx(Constants.Paths.Sounds.SFX_MOSSFLY_FLY, loopSoundId, myPos, playerPos, 15f);
+            }
             // Calculate the exact vector pointing from the Mossfly to the Player
             Vector2 direction = new Vector2(playerPos.x - myPos.x, playerPos.y - myPos.y);
 
@@ -77,11 +86,24 @@ public class Mossfly extends Enemy {
     }
 
     @Override
+    public void die() {
+        super.die();
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_MOSSFLY_FLY, loopSoundId);
+            loopSoundId = -1;
+        }
+    }
+
+    @Override
     public void respawn() {
         super.respawn();
         // Reset its state back to a hidden bush when it respawns
         this.isHidden = true;
         this.b2body.setGravityScale(1f); // Reset gravity so it falls back down
+        if (loopSoundId != -1) {
+            AudioManager.stopSfx(Constants.Paths.Sounds.SFX_MOSSFLY_FLY, loopSoundId);
+            loopSoundId = -1;
+        }
     }
 
     public boolean isHidden() {

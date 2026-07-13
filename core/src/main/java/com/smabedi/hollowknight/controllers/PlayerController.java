@@ -8,6 +8,7 @@ import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
 import com.badlogic.gdx.utils.Array;
 import com.smabedi.hollowknight.config.Assets;
+import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.IDamageable;
@@ -110,6 +111,7 @@ public class PlayerController {
         if (nearbyZote[0] != null && !nearbyZote[0].isAngry()) {
             if (!wasZoteNearby) {
                 gameUI.showToast(Assets.getString("press_up_to_listen"));
+                AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                 wasZoteNearby = true;
             }
         } else {
@@ -132,6 +134,7 @@ public class PlayerController {
                         if (dialogText != null) {
                             gameUI.showDialog(dialogText);
                             player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y); // Halt player
+                            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_ZOTE, 0.8f, 1.2f);
                             System.out.println("[SFX] Zote grumbles..."); // SFX Trigger
                             interacted[0] = true;
                         }
@@ -181,6 +184,7 @@ public class PlayerController {
         if (Gdx.input.isKeyJustPressed(dashKey) && player.canDash && player.dashCooldownTimer <= 0) {
             player.isDashing = true;
             player.canDash = false;
+            AudioManager.playSfx(Constants.Paths.Sounds.SFX_DASH);
             if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
                 player.dashTimer = Constants.Knight.Dash.DURATION * 1.5f;
             } else {
@@ -256,7 +260,7 @@ public class PlayerController {
                 // Reset Y velocity before jumping to ensure consistent jump heights
                 player.b2body.setLinearVelocity(player.b2body.getLinearVelocity().x, 0);
                 player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
-
+                AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_JUMP, 0.9f, 1.1f);
                 player.isDoubleJumping = false; // Ensure double jump animation is OFF
             }
             // Condition 2: Double Jump in midair
@@ -264,7 +268,7 @@ public class PlayerController {
                 // Reset Y velocity so falling momentum doesn't eat the double jump force
                 player.b2body.setLinearVelocity(player.b2body.getLinearVelocity().x, 0);
                 player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
-
+                AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_JUMP, 0.9f, 1.1f);
                 player.canDoubleJump = false; // Consume the double jump
                 player.isDoubleJumping = true;
             }
@@ -272,6 +276,7 @@ public class PlayerController {
 
         // --- ATTACK LOGIC ---
         if (Gdx.input.isKeyJustPressed(attackKey) && player.attackCooldownTimer <= 0) {
+            AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_SLASH, 0.85f, 1.15f);
             player.pogoDurationTimer = Constants.Knight.Pogo.ATTACK_DURATION;
             player.attackCooldownTimer = Constants.Knight.ATTACK_COOLDOWN;
             if (inventory.isEquipped(CharmType.QUICK_SLASH)) player.attackCooldownTimer *= 0.5f; // Half the cooldown
@@ -344,6 +349,11 @@ public class PlayerController {
                         Animation<TextureRegion> soulAnim = player.hasVoidHeart ? Assets.getVoidSpiritCastVfx() : Assets.getSpiritCastVfx();
                         eventCallback.spawnStaticVfx(soulAnim, center.x, center.y, Constants.Knight.WIDTH_HALVED_SCALED, 0, player.facingRight, true);
                         System.out.println("Vengeful Spirit Cast!");
+                    }
+                    if (player.hasVoidHeart) {
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_VOID_SPELL_CAST);
+                    } else {
+                        AudioManager.playSfx(Constants.Paths.Sounds.SFX_SPELL_CAST);
                     }
                     return; // Exit out, spell successfully cast
                 } else {

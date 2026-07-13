@@ -47,13 +47,64 @@ public final class Constants {
             public static final String BGM_GREENPATH = ROOT + "greenpath.mp3";
             public static final String BGM_BOSS = ROOT + "boss.mp3";
             public static final String BGM_WIN = ROOT + "win.mp3";
-            public static final String BOSS_TRANSITION = ROOT + "boss_transition.wav";
-//            public static final String SFX_NAIL_SLASH = ROOT + "nail_slash.mp3";
-//            public static final String SFX_DASH = ROOT + "dash.mp3";
-//            public static final String SFX_DAMAGE = ROOT + "take_damage.mp3";
-//            public static final String SFX_FOCUS = ROOT + "focus_heal.mp3";
-//            public static final String SFX_SPELL_CAST = ROOT + "spell_cast.mp3";
-//            public static final String SFX_ZOTE = ROOT + "zote_grumble.mp3";
+            public static final String SFX_BOSS_TRANSITION = ROOT + "boss_transition.wav";
+            public static final String SFX_FOCUS = ROOT + "focus_health_heal.wav";
+            public static final String SFX_DAMAGE = ROOT + "hero_damage.wav";
+            public static final String SFX_DASH = ROOT + "hero_dash.wav";
+            public static final String SFX_JUMP = ROOT + "hero_jump.wav";
+            public static final String SFX_RUN = ROOT + "hero_run_footsteps_stone.wav";
+            public static final String SFX_LAND = ROOT + "hero_land_soft.wav";
+            public static final String SFX_SPELL_CAST = ROOT + "hero_scream_spell.wav";
+            public static final String SFX_VOID_SPELL_CAST = ROOT + "hero_void_scream_spell.wav";
+            public static final String SFX_WALL_SLIDE = ROOT + "hero_wall_slide.wav";
+            public static final String SFX_NOTIFICATION = ROOT + "notification.mp3";
+            public static final String SFX_ACHIEVEMENT = ROOT + "achievement_unlocked.mp3";
+            public static final String SFX_ZOTE_ATTACK = ROOT + "zote_attack_loop.wav";
+            public static final String SFX_UI_BUTTON = ROOT + "ui_button_confirm.wav";
+            public static final String SFX_MOSSFLY_FLY = ROOT + "fly_flying_loop.wav";
+            public static final String SFX_ENEMY_WALKING = ROOT + "enemy_walking_loop.wav";
+            public static final String SFX_GUARDIAN_RUNNING_LOOP = ROOT + "guardian_run_loop.wav";
+            public static final String SFX_LASER_BURST = ROOT + "laser_burst.wav";
+            public static final String SFX_FK_STUN_HIT = ROOT + "false_knight_head_damage.wav";
+            public static final String SFX_FK_ARMOR_HIT = ROOT + "false_knight_damage_armour.wav";
+            public static final String SFX_FK_OPEN_ARMOR_HIT = ROOT + "false_knight_damage_armour_final.wav";
+            public static final String SFX_FK_SWING = ROOT + "false_knight_swing.wav";
+            public static final String SFX_FK_STRIKE = ROOT + "false_knight_strike_ground.wav";
+            public static final String SFX_FK_POWER_STRIKE = ROOT + "false_knight_land_2.wav";
+            public static final String SFX_FK_JUMP = ROOT + "false_knight_jump.wav";
+            public static final String SFX_FK_LAND = ROOT + "false_knight_land_1.wav";
+            public static final String SFX_FK_RUN_LOOP = ROOT + "false_knight_roll.wav";
+            public static final String SFX_SOUL_FULL = ROOT + "enemy_death_sword.wav";
+            public static final String[] SFX_FK_ROAR = {
+                ROOT + "false_knight_attack_new_1.wav",
+                ROOT + "false_knight_attack_new_2.wav",
+                ROOT + "false_knight_attack_new_3.wav",
+                ROOT + "false_knight_attack_new_4.wav",
+                ROOT + "false_knight_attack_new_5.wav"
+            };
+            public static final String[] SFX_SOUL_PICKUP = {
+                ROOT + "soul_pickup_1.wav",
+                ROOT + "soul_pickup_2.wav",
+                ROOT + "soul_pickup_3.wav",
+                ROOT + "soul_pickup_4.wav",
+                ROOT + "soul_pickup_5.wav",
+                ROOT + "soul_pickup_6.wav",
+                ROOT + "soul_pickup_7.wav"
+            };
+            public static final String[] SFX_ZOTE = {
+                ROOT + "zote_1.wav",
+                ROOT + "zote_2.wav",
+                ROOT + "zote_3.wav",
+                ROOT + "zote_4.wav",
+                ROOT + "zote_5.wav"
+            };
+            public static final String[] SFX_SLASH = {
+                ROOT + "sword_1.wav",
+                ROOT + "sword_2.wav",
+                ROOT + "sword_3.wav",
+                ROOT + "sword_4.wav",
+                ROOT + "sword_5.wav"
+            };
         }
     }
 
@@ -83,7 +134,7 @@ public final class Constants {
         public static final int HEIGHT = 80;
         public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
         public static final float SENSOR_WIDTH = 0.02f;
-        public static final float ATTACK_COOLDOWN = 0.3f;
+        public static final float ATTACK_COOLDOWN = 0.5f;
         public static final float MAX_SPEED = 5f;
         public static final float JUMP_STRENGTH = 3f;
         public static final float FRICTION = 0.1f;
