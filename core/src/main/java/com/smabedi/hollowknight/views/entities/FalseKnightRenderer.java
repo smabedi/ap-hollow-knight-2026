@@ -12,18 +12,11 @@ import com.smabedi.hollowknight.models.entities.enemies.FalseKnight;
 
 public class FalseKnightRenderer implements EntityRenderer {
     private final FalseKnight boss;
-    private float stateTimer = 0f;
-
-    private enum VisualState {
-        IDLE, RUN, JUMP, JUMP_ATTACK, LAND, ATTACK, ANTICIPATE, RECOVER,
-        STUN_IDLE, STUN_HIT, STUN_RECOVER, DEATH
-    }
-    private VisualState currentVisualState = VisualState.IDLE;
-
     private final Animation<TextureRegion> idleAnim, runAnim, jumpAnim, jumpAttackAnim, landAnim;
     private final Animation<TextureRegion> attackAnim, anticipateAnim, recoverAnim;
     private final Animation<TextureRegion> stunIdleAnim, stunHitAnim, stunRecoverAnim, deathAnim;
-
+    private float stateTimer = 0f;
+    private VisualState currentVisualState = VisualState.IDLE;
     public FalseKnightRenderer(FalseKnight boss, TextureAtlas atlas) {
         this.boss = boss;
         idleAnim = new Animation<>(0.1f, atlas.findRegions("boss_idle"), Animation.PlayMode.LOOP);
@@ -123,5 +116,10 @@ public class FalseKnightRenderer implements EntityRenderer {
             case DEATH -> deathAnim.getKeyFrame(timer);
             default -> idleAnim.getKeyFrame(timer);
         };
+    }
+
+    private enum VisualState {
+        IDLE, RUN, JUMP, JUMP_ATTACK, LAND, ATTACK, ANTICIPATE, RECOVER,
+        STUN_IDLE, STUN_HIT, STUN_RECOVER, DEATH
     }
 }

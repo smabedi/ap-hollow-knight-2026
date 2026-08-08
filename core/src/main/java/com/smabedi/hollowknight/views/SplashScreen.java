@@ -6,22 +6,21 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Scaling;
 
 public class SplashScreen implements Screen {
     private final SpriteBatch batch;
     private final Texture logoTexture;
     private final Viewport viewport;
+    private final Sound splashSound;
     private float elapsedTime = 0f;
     private float scale = 0.95f; // Starts slightly zoomed out
     private float alpha = 1f;
-    private final Sound splashSound;
-
     private boolean isLoaded = false;
 
     public SplashScreen() {
@@ -96,7 +95,7 @@ public class SplashScreen implements Screen {
             drawWidth / 2f, drawHeight / 2f, // Origin for the zoom scaling
             drawWidth, drawHeight,
             scale, scale, 0,
-            0, 0, (int)texWidth, (int)texHeight, false, false
+            0, 0, (int) texWidth, (int) texHeight, false, false
         );
         batch.end();
     }

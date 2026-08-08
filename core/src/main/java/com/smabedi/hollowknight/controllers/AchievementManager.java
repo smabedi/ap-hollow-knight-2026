@@ -9,11 +9,10 @@ import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.game.GameUI;
 
 public class AchievementManager {
-    private final GameSession session;
-    private GameUI gameUI;
-
     // 10 minutes in seconds for the speedrun
     private static final int SPEEDRUN_TIME_LIMIT_SECONDS = 600;
+    private final GameSession session;
+    private GameUI gameUI;
 
     public AchievementManager(GameSession session, GameUI gameUI) {
         this.session = session;

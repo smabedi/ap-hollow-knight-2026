@@ -16,12 +16,6 @@ public class AmbientParticles implements Disposable {
     private final int maxParticles;
 
 
-    private static class Particle {
-        float x, y, size, life, maxLife;
-        float vx, vy, swayPhase, swaySpeed;
-        Color color;
-    }
-
     public AmbientParticles(LocationType location) {
         this.location = location;
 
@@ -157,5 +151,11 @@ public class AmbientParticles implements Disposable {
     @Override
     public void dispose() {
         particleTexture.dispose();
+    }
+
+    private static class Particle {
+        float x, y, size, life, maxLife;
+        float vx, vy, swayPhase, swaySpeed;
+        Color color;
     }
 }

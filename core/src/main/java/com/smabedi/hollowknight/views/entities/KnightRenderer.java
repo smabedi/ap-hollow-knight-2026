@@ -10,15 +10,13 @@ import com.smabedi.hollowknight.models.entities.knight.KnightState;
 
 public class KnightRenderer implements EntityRenderer {
     private final Knight player;
-    private float stateTimer = 0f;
-    private KnightState lastRenderedState = KnightState.IDLE;
-
     private final Animation<TextureRegion> idleAnim, runAnim, jumpAnim, fallAnim, doubleJumpAnim;
     private final Animation<TextureRegion> dashAnim, shadowDashAnim, wallSlideAnim;
     private final Animation<TextureRegion> attackSideAnim, attackDownAnim, focusAnim;
     private final Animation<TextureRegion> castWraithsAnim, castVoidWraithsAnim, castSpiritAnim, castVoidSpiritAnim;
     private final Animation<TextureRegion> sideSlashVfx, downSlashVfx;
-
+    private float stateTimer = 0f;
+    private KnightState lastRenderedState = KnightState.IDLE;
     private Animation<TextureRegion> activeVfx = null;
     private float vfxTimer = 0f;
     private boolean vfxFacingRight = true;

@@ -9,8 +9,8 @@ import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class Zote implements IDamageable {
-    public Body b2body;
     private final World world;
+    public Body b2body;
     private boolean isAngry = false;
     private float angryTimer = 0f;
     private float stunTimer = 0f;
@@ -139,8 +139,14 @@ public class Zote implements IDamageable {
         b2body.applyLinearImpulse(new Vector2(dirX, dirY), b2body.getWorldCenter(), true);
     }
 
-    @Override public void die() {}
-    @Override public boolean isDead() { return false; }
+    @Override
+    public void die() {
+    }
+
+    @Override
+    public boolean isDead() {
+        return false;
+    }
 
     public boolean isTalking() {
         return talkTimer > 0;

@@ -7,6 +7,7 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 
 public class Knight {
+    private final EventCallback eventCallback;
     public World world;
     public Body b2body;
     public boolean facingRight = true;
@@ -40,7 +41,6 @@ public class Knight {
     public KnightState currentState = KnightState.IDLE;
     public KnightState previousState = KnightState.IDLE;
     public boolean isAttackingDown = false;
-    private final EventCallback eventCallback;
     public long walkLoopId = -1;
     public long wallSlideLoopId = -1;
 

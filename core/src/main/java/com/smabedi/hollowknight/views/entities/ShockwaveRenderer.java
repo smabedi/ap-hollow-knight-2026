@@ -9,8 +9,8 @@ import com.smabedi.hollowknight.models.entities.items.Shockwave;
 
 public class ShockwaveRenderer {
     private final Shockwave shockwave;
-    private float stateTimer = 0f;
     private final Animation<TextureRegion> shockwaveAnim;
+    private float stateTimer = 0f;
 
     public ShockwaveRenderer(Shockwave shockwave, TextureAtlas vfxAtlas) {
         this.shockwave = shockwave;

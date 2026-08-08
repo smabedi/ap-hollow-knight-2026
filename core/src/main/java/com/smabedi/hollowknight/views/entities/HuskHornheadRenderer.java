@@ -10,19 +10,14 @@ import com.smabedi.hollowknight.models.entities.enemies.HuskHornhead;
 
 public class HuskHornheadRenderer implements EntityRenderer {
     private final HuskHornhead hornhead;
-    private float stateTimer = 0f;
-    private boolean facingRight = true;
-
-    // Visual states diverge slightly from logical states to allow for transition animations
-    private enum VisualState { IDLE, WALK, ANTICIPATE, ATTACK, DEAD }
-    private VisualState currentVisualState = VisualState.WALK;
-
     private final Animation<TextureRegion> idleAnim;
     private final Animation<TextureRegion> walkAnim;
     private final Animation<TextureRegion> anticipateAnim;
     private final Animation<TextureRegion> attackAnim;
     private final Animation<TextureRegion> deathAnim;
-
+    private float stateTimer = 0f;
+    private boolean facingRight = true;
+    private VisualState currentVisualState = VisualState.WALK;
     public HuskHornheadRenderer(HuskHornhead hornhead, TextureAtlas atlas) {
         this.hornhead = hornhead;
         idleAnim = new Animation<>(0.1f, atlas.findRegions("hornhead_idle"), Animation.PlayMode.LOOP);
@@ -96,4 +91,7 @@ public class HuskHornheadRenderer implements EntityRenderer {
 
         batch.draw(currentFrame, x, y, width, height);
     }
+
+    // Visual states diverge slightly from logical states to allow for transition animations
+    private enum VisualState {IDLE, WALK, ANTICIPATE, ATTACK, DEAD}
 }

@@ -9,17 +9,12 @@ import com.smabedi.hollowknight.models.entities.enemies.Mossfly;
 
 public class MossflyRenderer implements EntityRenderer {
     private final Mossfly mossfly;
-    private float stateTimer = 0f;
-
-    private enum State {HIDDEN, APPEARING, FLYING, DEAD}
-
-    private State currentState = State.HIDDEN;
-
     private final Animation<TextureRegion> shakeAnim;
     private final Animation<TextureRegion> appearAnim;
     private final Animation<TextureRegion> flyAnim;
     private final Animation<TextureRegion> deathAnim;
-
+    private float stateTimer = 0f;
+    private State currentState = State.HIDDEN;
     public MossflyRenderer(Mossfly mossfly, TextureAtlas atlas) {
         this.mossfly = mossfly;
         shakeAnim = new Animation<>(0.2f, atlas.findRegions("mossfly_shake"), Animation.PlayMode.LOOP);
@@ -79,4 +74,6 @@ public class MossflyRenderer implements EntityRenderer {
 
         batch.draw(currentFrame, x, y, width, height);
     }
+
+    private enum State {HIDDEN, APPEARING, FLYING, DEAD}
 }

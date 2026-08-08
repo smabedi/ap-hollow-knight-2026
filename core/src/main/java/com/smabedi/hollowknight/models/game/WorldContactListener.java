@@ -27,6 +27,21 @@ public class WorldContactListener implements ContactListener {
         this.session = session;
     }
 
+    private static float getKnockbackDirX(Fixture hazardFixture, Fixture playerFixture) {
+        float hazardX = hazardFixture.getBody().getPosition().x;
+        float playerX = playerFixture.getBody().getPosition().x;
+        float knockbackDirX;
+
+        // If falling perfectly dead-center on a hazard, bounce backward based on facing direction
+        if (Math.abs(playerX - hazardX) < Constants.Knight.WIDTH_HALVED_SCALED * 1.5f) {
+            knockbackDirX = 0;
+        } else {
+            // Otherwise, bounce away from the hazard
+            knockbackDirX = (playerX < hazardX) ? -1f : 1f;
+        }
+        return knockbackDirX;
+    }
+
     @Override
     public void beginContact(Contact contact) {
         Fixture fixA = contact.getFixtureA();
@@ -133,21 +148,6 @@ public class WorldContactListener implements ContactListener {
                 session.pendingRespawn = true;
             }
         }
-    }
-
-    private static float getKnockbackDirX(Fixture hazardFixture, Fixture playerFixture) {
-        float hazardX = hazardFixture.getBody().getPosition().x;
-        float playerX = playerFixture.getBody().getPosition().x;
-        float knockbackDirX;
-
-        // If falling perfectly dead-center on a hazard, bounce backward based on facing direction
-        if (Math.abs(playerX - hazardX) < Constants.Knight.WIDTH_HALVED_SCALED * 1.5f) {
-            knockbackDirX = 0;
-        } else {
-            // Otherwise, bounce away from the hazard
-            knockbackDirX = (playerX < hazardX) ? -1f : 1f;
-        }
-        return knockbackDirX;
     }
 
     private boolean isContact(Fixture a, Fixture b, String sensorUserData, String targetUserData) {
@@ -267,5 +267,6 @@ public class WorldContactListener implements ContactListener {
     }
 
     @Override
-    public void postSolve(Contact contact, ContactImpulse impulse) {}
+    public void postSolve(Contact contact, ContactImpulse impulse) {
+    }
 }

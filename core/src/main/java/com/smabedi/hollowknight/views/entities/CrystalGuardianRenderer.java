@@ -10,21 +10,16 @@ import com.smabedi.hollowknight.models.entities.enemies.GuardianState;
 
 public class CrystalGuardianRenderer implements EntityRenderer {
     private final CrystalGuardian guardian;
-    private float stateTimer = 0f;
-
-    private enum VisualState { IDLE, SHOOT, RUN, DEAD }
-    private VisualState currentVisualState = VisualState.IDLE;
-
     private final Animation<TextureRegion> idleAnim;
     private final Animation<TextureRegion> runAnim;
     private final Animation<TextureRegion> shootAnim;
     private final Animation<TextureRegion> deathAnim;
-
     // Laser VFX
     private final Animation<TextureRegion> laserOriginAnim;
     private final Animation<TextureRegion> laserBodyAnim;
     private final TextureRegion laserGlowFrame;
-
+    private float stateTimer = 0f;
+    private VisualState currentVisualState = VisualState.IDLE;
     public CrystalGuardianRenderer(CrystalGuardian guardian, TextureAtlas atlas) {
         this.guardian = guardian;
         idleAnim = new Animation<>(0.2f, atlas.findRegions("crystallized_idle"), Animation.PlayMode.LOOP);
@@ -118,4 +113,6 @@ public class CrystalGuardianRenderer implements EntityRenderer {
             }
         }
     }
+
+    private enum VisualState {IDLE, SHOOT, RUN, DEAD}
 }

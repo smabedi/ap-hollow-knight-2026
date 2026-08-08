@@ -32,7 +32,6 @@ import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
 import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
 import com.smabedi.hollowknight.models.entities.items.VfxType;
-import com.smabedi.hollowknight.views.entities.VfxInstance;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
@@ -44,9 +43,13 @@ import com.smabedi.hollowknight.views.entities.*;
 import static com.badlogic.gdx.utils.Timer.schedule;
 
 public class GameScreen implements Screen {
+    public static final Array<VfxInstance> vfxList = new Array<>();
     private final OrthographicCamera camera;
     private final Viewport viewport;
     private final GameSession session;
+    private final Array<Body> bodyBuffer = new Array<>();
+    private final ShaderProgram worldShader;
+    public float timeScale = 1f;
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
     private World world;
@@ -61,13 +64,9 @@ public class GameScreen implements Screen {
     private HudRenderer hudRenderer;
     private PlayerController playerController;
     private SpriteBatch batch;
-    public float timeScale = 1f;
     private CheatController cheatController;
-    private final Array<Body> bodyBuffer = new Array<>();
-    public static final Array<VfxInstance> vfxList = new Array<>();
     private AmbientParticles ambientParticles;
     private AchievementManager achievementManager;
-    private final ShaderProgram worldShader;
     private float currentSaturation = 1f;
 
     public GameScreen(GameSession session) {
@@ -153,8 +152,7 @@ public class GameScreen implements Screen {
 
         // 2. Handle Music Swaps
         switch (location) {
-            case FORGOTTEN_CROSSROADS ->
-                AudioManager.playMusic(Constants.Paths.Sounds.BGM_CROSSROADS, true);
+            case FORGOTTEN_CROSSROADS -> AudioManager.playMusic(Constants.Paths.Sounds.BGM_CROSSROADS, true);
             case GREENPATH -> {
                 if (session.isArenaLocked) {
                     AudioManager.playMusic(Constants.Paths.Sounds.BGM_BOSS, true);

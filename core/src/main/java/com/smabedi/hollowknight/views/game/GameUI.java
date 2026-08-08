@@ -34,10 +34,10 @@ import static com.badlogic.gdx.utils.Align.right;
 public class GameUI {
     public final Stage stage;
     private final Skin skin;
-    private Table pauseMenu;
     private final Knight player;
     private final GameSession session;
     private final Inventory inventory;
+    private Table pauseMenu;
     private Table inventoryMenu;
     private Label notchLabel;
     private Label charmDescription;

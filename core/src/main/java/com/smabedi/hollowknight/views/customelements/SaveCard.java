@@ -14,8 +14,8 @@ import com.smabedi.hollowknight.views.game.LocationType;
 
 public class SaveCard extends Table {
     private final int slotIndex;
-    private GameSession session;
     private final Skin skin;
+    private GameSession session;
     private SaveCardHudActor hudActor;
 
     public SaveCard(int slotIndex, GameSession session, Skin skin) {

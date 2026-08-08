@@ -41,13 +41,6 @@ public class Assets {
         return getInstance().bundle;
     }
 
-    public void reloadLanguage() {
-        bundle = I18NBundle.createBundle(
-            Gdx.files.internal(Constants.Paths.STRINGS),
-            Locale.of(GameSettings.getLanguage())
-        );
-    }
-
     public static <T> void load(String fileName, Class<T> type) {
         getManager().load(fileName, type);
     }
@@ -178,5 +171,12 @@ public class Assets {
 
     public static void dispose() {
         getManager().dispose();
+    }
+
+    public void reloadLanguage() {
+        bundle = I18NBundle.createBundle(
+            Gdx.files.internal(Constants.Paths.STRINGS),
+            Locale.of(GameSettings.getLanguage())
+        );
     }
 }

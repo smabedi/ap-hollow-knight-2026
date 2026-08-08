@@ -11,7 +11,6 @@ public class GameSession {
     public int soul;
     public LocationType location;
     public int playtime;
-    private transient float playtimeAccumulator = 0f;
     public int deathCounter;
     public int enemyKillCounter;
     public Inventory inventory;
@@ -41,9 +40,11 @@ public class GameSession {
     public LocationType nextLocation;
     public boolean pendingBossTeleport = false;
     public transient boolean isOneSitting = true;
+    private transient float playtimeAccumulator = 0f;
 
     // Default constructor required for LibGDX JSON deserialization
-    public GameSession() {}
+    public GameSession() {
+    }
 
     // Constructor for starting a brand-new game
     public GameSession(int slotIndex) {

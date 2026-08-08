@@ -11,8 +11,8 @@ import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public abstract class Enemy implements IDamageable {
-    protected World world;
     public Body b2body;
+    protected World world;
     protected int maxHp;
     protected int hp;
     protected boolean dead;

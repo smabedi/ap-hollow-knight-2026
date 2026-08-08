@@ -14,9 +14,9 @@ import com.smabedi.hollowknight.views.game.LocationType;
 
 public class CheatController extends InputAdapter {
     private final Knight player;
-    private GameUI gameUI;
     private final GameScreen gameScreen;
     private final GameSession session;
+    private GameUI gameUI;
 
     public CheatController(Knight player, GameUI gameUI, GameScreen gameScreen, GameSession session) {
         this.player = player;

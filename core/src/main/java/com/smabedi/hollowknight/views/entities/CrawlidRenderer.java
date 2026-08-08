@@ -9,10 +9,10 @@ import com.smabedi.hollowknight.models.entities.enemies.Crawlid;
 
 public class CrawlidRenderer implements EntityRenderer {
     private final Crawlid crawlid;
-    private float stateTimer = 0f;
-    private boolean wasDead = false;
     private final Animation<TextureRegion> walkAnim;
     private final Animation<TextureRegion> deathAnim;
+    private float stateTimer = 0f;
+    private boolean wasDead = false;
 
     public CrawlidRenderer(Crawlid crawlid, TextureAtlas atlas) {
         this.crawlid = crawlid;

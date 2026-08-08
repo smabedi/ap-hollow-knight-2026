@@ -25,9 +25,9 @@ public class PlayerController {
     private final Vector2 rayEnd = new Vector2();
     private final Array<IDamageable> enemiesHitDuringDash = new Array<>();
     private final Array<IDamageable> enemiesHitDuringAttack = new Array<>();
+    private final EventCallback eventCallback;
     private GameUI gameUI;
     private boolean wasZoteNearby = false;
-    private final EventCallback eventCallback;
 
     public PlayerController(Knight player, Inventory inventory, GameUI gameUI, EventCallback eventCallback) {
         this.player = player;

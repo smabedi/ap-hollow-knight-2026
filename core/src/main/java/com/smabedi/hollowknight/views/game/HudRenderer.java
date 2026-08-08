@@ -32,20 +32,14 @@ public class HudRenderer {
     private final Animation<TextureRegion> orbShrink;
     private final Animation<TextureRegion> maskBreakAnim;
     private final Animation<TextureRegion> maskHealAnim;
-
-    // Soul tracking state
-    private float stateTime = 0f;
-    private float currentFillPercent = 0f;
     private final FrameBuffer fbo;
     private final TextureRegion fboRegion;
     private final OrthographicCamera fboCamera;
-
-    // Mask tracking state
-    private enum MaskState {FULL, EMPTY, BREAKING, HEALING}
-
     private final MaskState[] maskStates;
     private final float[] maskTimers;
-
+    // Soul tracking state
+    private float stateTime = 0f;
+    private float currentFillPercent = 0f;
     public HudRenderer(Knight player) {
         this.player = player;
 
@@ -186,4 +180,7 @@ public class HudRenderer {
     public void dispose() {
         if (fbo != null) fbo.dispose();
     }
+
+    // Mask tracking state
+    private enum MaskState {FULL, EMPTY, BREAKING, HEALING}
 }

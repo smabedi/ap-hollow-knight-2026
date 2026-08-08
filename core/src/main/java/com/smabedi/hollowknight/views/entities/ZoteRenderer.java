@@ -9,15 +9,11 @@ import com.smabedi.hollowknight.models.entities.npcs.Zote;
 
 public class ZoteRenderer {
     private final Zote zote;
-    private float stateTimer = 0f;
-
-    private enum VisualState { IDLE, TALK, ATTACK }
-    private VisualState currentVisualState = VisualState.IDLE;
-
     private final Animation<TextureRegion> idleAnim;
     private final Animation<TextureRegion> talkAnim;
     private final Animation<TextureRegion> attackAnim;
-
+    private float stateTimer = 0f;
+    private VisualState currentVisualState = VisualState.IDLE;
     public ZoteRenderer(Zote zote, TextureAtlas atlas) {
         this.zote = zote;
         idleAnim = new Animation<>(0.1f, atlas.findRegions("zote_idle"), Animation.PlayMode.LOOP);
@@ -34,20 +30,17 @@ public class ZoteRenderer {
         // 1. Determine State
         if (zote.isAngry()) {
             nextState = VisualState.ATTACK;
-        }
-        else if (zote.isTalking()) {
+        } else if (zote.isTalking()) {
             // Model says we just interacted! Switch to TALK.
             if (currentVisualState != VisualState.TALK) {
                 nextState = VisualState.TALK;
             }
-        }
-        else if (currentVisualState == VisualState.TALK) {
+        } else if (currentVisualState == VisualState.TALK) {
             // If we are currently talking visually, stay in this state UNTIL the animation finishes!
             if (talkAnim.isAnimationFinished(stateTimer)) {
                 nextState = VisualState.IDLE;
             }
-        }
-        else {
+        } else {
             nextState = VisualState.IDLE;
         }
 
@@ -79,4 +72,6 @@ public class ZoteRenderer {
 
         batch.draw(currentFrame, x, y, width, height);
     }
+
+    private enum VisualState {IDLE, TALK, ATTACK}
 }

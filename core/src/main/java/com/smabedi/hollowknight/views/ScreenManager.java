@@ -14,8 +14,8 @@ import java.util.Map;
 import static com.smabedi.hollowknight.views.ScreenType.START_GAME;
 
 public final class ScreenManager {
-    private static Main main;
     private static final Map<ScreenType, Screen> screens = new HashMap<>();
+    private static Main main;
     @SuppressWarnings("GDXJavaStaticResource")
     private static GameScreen currentGameScreen;
     @SuppressWarnings("GDXJavaStaticResource")

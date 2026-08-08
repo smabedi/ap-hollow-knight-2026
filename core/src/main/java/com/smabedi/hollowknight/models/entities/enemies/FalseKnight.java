@@ -13,6 +13,9 @@ import com.smabedi.hollowknight.models.entities.items.VfxType;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class FalseKnight extends Enemy {
+    private final EventCallback eventCallback;
+    public boolean facingRight = false;
+    public boolean isActive = false;
     private BossPhase currentPhase = BossPhase.PHASE_1;
     private BossMove currentMove = BossMove.IDLE;
     private BossMove lastMove = BossMove.IDLE;
@@ -23,10 +26,7 @@ public class FalseKnight extends Enemy {
     private boolean actionExecuted = false; // Prevents the 60fps multi-impulse bug
     private int recentDamageCount = 0;
     private float damageTimer = 0f;
-    public boolean facingRight = false;
-    private final EventCallback eventCallback;
     private long runLoopId = -1;
-    public boolean isActive = false;
 
     public FalseKnight(World world, float x, float y, EventCallback eventCallback) {
         super(world, x, y, Constants.FalseKnight.HP, eventCallback, EnemyType.FALSE_KNIGHT);
