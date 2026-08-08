@@ -1,4 +1,4 @@
-package com.smabedi.hollowknight.models.entities.items;
+package com.smabedi.hollowknight.views.entities;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;

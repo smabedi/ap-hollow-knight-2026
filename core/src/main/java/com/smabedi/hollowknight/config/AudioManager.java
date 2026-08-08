@@ -6,15 +6,32 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 
 public class AudioManager {
     private static AudioManager instance;
-    private Music currentMusic;
-    private Music nextMusic;
+    private Music activeMusic;
+    private Music pendingMusic;
     private float fadeTimer = 0f;
+    private static final float FADE_DURATION = 0.8f; // 0.8s fade out + 0.8s fade in
+    private enum FadeState { NONE, FADING_OUT, FADING_IN }
+    private FadeState fadeState = FadeState.NONE;
     private static final Random random = new Random();
+    private final Map<Long, SoundInstance> activeLoops = new HashMap<>();
+
+    // Internal class to track which sound object owns which ID
+    private static class SoundInstance {
+        Sound sound;
+        String path;
+
+        SoundInstance(Sound sound, String path) {
+            this.sound = sound;
+            this.path = path;
+        }
+    }
 
     private AudioManager() {
     }
@@ -27,35 +44,82 @@ public class AudioManager {
     }
 
     /**
-     * Updates crossfades. Hook this directly into your main GameScreen loop.
+     * Updates music transitions. Hooked directly into the main GameScreen loop.
      */
     public void update(float dt) {
         float maxMusicVolume = GameSettings.getMusicVolume();
+        boolean shouldPlayMusic = GameSettings.shouldPlayMusic();
 
-        if (nextMusic != null) {
-            fadeTimer += dt;
-            float fadeDuration = 1.5f;
-            float progress = MathUtils.clamp(fadeTimer / fadeDuration, 0f, 1f);
+        if (!shouldPlayMusic) {
+            if (activeMusic != null && activeMusic.isPlaying()) activeMusic.pause();
+            if (pendingMusic != null && pendingMusic.isPlaying()) pendingMusic.pause();
+            return;
+        }
 
-            // Crossfade math
-            if (currentMusic != null && GameSettings.shouldPlayMusic()) {
-                currentMusic.setVolume((1f - progress) * maxMusicVolume);
-            }
-            if (GameSettings.shouldPlayMusic()) {
-                nextMusic.setVolume(progress * maxMusicVolume);
-            }
+        switch (fadeState) {
+            case FADING_OUT -> {
+                if (activeMusic != null && activeMusic.isPlaying()) {
+                    fadeTimer += dt;
+                    float progress = MathUtils.clamp(fadeTimer / FADE_DURATION, 0f, 1f);
+                    activeMusic.setVolume((1f - progress) * maxMusicVolume);
 
-            if (progress >= 1f) {
-                if (currentMusic != null) currentMusic.stop();
-                currentMusic = nextMusic;
-                nextMusic = null;
+                    if (progress >= 1f) {
+                        activeMusic.stop(); // Cleanly kill track A before starting track B
+                        activeMusic = pendingMusic;
+                        pendingMusic = null;
+
+                        if (activeMusic != null) {
+                            activeMusic.setVolume(0f);
+                            activeMusic.play();
+                            fadeState = FadeState.FADING_IN;
+                            fadeTimer = 0f;
+                        } else {
+                            fadeState = FadeState.NONE;
+                        }
+                    }
+                } else {
+                    // Fallback if active track was already stopped
+                    activeMusic = pendingMusic;
+                    pendingMusic = null;
+                    if (activeMusic != null) {
+                        activeMusic.setVolume(0f);
+                        activeMusic.play();
+                        fadeState = FadeState.FADING_IN;
+                        fadeTimer = 0f;
+                    } else {
+                        fadeState = FadeState.NONE;
+                    }
+                }
             }
-        } else if (currentMusic != null && currentMusic.isPlaying()) {
-            // Live volume sync with slider movements
-            if (!GameSettings.shouldPlayMusic()) {
-                currentMusic.setVolume(0f);
+            case FADING_IN -> {
+                if (activeMusic != null) {
+                    if (!activeMusic.isPlaying()) activeMusic.play();
+                    fadeTimer += dt;
+                    float progress = MathUtils.clamp(fadeTimer / FADE_DURATION, 0f, 1f);
+                    activeMusic.setVolume(progress * maxMusicVolume);
+
+                    if (progress >= 1f) {
+                        activeMusic.setVolume(maxMusicVolume);
+                        fadeState = FadeState.NONE;
+                    }
+                } else {
+                    fadeState = FadeState.NONE;
+                }
+            }
+            case NONE -> {
+                if (activeMusic != null && activeMusic.isPlaying()) {
+                    activeMusic.setVolume(maxMusicVolume);
+                }
+            }
+        }
+
+        // Continuous SFX Mute Logic
+        boolean shouldPlaySFX = GameSettings.shouldPlaySFX();
+        for (Map.Entry<Long, SoundInstance> entry : activeLoops.entrySet()) {
+            if (!shouldPlaySFX) {
+                entry.getValue().sound.pause(entry.getKey());
             } else {
-                currentMusic.setVolume(maxMusicVolume);
+                entry.getValue().sound.resume(entry.getKey());
             }
         }
     }
@@ -67,24 +131,37 @@ public class AudioManager {
         }
 
         Music target = Assets.getInstance().manager.get(internalPath, Music.class);
-        if (currentMusic == target || nextMusic == target) return;
+
+        // Ignore if this track is already playing or queued
+        if (activeMusic == target && (fadeState == FadeState.NONE || fadeState == FadeState.FADING_IN)) return;
+        if (pendingMusic == target) return;
 
         target.setLooping(loop);
 
-        if (currentMusic == null) {
-            currentMusic = target;
+        // If no active music, jump straight to Fade In
+        if (activeMusic == null || !activeMusic.isPlaying()) {
+            activeMusic = target;
+            pendingMusic = null;
             if (GameSettings.shouldPlayMusic()) {
-                currentMusic.setVolume(GameSettings.getMusicVolume());
-                currentMusic.play();
+                activeMusic.setVolume(0f);
+                activeMusic.play();
+                fadeState = FadeState.FADING_IN;
+                fadeTimer = 0f;
             }
         } else {
-            nextMusic = target;
+            // Queue target and start Sequential Fade Out
+            pendingMusic = target;
+            fadeState = FadeState.FADING_OUT;
             fadeTimer = 0f;
-            if (GameSettings.shouldPlayMusic()) {
-                nextMusic.setVolume(0f);
-                nextMusic.play();
-            }
         }
+    }
+
+    public void stopCurrentMusic() {
+        if (activeMusic != null) activeMusic.stop();
+        if (pendingMusic != null) pendingMusic.stop();
+        activeMusic = null;
+        pendingMusic = null;
+        fadeState = FadeState.NONE;
     }
 
     /**
@@ -126,7 +203,13 @@ public class AudioManager {
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
         // 1f volume, 1f pitch, 0f pan (dead center)
-        return sound.loop(1f, 1f, 0f);
+        long id = sound.loop(1f, 1f, 0f);
+
+        // Immediately pause if muted, but keep tracking the ID!
+        if (!GameSettings.shouldPlaySFX()) sound.pause(id);
+
+        getInstance().activeLoops.put(id, new SoundInstance(sound, internalPath));
+        return id;
     }
 
     private long playSfxVariedCore(String internalPath, float minPitch, float maxPitch) {
@@ -187,7 +270,10 @@ public class AudioManager {
         float pan = MathUtils.clamp((sourcePos.x - listenerPos.x) / falloffRadius, -1f, 1f);
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
-        return sound.loop(volume, 1f, pan);
+        long id = sound.loop(volume, 1f, pan);
+        if (!GameSettings.shouldPlaySFX()) sound.pause(id);
+        getInstance().activeLoops.put(id, new SoundInstance(sound, internalPath));
+        return id;
     }
 
     /**
@@ -202,7 +288,10 @@ public class AudioManager {
         float pan = MathUtils.clamp((sourcePos.x - listenerPos.x) / falloffRadius, -1f, 1f);
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
-        sound.setPan(soundId, pan, volume);
+        // LibGDX overrides pause states when volume is updated, so we must gate it
+        if (GameSettings.shouldPlaySFX()) {
+            sound.setPan(soundId, pan, volume);
+        }
     }
 
     /**
@@ -214,6 +303,8 @@ public class AudioManager {
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
         sound.stop(soundId);
+        // Remove from the active registry
+        getInstance().activeLoops.remove(soundId);
     }
 
     /**
@@ -230,6 +321,8 @@ public class AudioManager {
         for (Sound sound : allSounds) {
             sound.stop(); // Stops every single active emission of this sound
         }
+        // Clear the registry to prevent memory leaks
+        getInstance().activeLoops.clear();
     }
 
     private long playSfx(String internalPath, float baseVolume, float pitch, float pan) {
@@ -242,12 +335,5 @@ public class AudioManager {
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
         return sound.play(baseVolume, pitch, pan);
-    }
-
-    public void stopCurrentMusic() {
-        if (currentMusic != null) currentMusic.stop();
-        if (nextMusic != null) nextMusic.stop();
-        currentMusic = null;
-        nextMusic = null;
     }
 }

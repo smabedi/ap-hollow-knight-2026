@@ -48,7 +48,10 @@ public class FalseKnightRenderer implements EntityRenderer {
             currentVisualState = nextState;
         }
 
-        stateTimer += dt;
+        // Double the animation speed if in Phase 2
+        float speedMultiplier = (boss.getCurrentPhase() == BossPhase.PHASE_2) ? 1.75f : 1.0f;
+        stateTimer += (dt * speedMultiplier);
+
         TextureRegion currentFrame = getFrame(currentVisualState, stateTimer);
 
         // Assets face LEFT by default. Flip logic:

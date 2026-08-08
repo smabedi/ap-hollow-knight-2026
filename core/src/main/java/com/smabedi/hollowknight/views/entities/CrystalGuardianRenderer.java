@@ -89,7 +89,7 @@ public class CrystalGuardianRenderer implements EntityRenderer {
             float startX = centerX + stomachOffsetX;
             float startY = centerY - 0.1f;
 
-            float laserMaxRange = Constants.Enemy.CrystalGuardian.VISION_RANGE;
+            float laserMaxRange = Constants.Enemy.CrystalGuardian.LASER_RANGE;
             float drawX = facingRight ? startX : startX - laserMaxRange;
 
             // 5a. Draw Glow

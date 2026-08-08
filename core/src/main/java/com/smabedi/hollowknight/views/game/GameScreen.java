@@ -31,7 +31,8 @@ import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
 import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
-import com.smabedi.hollowknight.models.entities.items.VfxInstance;
+import com.smabedi.hollowknight.models.entities.items.VfxType;
+import com.smabedi.hollowknight.views.entities.VfxInstance;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
@@ -72,9 +73,10 @@ public class GameScreen implements Screen {
     public GameScreen(GameSession session) {
         this.session = session;
         camera = new OrthographicCamera();
+        float zoomFactor = 1.2f;
         viewport = new FitViewport(
-            Constants.UI.DEFAULT_WIDTH / Constants.World.PPM,
-            Constants.UI.DEFAULT_HEIGHT / Constants.World.PPM,
+            (Constants.UI.DEFAULT_WIDTH / Constants.World.PPM) / zoomFactor,
+            (Constants.UI.DEFAULT_HEIGHT / Constants.World.PPM) / zoomFactor,
             camera);
 
         // --- COMPILE POST-PROCESSING SHADER ---
@@ -128,6 +130,9 @@ public class GameScreen implements Screen {
     }
 
     public void loadMap(LocationType location) {
+        // Immediately terminate all active SFX loops from the previous level ---
+        AudioManager.stopAllSfx();
+
         if (map != null) map.dispose();
         if (renderer != null) renderer.dispose();
         if (gameUI != null) gameUI.dispose();
@@ -150,20 +155,38 @@ public class GameScreen implements Screen {
         switch (location) {
             case FORGOTTEN_CROSSROADS ->
                 AudioManager.playMusic(Constants.Paths.Sounds.BGM_CROSSROADS, true);
-            case GREENPATH ->
-                AudioManager.playMusic(Constants.Paths.Sounds.BGM_GREENPATH, true);
-
+            case GREENPATH -> {
+                if (session.isArenaLocked) {
+                    AudioManager.playMusic(Constants.Paths.Sounds.BGM_BOSS, true);
+                } else {
+                    AudioManager.playMusic(Constants.Paths.Sounds.BGM_GREENPATH, true);
+                }
+            }
         }
 
         entityRenderers = new Array<>();
         TextureAtlas entityAtlas = Assets.getEntityAtlas();
 
+        // Reset this flag so the new Box2D world locks the gates and wakes the boss
+        session.arenaGatesSolidified = false;
+
         assert map != null;
         new B2WorldCreator(world, map, session);
 
+        Animation<TextureRegion> damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
         EventCallback eventCallback = new EventCallback() {
             @Override
-            public void spawnStaticVfx(Animation<TextureRegion> anim, float x, float y, float offsetX, float offsetY, boolean facingRight, boolean defaultFacesRight) {
+            public void spawnStaticVfx(VfxType type, float x, float y, float offsetX, float offsetY, boolean facingRight, boolean defaultFacesRight) {
+                Animation<TextureRegion> anim = switch (type) {
+                    case DAMAGE -> damageAnimation;
+                    case NORMAL_DASH -> Assets.getNormalDashVfx();
+                    case SHADOW_DASH -> Assets.getShadowDashVfx();
+                    case WRAITHS -> Assets.getWraithsVfx();
+                    case VOID_WRAITHS -> Assets.getVoidWraithsVfx();
+                    case SPIRIT_CAST -> Assets.getSpiritCastVfx();
+                    case VOID_SPIRIT_CAST -> Assets.getVoidSpiritCastVfx();
+                };
+
                 vfxList.add(new VfxInstance(anim, x, y, offsetX, offsetY, facingRight, defaultFacesRight));
             }
 
@@ -200,10 +223,10 @@ public class GameScreen implements Screen {
 
             @Override
             public void onPlayerDeath() {
-                session.isArenaLocked = false;
+                // The arena remains locked! There is no escape.
                 session.pendingDeathRespawn = true;
                 session.deathCounter++;
-                System.out.println("Player died. Arena unlocked. Respawning.");
+                System.out.println("Player died. Respawning.");
             }
 
             @Override
@@ -213,12 +236,14 @@ public class GameScreen implements Screen {
             }
         };
 
-        Animation<TextureRegion> damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
         enemies = new Array<>();
         for (MapObject object : map.getLayers().get("spawns").getObjects()) {
             float x = ((float) object.getProperties().get("x")) / Constants.World.PPM;
             float y = ((float) object.getProperties().get("y")) / Constants.World.PPM;
             String type = (String) object.getProperties().get("type");
+
+            zote = null;
+            zoteRenderer = null;
 
             switch (type) {
                 case "player" -> {
@@ -267,7 +292,7 @@ public class GameScreen implements Screen {
                     entityRenderers.add(new CrystalGuardianRenderer(guardian, entityAtlas));
                 }
                 case "boss" -> { // Match the Type string from your Tiled map
-                    FalseKnight boss = new FalseKnight(world, x, y, eventCallback, damageAnimation);
+                    FalseKnight boss = new FalseKnight(world, x, y, eventCallback);
                     enemies.add(boss); // Bosses extend Enemy, so they fit in the AI update loop naturally
                     entityRenderers.add(new FalseKnightRenderer(boss, Assets.getBossAtlas()));
                 }
@@ -305,10 +330,10 @@ public class GameScreen implements Screen {
         hudRenderer.resize(currentWidth, currentHeight);
 
         achievementManager = new AchievementManager(session, gameUI);
-        playerController = new PlayerController(player, session.inventory, gameUI, eventCallback, damageAnimation);
+        playerController = new PlayerController(player, session.inventory, gameUI, eventCallback);
         cheatController = new CheatController(player, gameUI, this, session);
 
-        world.setContactListener(new WorldContactListener(player, session.inventory, session, eventCallback, damageAnimation));
+        world.setContactListener(new WorldContactListener(player, session.inventory, session, eventCallback));
 
         setupInputProcessors();
     }
@@ -371,6 +396,13 @@ public class GameScreen implements Screen {
                 }
             }
             session.arenaGatesSolidified = true;
+
+            // Wake up the False Knight!
+            for (int i = 0; i < enemies.size; i++) {
+                if (enemies.get(i) instanceof FalseKnight) {
+                    ((FalseKnight) enemies.get(i)).isActive = true;
+                }
+            }
         }
 
         // Safely OPEN gates when arena is unlocked
@@ -408,14 +440,20 @@ public class GameScreen implements Screen {
 
         // 2. Execute DEATH Respawn (Returns to Level Start)
         if (session.pendingDeathRespawn) {
-            player.b2body.setTransform(session.initialSpawnX, session.initialSpawnY, 0);
+            // Check if we are currently trapped in the arena
+            if (session.isArenaLocked) {
+                // Boss death: Respawn at the arena gates (last safe spot)
+                player.b2body.setTransform(session.lastSafeX, session.lastSafeY, 0);
+            } else {
+                // Normal death: Respawn at the map start
+                player.b2body.setTransform(session.initialSpawnX, session.initialSpawnY, 0);
+                // Reset the safe spot to the start point!
+                session.lastSafeX = session.initialSpawnX;
+                session.lastSafeY = session.initialSpawnY;
+            }
+
             player.b2body.setLinearVelocity(0, 0);
 
-            // Reset the safe spot to the start point!
-            session.lastSafeX = session.initialSpawnX;
-            session.lastSafeY = session.initialSpawnY;
-
-            // You can add a localization string for "You Died!" later
             gameUI.showToast(Assets.getString("death_respawning"));
             AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
 
@@ -457,6 +495,10 @@ public class GameScreen implements Screen {
                     wave.isDestroyed = true;
                 } else if (!wave.isDestroyed) {
                     wave.stateTimer += scaledDt;
+                    // Continuous acceleration
+                    float currentVx = body.getLinearVelocity().x;
+                    float direction = Math.signum(currentVx);
+                    body.setLinearVelocity(currentVx + (direction * 15f * scaledDt), 0);
                 }
             }
         }
@@ -501,8 +543,8 @@ public class GameScreen implements Screen {
 
         viewport.apply();
 
-        float anchorX = 16;
-        float anchorY = 11;
+        float anchorX = 5;
+        float anchorY = 10;
 
         // Store the pure logical position calculated by update()
         float realX = camera.position.x;
@@ -567,7 +609,7 @@ public class GameScreen implements Screen {
         // =========================================================
         // PASS 2: BACK (Slightly Slow Parallax)
         // =========================================================
-        camera.position.set(anchorX + (travelX * 0.75f) + shakeOffsetX, anchorY + (travelY * 0.75f) + shakeOffsetY, 0);
+        camera.position.set(anchorX + (travelX * 0.9f) + shakeOffsetX, anchorY + (travelY * 0.9f) + shakeOffsetY, 0);
         camera.update();
 
         renderer.setView(camera.combined,
@@ -674,8 +716,6 @@ public class GameScreen implements Screen {
                 float h = frame.getRegionHeight() / Constants.World.PPM;
 
                 batch.draw(frame, body.getPosition().x - (w / 2f), body.getPosition().y - (h / 2f) + 0.5f, w, h);
-
-                if (anim.isAnimationFinished(wave.stateTimer)) { wave.setToDestroy = true; }
             }
         }
 

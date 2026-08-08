@@ -130,15 +130,16 @@ public class CrystalGuardian extends Enemy {
                 break;
 
             case ENRAGED:
-                // High-speed charge
-                b2body.setLinearVelocity(
-                    direction * Constants.Enemy.CrystalGuardian.CHARGE_SPEED,
-                    b2body.getLinearVelocity().y
-                );
-
-                // Prevent falling off ledges or getting stuck on walls during the charge
                 if (isPathBlocked(center, direction)) {
-                    facingRight = !facingRight; // Turn around if it hits a wall while enraged
+                    // Crash! End the charge instantly.
+                    currentState = GuardianState.RETURNING;
+                    b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+                } else {
+                    // Only apply high-speed charge if the path is clear
+                    b2body.setLinearVelocity(
+                        direction * Constants.Enemy.CrystalGuardian.CHARGE_SPEED,
+                        b2body.getLinearVelocity().y
+                    );
                 }
 
                 stateTimer -= dt;
@@ -172,7 +173,7 @@ public class CrystalGuardian extends Enemy {
     private void fireLaser(Knight player, Vector2 center, float direction) {
         // Fire an instant raycast that damages the player if they haven't moved out of the way!
         Vector2 laserEnd = new Vector2(
-            center.x + (direction * Constants.Enemy.CrystalGuardian.VISION_RANGE),
+            center.x + (direction * Constants.Enemy.CrystalGuardian.LASER_RANGE),
             center.y
         );
 

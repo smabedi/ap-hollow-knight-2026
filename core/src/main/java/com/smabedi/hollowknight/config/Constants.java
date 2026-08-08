@@ -13,8 +13,8 @@ public final class Constants {
         public static final String LANG_MANAGEMENT = "i18n/";
         public static final String STRINGS = LANG_MANAGEMENT + "strings";
         public static final String MAPS = "maps/";
-        public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads_test.tmx";
-        public static final String GREENPATH = MAPS + "greenpath_test.tmx";
+        public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads.tmx";
+        public static final String GREENPATH = MAPS + "greenpath.tmx";
 
         public static final class Saves {
             public static final String ROOT = "saves/";
@@ -116,7 +116,7 @@ public final class Constants {
     }
 
     public static final class World {
-        public static final Vector2 GRAVITY_VECTOR = new Vector2(0, -10f);
+        public static final Vector2 GRAVITY_VECTOR = new Vector2(0, -12f);
         public static final float TIME_STEP = 1 / 60f;
         public static final float PPM = 100f;
     }
@@ -192,7 +192,7 @@ public final class Constants {
         public static final float TYPE_SPEED = 0.025f;
         public static final int DIALOG_NUMBER = 3;
         public static final int PRECEPTS_NUMBER = 3;
-        public static final float INTERACTION_DISTANCE = 4f;
+        public static final float INTERACTION_DISTANCE = 2f;
     }
 
     public static final class FalseKnight {
@@ -212,7 +212,7 @@ public final class Constants {
     }
 
     public static final class Enemy {
-        public static final float RESPAWN_DISTANCE = 20f;
+        public static final float RESPAWN_DISTANCE = 15f;
         public static final float DEATH_KNOCKBACK = 5f;
 
         public static final class Crawlid {
@@ -251,15 +251,16 @@ public final class Constants {
         public static final class CrystalGuardian {
             public static final int HP = 6;
             public static final float CHARGE_SPEED = 5.5f;
-            public static final float RETURN_SPEED = 2f;
+            public static final float RETURN_SPEED = 2.5f;
             public static final int WIDTH = 80;
             public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
             public static final int HEIGHT = 120;
             public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
             public static final float FRICTION = 0.2f;
-            public static final float VISION_RANGE = 12f; // Long range laser sight!
+            public static final float VISION_RANGE = 5f;
+            public static final float LASER_RANGE = 40f;
             public static final float ENRAGE_DURATION = 3f;
-            public static final float LASER_TELEGRAPH_TIME = 0.4f; // A brief pause to warn the player
+            public static final float LASER_TELEGRAPH_TIME = 0.4f;
         }
     }
 

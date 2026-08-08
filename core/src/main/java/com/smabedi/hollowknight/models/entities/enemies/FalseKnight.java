@@ -1,7 +1,5 @@
 package com.smabedi.hollowknight.models.entities.enemies;
 
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -11,6 +9,7 @@ import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
+import com.smabedi.hollowknight.models.entities.items.VfxType;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
 public class FalseKnight extends Enemy {
@@ -26,13 +25,12 @@ public class FalseKnight extends Enemy {
     private float damageTimer = 0f;
     public boolean facingRight = false;
     private final EventCallback eventCallback;
-    private final Animation<TextureRegion> damageAnimation;
     private long runLoopId = -1;
+    public boolean isActive = false;
 
-    public FalseKnight(World world, float x, float y, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
+    public FalseKnight(World world, float x, float y, EventCallback eventCallback) {
         super(world, x, y, Constants.FalseKnight.HP, eventCallback, EnemyType.FALSE_KNIGHT);
         this.eventCallback = eventCallback;
-        this.damageAnimation = damageAnimation;
         define();
     }
 
@@ -56,6 +54,12 @@ public class FalseKnight extends Enemy {
     @Override
     public void update(float dt, Knight player) {
         if (dead) return;
+
+        // Do nothing until the arena is locked
+        if (!isActive) {
+            b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+            return;
+        }
 
         // Manage rapid-damage memory
         if (damageTimer > 0) {
@@ -188,7 +192,7 @@ public class FalseKnight extends Enemy {
                     subStateTimer -= dt;
                     if (subStateTimer <= 0) {
                         currentSubState = BossSubState.RECOVERY;
-                        subStateTimer = 0.8f; // duration of pulling mace back up
+                        subStateTimer = (currentPhase == BossPhase.PHASE_2) ? 0.4f : 0.8f;
                     }
                 } else if (currentSubState == BossSubState.RECOVERY) {
                     subStateTimer -= dt;
@@ -215,7 +219,7 @@ public class FalseKnight extends Enemy {
                     // Use the method here too!
                     if (isGrounded() && b2body.getLinearVelocity().y <= 0.1f) {
                         currentSubState = BossSubState.RECOVERY;
-                        subStateTimer = 0.5f; // Land recovery
+                        subStateTimer = (currentPhase == BossPhase.PHASE_2) ? 0.25f : 0.5f;
                         eventCallback.addCameraTrauma(0.75f);
                         AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_LAND, 0.85f, 1.15f); // Heavy Landing
                     }
@@ -259,7 +263,7 @@ public class FalseKnight extends Enemy {
                     // ADDED: Stop if he reaches you, OR if the timer runs out, OR if he hits a wall (x velocity drops)
                     if (dist < 2f || subStateTimer <= 0 || Math.abs(b2body.getLinearVelocity().x) < 0.5f) {
                         currentSubState = BossSubState.RECOVERY;
-                        subStateTimer = 0.6f;
+                        subStateTimer = (currentPhase == BossPhase.PHASE_2) ? 0.3f : 0.6f;
                         // Audio: End the loop upon crashing or stopping
                         if (runLoopId != -1) {
                             AudioManager.stopSfx(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, runLoopId);
@@ -308,7 +312,7 @@ public class FalseKnight extends Enemy {
 
     @Override
     public void takeDamage(int amount) {
-        if (dead) return;
+        if (dead || !isActive) return;
 
         hp -= amount;
         recentDamageCount++;
@@ -325,8 +329,10 @@ public class FalseKnight extends Enemy {
             AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_FK_ARMOR_HIT, 0.8f, 1.2f);
         }
 
-        // Stun Phase Shift (50% HP)
-        if (hp <= maxHp / 2 && currentPhase == BossPhase.PHASE_1) {
+        if (hp <= 0) {
+            die();
+        } else if (hp <= maxHp / 2 && currentPhase == BossPhase.PHASE_1) {
+            // Stun Phase Shift (50% HP)
             currentPhase = BossPhase.STUNNED;
             stunTimer = 4f;
             currentMove = BossMove.IDLE;
@@ -340,8 +346,6 @@ public class FalseKnight extends Enemy {
                 runLoopId = -1;
             }
             System.out.println("False Knight Stunned! Armor is open!");
-        } else if (hp <= 0) {
-            die();
         }
     }
 
@@ -363,7 +367,7 @@ public class FalseKnight extends Enemy {
                 // Apply 1 damage, pushing the player away based on boss direction
                 player.takeDamage(1, direction);
                 Vector2 playerPos = player.b2body.getPosition();
-                eventCallback.spawnStaticVfx(damageAnimation, playerPos.x, playerPos.y, 0, 0, player.facingRight, true);
+                eventCallback.spawnStaticVfx(VfxType.DAMAGE, playerPos.x, playerPos.y, 0, 0, player.facingRight, true);
             }
             return true;
         }, lowerX, lowerY, upperX, upperY);

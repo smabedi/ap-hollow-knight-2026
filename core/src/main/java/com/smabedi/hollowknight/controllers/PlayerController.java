@@ -1,8 +1,6 @@
 package com.smabedi.hollowknight.controllers;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.QueryCallback;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
@@ -14,6 +12,7 @@ import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
+import com.smabedi.hollowknight.models.entities.items.VfxType;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.inventory.CharmType;
@@ -29,14 +28,12 @@ public class PlayerController {
     private GameUI gameUI;
     private boolean wasZoteNearby = false;
     private final EventCallback eventCallback;
-    private final Animation<TextureRegion> damageAnimation;
 
-    public PlayerController(Knight player, Inventory inventory, GameUI gameUI, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
+    public PlayerController(Knight player, Inventory inventory, GameUI gameUI, EventCallback eventCallback) {
         this.player = player;
         this.inventory = inventory;
         this.gameUI = gameUI;
         this.eventCallback = eventCallback;
-        this.damageAnimation = damageAnimation;
 
         inventory.addOwnedCharm(CharmType.SOUL_CATCHER);
         inventory.addOwnedCharm(CharmType.DASHMASTER);
@@ -208,9 +205,9 @@ public class PlayerController {
 
             if (inventory.isEquipped(CharmType.SHARP_SHADOW)) {
                 player.iFrameTimer = Constants.Knight.Dash.DURATION * 1.5f;
-                eventCallback.spawnStaticVfx(Assets.getShadowDashVfx(), player.b2body.getPosition().x, player.b2body.getPosition().y, 0, 0, player.facingRight, false);
+                eventCallback.spawnStaticVfx(VfxType.SHADOW_DASH, player.b2body.getPosition().x, player.b2body.getPosition().y, 0, 0, player.facingRight, false);
             } else {
-                eventCallback.spawnStaticVfx(Assets.getNormalDashVfx(), player.b2body.getPosition().x, player.b2body.getPosition().y, 0, 0, player.facingRight, false);
+                eventCallback.spawnStaticVfx(VfxType.NORMAL_DASH, player.b2body.getPosition().x, player.b2body.getPosition().y, 0, 0, player.facingRight, false);
             }
             return;
         }
@@ -338,15 +335,15 @@ public class PlayerController {
                     player.soul -= Constants.Knight.FOCUS_COST;
 
                     if (pressingUp) {
-                        player.wraithsTimer = Constants.Knight.HowlingWraiths.DURATION; // Start the animation lock!
+                        player.wraithsTimer = Constants.Knight.HowlingWraiths.DURATION;
                         player.wraithsTicksFired = 0;
-                        Animation<TextureRegion> wraithsAnim = player.hasVoidHeart ? Assets.getVoidWraithsVfx() : Assets.getWraithsVfx();
+                        VfxType wraithsAnim = player.hasVoidHeart ? VfxType.VOID_WRAITHS : VfxType.WRAITHS;
                         eventCallback.spawnStaticVfx(wraithsAnim, center.x, center.y, 0, Constants.Knight.HEIGHT_HALVED_SCALED * 3f, player.facingRight, true);
                         System.out.println("Howling Wraiths Cast!");
                     } else {
                         player.spritCastTimer = Constants.Knight.VengefulSpirit.DURATION;
                         new VengefulSpirit(player.world, center.x, center.y, player.facingRight, inventory.isEquipped(CharmType.VOID_HEART));
-                        Animation<TextureRegion> soulAnim = player.hasVoidHeart ? Assets.getVoidSpiritCastVfx() : Assets.getSpiritCastVfx();
+                        VfxType soulAnim = player.hasVoidHeart ? VfxType.VOID_SPIRIT_CAST : VfxType.SPIRIT_CAST;
                         eventCallback.spawnStaticVfx(soulAnim, center.x, center.y, Constants.Knight.WIDTH_HALVED_SCALED, 0, player.facingRight, true);
                         System.out.println("Vengeful Spirit Cast!");
                     }
@@ -405,9 +402,9 @@ public class PlayerController {
                 // Only damage them if they are alive AND haven't been hit this dash
                 if (!enemy.isDead() && !enemiesHitDuringDash.contains(enemy, true)) {
                     // Sharp Shadow deals exactly 1 damage (standard nail damage)
-                    enemy.applyKnockback(0, 2f);
+                    enemy.applyKnockback(0, 4f);
                     enemy.takeDamage(1);
-                    eventCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
+                    eventCallback.spawnStaticVfx(VfxType.DAMAGE, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
                     // Add them to the list so they don't get hit on the next frame
                     enemiesHitDuringDash.add(enemy);
@@ -461,7 +458,7 @@ public class PlayerController {
                     IDamageable enemy = (IDamageable) userData;
                     int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
                     enemy.takeDamage(damage);
-                    eventCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
+                    eventCallback.spawnStaticVfx(VfxType.DAMAGE, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
                     if (!(enemy instanceof Zote)) {
                         int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
@@ -502,9 +499,9 @@ public class PlayerController {
                     int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
                     float knockbackMulti = inventory.isEquipped(CharmType.HEAVY_BLOW) ? 2f : 1f;
 
-                    enemy.applyKnockback(direction * 3f * knockbackMulti, 1f);
+                    enemy.applyKnockback(direction * 3f * knockbackMulti, 4f);
                     enemy.takeDamage(damage);
-                    eventCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
+                    eventCallback.spawnStaticVfx(VfxType.DAMAGE, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
                     if (!(enemy instanceof Zote)) {
                         int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
@@ -542,10 +539,10 @@ public class PlayerController {
                     // Apply Void Heart modifier
                     int spellDamage = inventory.isEquipped(CharmType.VOID_HEART) ? 2 : 1;
                     if (player.wraithsTicksFired == 2 || (enemy instanceof Enemy && ((Enemy) enemy).getHp() == 1)) {
-                        enemy.applyKnockback(0, 2f);
+                        enemy.applyKnockback(0, 4f);
                     }
                     enemy.takeDamage(spellDamage);
-                    eventCallback.spawnStaticVfx(damageAnimation, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
+                    eventCallback.spawnStaticVfx(VfxType.DAMAGE, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
                 }
             }
             return true;

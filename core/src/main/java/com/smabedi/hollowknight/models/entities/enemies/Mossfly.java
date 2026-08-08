@@ -37,6 +37,11 @@ public class Mossfly extends Enemy {
         if (dead) {
             // When it dies, turn gravity back on so the corpse falls to the ground!
             b2body.setGravityScale(1f);
+
+            // Apply heavy friction so the corpse stops sliding
+            Vector2 vel = b2body.getLinearVelocity();
+            b2body.setLinearVelocity(vel.x * 0.9f, vel.y);
+
             return;
         }
 

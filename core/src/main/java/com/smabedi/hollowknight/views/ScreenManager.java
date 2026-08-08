@@ -29,7 +29,10 @@ public final class ScreenManager {
     }
 
     public static void setMenuScreen(ScreenType type) {
-        AudioManager.playMusic(Constants.Paths.Sounds.BGM_MENU, true);
+        // Only trigger the menu music if we are actually in the main menus (not paused in-game)
+        if (!isGameActive()) {
+            AudioManager.playMusic(Constants.Paths.Sounds.BGM_MENU, true);
+        }
 
         if (!screens.containsKey(type)) {
             Screen newScreen = switch (type) {

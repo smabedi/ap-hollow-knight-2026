@@ -1,7 +1,5 @@
 package com.smabedi.hollowknight.models.game;
 
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
@@ -10,6 +8,7 @@ import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.enemies.Enemy;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
 import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
+import com.smabedi.hollowknight.models.entities.items.VfxType;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.inventory.CharmType;
@@ -19,14 +18,12 @@ public class WorldContactListener implements ContactListener {
     private final Knight player;
     private final Inventory inventory;
     private final EventCallback eventCallback;
-    private final Animation<TextureRegion> damageAnimation;
     private final GameSession session;
 
-    public WorldContactListener(Knight player, Inventory inventory, GameSession session, EventCallback eventCallback, Animation<TextureRegion> damageAnimation) {
+    public WorldContactListener(Knight player, Inventory inventory, GameSession session, EventCallback eventCallback) {
         this.player = player;
         this.inventory = inventory;
         this.eventCallback = eventCallback;
-        this.damageAnimation = damageAnimation;
         this.session = session;
     }
 
@@ -131,8 +128,7 @@ public class WorldContactListener implements ContactListener {
             // Calculate knockback direction. If the hazard is to our right, we get knocked left (-1).
             float knockbackDirX = getKnockbackDirX(hazardFixture, playerFixture);
             player.takeDamage(1, knockbackDirX);
-            eventCallback.spawnStaticVfx(damageAnimation, playerFixture.getBody().getPosition().x, playerFixture.getBody().getPosition().y, 0, 0, true, true);
-
+            eventCallback.spawnStaticVfx(VfxType.DAMAGE, playerFixture.getBody().getPosition().x, playerFixture.getBody().getPosition().y, 0, 0, true, true);
             if ("spikes".equals(hazardData)) {
                 session.pendingRespawn = true;
             }
@@ -185,7 +181,7 @@ public class WorldContactListener implements ContactListener {
                     // Apply Void Heart modifier
                     int spellDamage = inventory.isEquipped(CharmType.VOID_HEART) ? 2 : 1;
                     enemy.takeDamage(spellDamage);
-                    eventCallback.spawnStaticVfx(damageAnimation, hazardFix.getBody().getPosition().x, hazardFix.getBody().getPosition().y, 0, 0, true, true);
+                    eventCallback.spawnStaticVfx(VfxType.DAMAGE, hazardFix.getBody().getPosition().x, hazardFix.getBody().getPosition().y, 0, 0, true, true);
                 }
             }
         }
