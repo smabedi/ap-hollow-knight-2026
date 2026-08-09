@@ -174,8 +174,8 @@ public final class Constants {
 
         public static final class HowlingWraiths {
             public static final float DURATION = 1f;
-            public static final float WIDTH = 2f;
-            public static final float HEIGHT = 2f;
+            public static final float WIDTH = 3f;
+            public static final float HEIGHT = 4f;
         }
 
         public static final class VengefulSpirit {

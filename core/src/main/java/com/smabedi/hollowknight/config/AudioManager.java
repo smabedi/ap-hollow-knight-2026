@@ -247,7 +247,10 @@ public class AudioManager {
                 }
             }
             case NONE -> {
-                if (activeMusic != null && activeMusic.isPlaying()) {
+                if (activeMusic != null) {
+                    if (!activeMusic.isPlaying()) {
+                        activeMusic.play();
+                    }
                     activeMusic.setVolume(maxMusicVolume);
                 }
             }

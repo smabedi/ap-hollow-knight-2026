@@ -45,6 +45,7 @@ public class Knight {
     public boolean hasVoidHeart = false;
     public KnightState currentState = KnightState.IDLE;
     public KnightState previousState = KnightState.IDLE;
+    public boolean isAttackingUp = false;
     public boolean isAttackingDown = false;
     public long walkLoopId = -1;
     public long wallSlideLoopId = -1;
@@ -95,7 +96,9 @@ public class Knight {
      */
     private KnightState getState() {
         if (attackDurationTimer > 0) {
-            return isAttackingDown ? KnightState.ATTACKING_DOWN : KnightState.ATTACKING_SIDE;
+            if (isAttackingDown) return KnightState.ATTACKING_DOWN;
+            if (isAttackingUp) return KnightState.ATTACKING_UP;
+            return KnightState.ATTACKING_SIDE;
         }
 
         if (spritCastTimer > 0) return hasVoidHeart ? KnightState.CASTING_VOID_SPIRIT : KnightState.CASTING_SPIRIT;

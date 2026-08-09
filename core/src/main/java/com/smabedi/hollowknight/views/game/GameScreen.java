@@ -223,7 +223,7 @@ public class GameScreen implements Screen {
                         // Dispatch the screen transition strictly to the main OpenGL render thread
                         Gdx.app.postRunnable(() -> ScreenManager.setEndGameScreen(session));
                     }
-                }, 1f);
+                }, 2f);
             }
 
             @Override
@@ -501,8 +501,11 @@ public class GameScreen implements Screen {
         float targetX = player.b2body.getPosition().x;
         float targetY = player.b2body.getPosition().y;
 
-        camera.position.x += (targetX - camera.position.x) * 0.1f;
-        camera.position.y += (targetY - camera.position.y) * 0.1f;
+        float cameraSpeed = 8f;
+        float lerpFactor = Math.min(1f, cameraSpeed * scaledDt);
+
+        camera.position.x += (targetX - camera.position.x) * lerpFactor;
+        camera.position.y += (targetY - camera.position.y) * lerpFactor;
 
         float camHalfWidth = camera.viewportWidth / 2f;
         float camHalfHeight = camera.viewportHeight / 2f;

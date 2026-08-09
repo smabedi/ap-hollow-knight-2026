@@ -17,7 +17,7 @@ public class KnightRenderer implements EntityRenderer {
     private final Knight player;
     private final Animation<TextureRegion> idleAnim, runAnim, jumpAnim, fallAnim, doubleJumpAnim;
     private final Animation<TextureRegion> dashAnim, shadowDashAnim, wallSlideAnim;
-    private final Animation<TextureRegion> attackSideAnim, attackDownAnim, focusAnim;
+    private final Animation<TextureRegion> attackSideAnim, attackDownAnim, attackUpAnim, focusAnim;
     private final Animation<TextureRegion> castWraithsAnim, castVoidWraithsAnim, castSpiritAnim, castVoidSpiritAnim;
     private final Animation<TextureRegion> sideSlashVfx, downSlashVfx;
     private float stateTimer = 0f;
@@ -25,6 +25,7 @@ public class KnightRenderer implements EntityRenderer {
     private Animation<TextureRegion> activeVfx = null;
     private float vfxTimer = 0f;
     private boolean vfxFacingRight = true;
+    private float lastFocusTimer = 0f;
 
     public KnightRenderer(Knight player, TextureAtlas atlas) {
         this.player = player;
@@ -42,6 +43,7 @@ public class KnightRenderer implements EntityRenderer {
 
         attackSideAnim = new Animation<>(0.075f, atlas.findRegions("knight_charge_slash"), Animation.PlayMode.NORMAL);
         attackDownAnim = new Animation<>(0.1f, atlas.findRegions("knight_down_slash_v0"), Animation.PlayMode.NORMAL);
+        attackUpAnim = new Animation<>(0.075f, atlas.findRegions("knight_up_slash"), Animation.PlayMode.NORMAL);
         sideSlashVfx = new Animation<>(0.04f, atlas.findRegions("knight_charge_slash_effect"), Animation.PlayMode.NORMAL);
         downSlashVfx = new Animation<>(0.075f, atlas.findRegions("knight_down_slash_effect"), Animation.PlayMode.NORMAL);
 
@@ -53,14 +55,19 @@ public class KnightRenderer implements EntityRenderer {
 
     @Override
     public void render(Batch batch, float dt) {
-        if (player.currentState != lastRenderedState) {
+        // Detect if state changed OR if a continuous focus cycle restarted (focusTimer reset to 0)
+        boolean focusRestarted = (player.currentState == KnightState.FOCUSING && player.focusTimer < lastFocusTimer);
+
+        if (player.currentState != lastRenderedState || focusRestarted) {
             stateTimer = 0;
             if (player.currentState == KnightState.ATTACKING_SIDE) triggerVfx(sideSlashVfx);
             if (player.currentState == KnightState.ATTACKING_DOWN) triggerVfx(downSlashVfx);
+            if (player.currentState == KnightState.ATTACKING_UP) triggerVfx(downSlashVfx);
         } else {
             stateTimer += dt;
         }
         lastRenderedState = player.currentState;
+        lastFocusTimer = player.focusTimer;
 
         if (activeVfx != null) vfxTimer += dt;
 
@@ -117,6 +124,9 @@ public class KnightRenderer implements EntityRenderer {
                 // Apply targeted offsets based on the distinct geometry of downward versus lateral attacks
                 if (player.isAttackingDown) {
                     vfxY -= Constants.Knight.HEIGHT_HALVED_SCALED;
+                } else if (player.isAttackingUp) {
+                    vfxY += Constants.Knight.HEIGHT_HALVED_SCALED * 1.5f; // Position above the Knight's head
+                    drawFlipY = true;
                 } else {
                     float sideOffsetX = 1f;
                     vfxX += vfxFacingRight ? sideOffsetX : -sideOffsetX;
@@ -151,6 +161,7 @@ public class KnightRenderer implements EntityRenderer {
             case CASTING_WRAITHS -> castWraithsAnim;
             case CASTING_VOID_SPIRIT -> castVoidSpiritAnim;
             case CASTING_SPIRIT -> castSpiritAnim;
+            case ATTACKING_UP -> attackUpAnim;
             case ATTACKING_DOWN -> attackDownAnim;
             case ATTACKING_SIDE -> attackSideAnim;
             case SHADOW_DASHING -> shadowDashAnim;

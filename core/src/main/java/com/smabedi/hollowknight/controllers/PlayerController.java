@@ -254,6 +254,7 @@ public class PlayerController {
                 player.b2body.applyLinearImpulse(new Vector2(0, Constants.Knight.JUMP_STRENGTH), player.b2body.getWorldCenter(), true);
                 AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_JUMP, 0.9f, 1.1f);
                 player.isDoubleJumping = false;
+                player.isJumping = true;
             }
             else if (player.canDoubleJump) {
                 player.b2body.setLinearVelocity(player.b2body.getLinearVelocity().x, 0);
@@ -261,6 +262,7 @@ public class PlayerController {
                 AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_JUMP, 0.9f, 1.1f);
                 player.canDoubleJump = false;
                 player.isDoubleJumping = true;
+                player.isJumping = true;
             }
         }
 
@@ -273,12 +275,15 @@ public class PlayerController {
 
             player.attackDurationTimer = player.attackCooldownTimer;
             player.isAttackingDown = !player.isGrounded && Gdx.input.isKeyPressed(downKey);
+            player.isAttackingUp = Gdx.input.isKeyPressed(upKey);
             enemiesHitDuringAttack.clear();
         }
 
         if (player.pogoDurationTimer > 0) {
             if (player.isAttackingDown) {
                 executePogoJump(targetVelX);
+            } else if (player.isAttackingUp) {
+                executeUpwardAttack();
             } else {
                 executeHorizontalAttack();
             }
@@ -485,6 +490,47 @@ public class PlayerController {
                     float knockbackMulti = inventory.isEquipped(CharmType.HEAVY_BLOW) ? 2f : 1f;
 
                     enemy.applyKnockback(direction * 3f * knockbackMulti, 4f);
+                    enemy.takeDamage(damage);
+                    eventCallback.spawnStaticVfx(VfxType.DAMAGE, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
+
+                    if (!(enemy instanceof Zote)) {
+                        int soulGain = inventory.isEquipped(CharmType.SOUL_CATCHER)
+                            ? Constants.Knight.SOUL_PER_HIT + 5
+                            : Constants.Knight.SOUL_PER_HIT;
+                        player.addSoul(soulGain);
+                    }
+
+                    enemiesHitDuringAttack.add(enemy);
+                }
+            }
+            return true;
+        };
+
+        player.world.QueryAABB(attackCallback, lowerX, lowerY, upperX, upperY);
+    }
+
+    private void executeUpwardAttack() {
+        Vector2 center = player.b2body.getWorldCenter();
+        float reachY = Constants.Knight.NAIL_REACH;
+        float widthX = Constants.Knight.WIDTH_HALVED_SCALED * 2f;
+
+        player.isAttackingDown = false;
+        player.isAttackingUp = true;
+
+        float lowerX = center.x - widthX;
+        float upperX = center.x + widthX;
+        float lowerY = center.y;
+        float upperY = center.y + reachY;
+
+        QueryCallback attackCallback = fixture -> {
+            Object userData = fixture.getUserData();
+            if (userData instanceof IDamageable enemy) {
+                if (!enemy.isDead() && !enemiesHitDuringAttack.contains(enemy, true)) {
+                    int damage = inventory.isEquipped(CharmType.UNBREAKABLE_STRENGTH) ? 2 : 1;
+                    float knockbackMulti = inventory.isEquipped(CharmType.HEAVY_BLOW) ? 2f : 1f;
+
+                    // Apply upward knockback to enemies
+                    enemy.applyKnockback(0, 4f * knockbackMulti);
                     enemy.takeDamage(damage);
                     eventCallback.spawnStaticVfx(VfxType.DAMAGE, fixture.getBody().getPosition().x, fixture.getBody().getPosition().y, 0, 0, player.facingRight, true);
 
