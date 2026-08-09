@@ -1,10 +1,14 @@
 package com.smabedi.hollowknight.models.entities.enemies;
 
+/**
+ * Represents the granular microstates within a boss entity's active maneuver.
+ * Used to synchronize rendering frames with precise physical hitbox activations and recovery periods.
+ */
 public enum BossSubState {
-    WIND_UP,     // Anticipate / Preparing to jump
-    ACTIVE,      // Midair or charging forward
-    ATTACK,      // The exact moment of smashing the ground
-    RECOVERY,    // Standing back up / recovering from smash
-    NONE,        // Idle
-    STUN_HIT     // When hit while armor is open
+    WIND_UP,
+    ACTIVE,
+    ATTACK,
+    RECOVERY,
+    NONE,
+    STUN_HIT
 }

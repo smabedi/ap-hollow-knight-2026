@@ -12,6 +12,11 @@ import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
 
+/**
+ * Abstract base class for all Scene2D-driven menu interfaces.
+ * Provides a unified Stage viewport, shared UI Skin definitions, and handles
+ * the rendering pipeline for dynamic, animated background themes.
+ */
 abstract public class MenuScreen implements Screen {
     protected final Stage stage;
     protected final Skin skin;
@@ -24,16 +29,19 @@ abstract public class MenuScreen implements Screen {
         this.stage = new Stage(viewport);
         this.skin = Assets.getSkin();
 
-        // 1. Fetch the saved theme key (e.g., "theme_void")
+        // Retrieve the user's persisted theme preference (e.g., "theme_void")
         String themeKey = GameSettings.getMenuTheme();
 
-        // 2. Strip the prefix to match the exact atlas region names
+        // Parse the raw setting key to derive the exact TextureAtlas region identifier
         String regionName = themeKey.replace("theme_", "");
 
-        // 3. Initialize the animation at 10fps (0.1f duration per frame)
+        // Instantiate the background animation to cycle at 10 frames per second
         this.bgAnimation = new Animation<>(0.1f, Assets.getBackgroundAtlas().findRegions(regionName), Animation.PlayMode.LOOP);
     }
 
+    /**
+     * Implementing classes must define their specific Scene2D actor layouts here.
+     */
     abstract public void showCore();
 
     @Override
@@ -51,7 +59,7 @@ abstract public class MenuScreen implements Screen {
         stateTime += delta;
         TextureRegion currentFrame = bgAnimation.getKeyFrame(stateTime, true);
 
-        // Render the background animation first
+        // Render the active background animation frame spanning the entire viewport
         stage.getBatch().begin();
         stage.getBatch().draw(
             currentFrame,
@@ -61,7 +69,7 @@ abstract public class MenuScreen implements Screen {
         );
         stage.getBatch().end();
 
-        // Render the UI elements on top
+        // Step and render the Scene2D UI actors overlaid on top of the background
         stage.act(delta);
         stage.draw();
     }

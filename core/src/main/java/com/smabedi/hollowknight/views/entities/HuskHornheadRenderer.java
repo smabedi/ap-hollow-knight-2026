@@ -8,6 +8,11 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.enemies.HornheadState;
 import com.smabedi.hollowknight.models.entities.enemies.HuskHornhead;
 
+/**
+ * Renders the Husk Hornhead entity.
+ * Implements an animation interceptor to inject a transitional 'anticipation' wind-up frame
+ * before executing the continuous charge loop dictated by the underlying AI model.
+ */
 public class HuskHornheadRenderer implements EntityRenderer {
     private final HuskHornhead hornhead;
     private final Animation<TextureRegion> idleAnim;
@@ -18,11 +23,11 @@ public class HuskHornheadRenderer implements EntityRenderer {
     private float stateTimer = 0f;
     private boolean facingRight = true;
     private VisualState currentVisualState = VisualState.WALK;
+
     public HuskHornheadRenderer(HuskHornhead hornhead, TextureAtlas atlas) {
         this.hornhead = hornhead;
         idleAnim = new Animation<>(0.1f, atlas.findRegions("hornhead_idle"), Animation.PlayMode.LOOP);
         walkAnim = new Animation<>(0.1f, atlas.findRegions("hornhead_walk"), Animation.PlayMode.LOOP);
-        // Normal play mode so it doesn't loop while we wait for it to finish
         anticipateAnim = new Animation<>(0.05f, atlas.findRegions("hornhead_anticipate"), Animation.PlayMode.NORMAL);
         attackAnim = new Animation<>(0.08f, atlas.findRegions("hornhead_attack"), Animation.PlayMode.LOOP);
         deathAnim = new Animation<>(0.1f, atlas.findRegions("hornhead_death"), Animation.PlayMode.LOOP);
@@ -33,7 +38,7 @@ public class HuskHornheadRenderer implements EntityRenderer {
         VisualState nextState = currentVisualState;
         HornheadState logicState = hornhead.getCurrentState();
 
-        // 1. Map Logical State to Visual State
+        // Project logical states to visual states, utilizing an interceptor for complex transitions
         if (hornhead.isDead()) {
             nextState = VisualState.DEAD;
         } else if (logicState == HornheadState.RESTING) {
@@ -41,17 +46,16 @@ public class HuskHornheadRenderer implements EntityRenderer {
         } else if (logicState == HornheadState.WALKING) {
             nextState = VisualState.WALK;
         } else if (logicState == HornheadState.CHARGING) {
-            // INTERCEPT: If we just started charging, play anticipate first!
+            // Intercept the logical CHARGING state to enforce a visual wind-up (ANTICIPATE)
+            // before permitting the renderer to cycle the ATTACK animation loop.
             if (currentVisualState != VisualState.ANTICIPATE && currentVisualState != VisualState.ATTACK) {
                 nextState = VisualState.ANTICIPATE;
             }
-            // Once anticipate is fully finished, proceed to the full attack loop
             else if (currentVisualState == VisualState.ANTICIPATE && anticipateAnim.isAnimationFinished(stateTimer)) {
                 nextState = VisualState.ATTACK;
             }
         }
 
-        // 2. Reset timer on state transitions
         if (nextState != currentVisualState) {
             stateTimer = 0f;
             currentVisualState = nextState;
@@ -68,7 +72,8 @@ public class HuskHornheadRenderer implements EntityRenderer {
             default -> currentFrame = walkAnim.getKeyFrame(stateTimer);
         }
 
-        // 3. Flipping logic (Default asset faces LEFT)
+        // Apply a small velocity threshold tolerance (0.2f) to prevent sprite jittering
+        // during micro-collisions or when decelerating.
         float velX = hornhead.b2body.getLinearVelocity().x;
 
         if (velX > 0.2f) {
@@ -83,7 +88,6 @@ public class HuskHornheadRenderer implements EntityRenderer {
             currentFrame.flip(true, false);
         }
 
-        // 4. Draw
         float width = currentFrame.getRegionWidth() / Constants.World.PPM;
         float height = currentFrame.getRegionHeight() / Constants.World.PPM;
         float x = hornhead.b2body.getPosition().x - (width / 2f);
@@ -92,6 +96,5 @@ public class HuskHornheadRenderer implements EntityRenderer {
         batch.draw(currentFrame, x, y, width, height);
     }
 
-    // Visual states diverge slightly from logical states to allow for transition animations
     private enum VisualState {IDLE, WALK, ANTICIPATE, ATTACK, DEAD}
 }

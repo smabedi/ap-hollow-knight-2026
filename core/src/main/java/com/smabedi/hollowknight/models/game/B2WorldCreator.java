@@ -9,15 +9,27 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.views.game.LocationType;
 
+/**
+ * Utility class responsible for parsing TiledMap layers and generating
+ * corresponding Box2D physics bodies and fixtures.
+ * Constructs static environment geometry, hazard zones, and event triggers.
+ */
 public class B2WorldCreator {
 
+    /**
+     * Iterates through the provided TiledMap layers and builds the physical game world.
+     *
+     * @param world   The active Box2D world context.
+     * @param map     The loaded Tiled map object.
+     * @param session The active game session tracking player state and arena limits.
+     */
     public B2WorldCreator(World world, TiledMap map, GameSession session) {
         BodyDef bodyDef = new BodyDef();
         PolygonShape shape = new PolygonShape();
         FixtureDef fixtureDef = new FixtureDef();
         Body body;
 
-        // 1. Extract Global Map Dimensions automatically
+        // Establish the operational boundaries for the camera based on map properties
         int mapWidthInTiles = map.getProperties().get("width", Integer.class);
         int mapHeightInTiles = map.getProperties().get("height", Integer.class);
         int tilePixelWidth = map.getProperties().get("tilewidth", Integer.class);
@@ -28,7 +40,7 @@ public class B2WorldCreator {
         session.mapMaxX = (mapWidthInTiles * tilePixelWidth) / Constants.World.PPM;
         session.mapMaxY = (mapHeightInTiles * tilePixelHeight) / Constants.World.PPM;
 
-        // Generate Static GROUND Hitboxes
+        // Instantiate solid structural colliders for the map ground
         for (MapObject object : map.getLayers().get("ground").getObjects()) {
 
             if (object instanceof RectangleMapObject) {
@@ -56,7 +68,6 @@ public class B2WorldCreator {
                 }
 
                 bodyDef.type = BodyDef.BodyType.StaticBody;
-                // Transformed vertices already contain world positions, so the body anchor is 0,0
                 bodyDef.position.set(0, 0);
 
                 body = world.createBody(bodyDef);
@@ -69,7 +80,7 @@ public class B2WorldCreator {
             }
         }
 
-        // Generate Static SPIKES Hitboxes
+        // Instantiate non-solid hazard regions for spikes
         for (MapObject object : map.getLayers().get("spikes").getObjects()) {
 
             if (object instanceof RectangleMapObject) {
@@ -84,7 +95,7 @@ public class B2WorldCreator {
                 shape.setAsBox((rect.getWidth() / 2) / Constants.World.PPM,
                     (rect.getHeight() / 2) / Constants.World.PPM);
                 fixtureDef.shape = shape;
-                fixtureDef.isSensor = true; // Sensors detect overlap but don't block movement
+                fixtureDef.isSensor = true;
 
                 body.createFixture(fixtureDef).setUserData("spikes");
 
@@ -109,7 +120,7 @@ public class B2WorldCreator {
             }
         }
 
-        // Generate Arena Sensors (Trigger)
+        // Establish the entry detection zones for initiating boss fights
         if (map.getLayers().get("arena_sensors") != null) {
             for (MapObject object : map.getLayers().get("arena_sensors").getObjects()) {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
@@ -125,7 +136,7 @@ public class B2WorldCreator {
             }
         }
 
-        // Generate Arena Gates (Initially sensors so player can walk in)
+        // Prepare physical arena gates (initialized as permeable sensors)
         if (map.getLayers().get("arena_gates") != null) {
             for (MapObject object : map.getLayers().get("arena_gates").getObjects()) {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
@@ -136,17 +147,17 @@ public class B2WorldCreator {
                 shape.setAsBox((rect.getWidth() / 2) / Constants.World.PPM,
                     (rect.getHeight() / 2) / Constants.World.PPM);
                 fixtureDef.shape = shape;
-                fixtureDef.isSensor = true; // STARTS AS SENSOR
+                fixtureDef.isSensor = true;
                 body.createFixture(fixtureDef).setUserData("arena_gate");
             }
         }
 
+        // Restrict camera movement to the arena boundaries during boss sequences
         if (map.getLayers().get("camera_bounds") != null) {
             for (MapObject object : map.getLayers().get("camera_bounds").getObjects()) {
                 if (object instanceof RectangleMapObject) {
                     Rectangle rect = ((RectangleMapObject) object).getRectangle();
 
-                    // Convert pixels to meters (PPM) and store in session
                     session.arenaMinX = rect.getX() / Constants.World.PPM;
                     session.arenaMinY = rect.getY() / Constants.World.PPM;
                     session.arenaMaxX = (rect.getX() + rect.getWidth()) / Constants.World.PPM;
@@ -155,7 +166,7 @@ public class B2WorldCreator {
             }
         }
 
-        // Generate Safe Spot Sensors
+        // Establish safe respawn checkpoints
         if (map.getLayers().get("safe_spots") != null) {
             for (MapObject object : map.getLayers().get("safe_spots").getObjects()) {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
@@ -174,7 +185,7 @@ public class B2WorldCreator {
             }
         }
 
-        // Generate Transition Sensors
+        // Configure environmental mapping transitions
         if (map.getLayers().get("transitions") != null) {
             for (MapObject object : map.getLayers().get("transitions").getObjects()) {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
@@ -184,11 +195,9 @@ public class B2WorldCreator {
                     (rect.getY() + rect.getHeight() / 2) / Constants.World.PPM);
                 body = world.createBody(bodyDef);
 
-                // Fetch custom properties from Tiled
                 String targetMapStr = object.getProperties().get("target_map", String.class);
                 LocationType targetLoc = LocationType.valueOf(targetMapStr);
 
-                // Attach our data class directly to the BODY
                 body.setUserData(new TransitionData(targetLoc));
 
                 shape.setAsBox((rect.getWidth() / 2) / Constants.World.PPM,

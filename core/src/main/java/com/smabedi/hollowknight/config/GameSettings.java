@@ -5,6 +5,10 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Preferences;
 import com.smabedi.hollowknight.models.entities.enemies.EnemyType;
 
+/**
+ * Handles persistent user configurations (Keybinds, Audio, Achievements)
+ * backed by LibGDX Preferences. Data is maintained between game sessions.
+ */
 public class GameSettings {
     // Setting Keys
     public static final String MUSIC_VOL = "music_vol";
@@ -13,6 +17,7 @@ public class GameSettings {
     public static final String BRIGHTNESS = "brightness";
     public static final String LANGUAGE = "language"; // "en" for English and "fr" for French
     public static final String MENU_THEME = "menu_theme";
+
     // Keybind Keys
     public static final String KEY_LEFT = "key_left";
     public static final String KEY_RIGHT = "key_right";
@@ -23,9 +28,14 @@ public class GameSettings {
     public static final String KEY_DASH = "key_dash";
     public static final String KEY_FOCUS = "key_focus";
     public static final String KEY_INVENTORY = "key_inventory";
+
     private static final String PREF_NAME = "hollow_knight_settings";
     private static Preferences prefs;
 
+    /**
+     * Initializes preferences on startup. If data is absent (first launch),
+     * default configurations are established and flushed to disk.
+     */
     public static void load() {
         prefs = Gdx.app.getPreferences(PREF_NAME);
 
@@ -35,6 +45,8 @@ public class GameSettings {
             setBrightness(1f);
             setLanguage("en");
             setMenuTheme("theme_void");
+
+            // Setup tracking for the 'True Hunter' achievement
             for (EnemyType type : EnemyType.values()) {
                 prefs.putBoolean("killed_" + type.name(), false);
             }
@@ -134,7 +146,6 @@ public class GameSettings {
         prefs.flush();
     }
 
-    // Add these two methods to your GameSettings class
     public static void registerEnemyKill(String enemyName) {
         prefs.putBoolean("killed_" + enemyName, true);
         prefs.flush();

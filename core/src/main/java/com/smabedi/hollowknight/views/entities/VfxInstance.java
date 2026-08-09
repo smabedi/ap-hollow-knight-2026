@@ -3,6 +3,11 @@ package com.smabedi.hollowknight.views.entities;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
+/**
+ * Data transfer object functioning as a decoupled visual tracker.
+ * Maps transient particle effects and spell animations to specific
+ * coordinates without relying on persistent Box2D physics bodies.
+ */
 public class VfxInstance {
     public Animation<TextureRegion> animation;
     public float timer = 0f;

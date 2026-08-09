@@ -1,5 +1,9 @@
 package com.smabedi.hollowknight.models.entities.knight;
 
+/**
+ * Defines all possible discrete operational and visual states for the Knight.
+ * Evaluated by rendering systems to match animations accurately with physical mechanics.
+ */
 public enum KnightState {
     IDLE,
     WALKING,

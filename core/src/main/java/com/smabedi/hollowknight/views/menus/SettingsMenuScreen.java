@@ -14,6 +14,11 @@ import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
+/**
+ * Provides the interactive UI for modifying persistent user configurations.
+ * Handles bi-directional mapping between localized UI strings and internal storage keys,
+ * and intercepts raw hardware inputs for dynamic control rebinding.
+ */
 public class SettingsMenuScreen extends MenuScreen {
     private String actionToBind = null;
     private TextButton buttonToUpdate = null;
@@ -45,7 +50,6 @@ public class SettingsMenuScreen extends MenuScreen {
         Table audioToggles = new Table();
 
         Label muteLabel = new Label(Assets.getString("audio"), skin);
-
 
         CheckBox sfxCheck = new CheckBox(" " + Assets.getString("sfx"), skin);
         sfxCheck.setChecked(GameSettings.shouldPlaySFX());
@@ -115,7 +119,7 @@ public class SettingsMenuScreen extends MenuScreen {
         leftCol.add(new Label(Assets.getString("menu_theme"), skin)).left().padTop(30).row();
         SelectBox<String> themeBox = new SelectBox<>(skin);
 
-        // Populate the localized display names
+        // Inject dynamically localized strings to display familiar names to the user
         themeBox.setItems(
             Assets.getString("theme_void"),
             Assets.getString("theme_void_heart"),
@@ -123,7 +127,7 @@ public class SettingsMenuScreen extends MenuScreen {
             Assets.getString("theme_eternal_ordeal")
         );
 
-        // Map the stored raw key back to the localized display name for the default selection
+        // Fetch the raw configuration key and map it to its localized equivalent for the UI
         String currentThemeKey = GameSettings.getMenuTheme();
         themeBox.setSelected(Assets.getString(currentThemeKey));
 
@@ -131,9 +135,9 @@ public class SettingsMenuScreen extends MenuScreen {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 String selectedDisplay = themeBox.getSelected();
-                String newThemeKey = "theme_void"; // Fallback
+                String newThemeKey = "theme_void";
 
-                // Reverse-map the localized string back to the raw key
+                // Execute reverse-mapping: translate the localized UI string back into a system-safe storage key
                 if (selectedDisplay.equals(Assets.getString("theme_void_heart"))) {
                     newThemeKey = "theme_void_heart";
                 } else if (selectedDisplay.equals(Assets.getString("theme_grimm_troupe"))) {
@@ -145,7 +149,7 @@ public class SettingsMenuScreen extends MenuScreen {
                 if (!newThemeKey.equals(GameSettings.getMenuTheme())) {
                     GameSettings.setMenuTheme(newThemeKey);
 
-                    // Re-run the screen clear sequence to enforce the new background safely
+                    // Re-initialize the rendering view to safely apply the new background texture
                     ScreenManager.reloadLanguage();
                     ScreenManager.setMenuScreen(ScreenType.SETTINGS);
                 }
@@ -216,6 +220,7 @@ public class SettingsMenuScreen extends MenuScreen {
             }
         });
 
+        // Global Input Listener: Intercepts raw keycodes and redirects them to the configuration layer
         stage.addListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {

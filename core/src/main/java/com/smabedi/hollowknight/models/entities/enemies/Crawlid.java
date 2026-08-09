@@ -9,6 +9,11 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
+/**
+ * Basic ground-traversing enemy entity.
+ * Employs simplistic horizontal patrol behavior, dynamically reversing
+ * traversal direction upon encountering walls or ledges.
+ */
 public class Crawlid extends Enemy {
     private boolean movingRight = true;
 
@@ -35,30 +40,25 @@ public class Crawlid extends Enemy {
         checkRespawn(player);
 
         if (dead) {
-            // Apply heavy friction so the corpse stops sliding after taking the killing blow
             Vector2 vel = b2body.getLinearVelocity();
             b2body.setLinearVelocity(vel.x * 0.9f, vel.y);
-            return; // Stop AI logic
+            return;
         }
 
-        // Initialize the loop if it hasn't started yet
         if (loopSoundId == -1) {
             loopSoundId = AudioManager.loopSpatialSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 12f);
         } else {
-            // Update panning and volume dynamically
             AudioManager.updateSpatialSfx(Constants.Paths.Sounds.SFX_ENEMY_WALKING, loopSoundId, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 12f);
         }
 
-        // Stun logic
         if (stunTimer > 0) {
             stunTimer -= dt;
-            return; // Exit early! Let Box2D handle the knockback physics and friction.
+            return;
         }
 
         Vector2 center = b2body.getWorldCenter();
         float direction = movingRight ? 1f : -1f;
 
-        // 1. Raycast for Walls (Short line directly in front)
         Vector2 wallRayEnd = new Vector2(center.x + (direction * 1.5f * Constants.Enemy.Crawlid.WIDTH_HALVED_SCALED),
             center.y);
         final boolean[] hitWall = {false};
@@ -68,7 +68,6 @@ public class Crawlid extends Enemy {
             return 1;
         }, center, wallRayEnd);
 
-        // 2. Raycast for Ledges (Short line angled down and forward)
         Vector2 ledgeRayEnd = new Vector2(center.x + (direction * 1.5f * Constants.Enemy.Crawlid.WIDTH_HALVED_SCALED),
             center.y - (1.5f * Constants.Enemy.Crawlid.HEIGHT_HALVED_SCALED));
         final boolean[] hitGround = {false};
@@ -78,15 +77,12 @@ public class Crawlid extends Enemy {
             return 1;
         }, center, ledgeRayEnd);
 
-        // Turn around if we hit a wall, or if the ledge raycast found empty air!
         if (hitWall[0] || !hitGround[0]) {
             movingRight = !movingRight;
         }
 
-        // Apply constant movement speed
         float velocityX = movingRight ? Constants.Enemy.Crawlid.SPEED : -Constants.Enemy.Crawlid.SPEED;
 
-        // We only overwrite the X velocity, preserving the Y velocity (gravity/falling)
         b2body.setLinearVelocity(velocityX, b2body.getLinearVelocity().y);
     }
 

@@ -9,6 +9,11 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
+/**
+ * Mid-tier ground entity.
+ * Executes persistent line-of-sight raycasting to dynamically interrupt its standard
+ * patrol algorithm and transition into an aggressive, high-speed charge vector.
+ */
 public class HuskHornhead extends Enemy {
     private HornheadState currentState;
     private float stateTimer;
@@ -52,7 +57,7 @@ public class HuskHornhead extends Enemy {
         Vector2 center = b2body.getWorldCenter();
         float direction = movingRight ? 1f : -1f;
 
-        // --- 1. RAYCAST: Ledges & Walls (Safety checks) ---
+        // Perform environmental safety evaluations to detect upcoming drop-offs or solid barricades
         Vector2 wallRayEnd = new Vector2(
             center.x + (direction * 2f * Constants.Enemy.HuskHornhead.WIDTH_HALVED_SCALED),
             center.y
@@ -75,7 +80,7 @@ public class HuskHornhead extends Enemy {
 
         boolean pathBlocked = hitWall[0] || !hitGround[0];
 
-        // --- 2. RAYCAST: Vision Check ---
+        // Process optical recognition vector prior to initiating aggressive maneuvers
         if (currentState != HornheadState.CHARGING) {
             Vector2 visionEnd = new Vector2(
                 center.x + (direction * Constants.Enemy.HuskHornhead.VISION_RANGE),
@@ -84,20 +89,20 @@ public class HuskHornhead extends Enemy {
 
             final boolean[] sawPlayer = {false};
 
-            // Notice we are using 'fraction' here now
+            // Evaluate line-of-sight using fractional callback returns to accurately detect ray obstructions
             world.rayCast((fixture, _, _, fraction) -> {
                 Object userData = fixture.getUserData();
 
                 if ("ground".equals(userData) || "spikes".equals(userData)) {
-                    sawPlayer[0] = false; // Vision is blocked!
-                    return fraction; // Clip the ray to this wall/spike
+                    sawPlayer[0] = false;
+                    return fraction;
                 }
                 if ("knight".equals(userData)) {
-                    sawPlayer[0] = true;  // We see the Knight!
-                    return fraction; // Clip the ray to the Knight
+                    sawPlayer[0] = true;
+                    return fraction;
                 }
 
-                return 1; // Ignore other things like sensors or corpses, keep going
+                return 1;
             }, center, visionEnd);
 
             if (sawPlayer[0]) {
@@ -106,7 +111,6 @@ public class HuskHornhead extends Enemy {
             }
         }
 
-        // --- SPATIAL AUDIO LOGIC ---
         boolean isMoving = (currentState == HornheadState.WALKING || currentState == HornheadState.CHARGING);
 
         if (isMoving) {
@@ -122,11 +126,10 @@ public class HuskHornhead extends Enemy {
             }
         }
 
-        // --- 3. HornheadState MACHINE LOGIC ---
         switch (currentState) {
             case WALKING:
                 if (pathBlocked) {
-                    movingRight = !movingRight; // Turn around
+                    movingRight = !movingRight;
                 }
                 b2body.setLinearVelocity(
                     direction * Constants.Enemy.HuskHornhead.WALK_SPEED,
@@ -151,13 +154,11 @@ public class HuskHornhead extends Enemy {
 
             case CHARGING:
                 if (pathBlocked) {
-                    // Crash! The blind rush ends here.
                     System.out.println("Husk Hornhead crashed! Ending charge.");
                     currentState = HornheadState.RESTING;
                     stateTimer = Constants.Enemy.HuskHornhead.REST_DURATION;
-                    movingRight = !movingRight; // Turn around after crashing
+                    movingRight = !movingRight;
                 } else {
-                    // Execute the blind rush
                     b2body.setLinearVelocity(
                         direction * Constants.Enemy.HuskHornhead.CHARGE_SPEED,
                         b2body.getLinearVelocity().y

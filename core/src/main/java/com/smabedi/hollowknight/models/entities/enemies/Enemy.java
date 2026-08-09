@@ -10,6 +10,10 @@ import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
+/**
+ * Abstract base class for all hostile entities.
+ * Encapsulates core Box2D physics integration, health management, and base combat interactions.
+ */
 public abstract class Enemy implements IDamageable {
     public Body b2body;
     protected World world;
@@ -35,8 +39,14 @@ public abstract class Enemy implements IDamageable {
         this.type = type;
     }
 
+    /**
+     * Defines the precise physical fixture geometry. Must be implemented by concrete subclasses.
+     */
     public abstract void defineShape();
 
+    /**
+     * Initializes the dynamic rigid body within the Box2D simulation and delegates fixture creation.
+     */
     public void define() {
         BodyDef bodyDef = new BodyDef();
         bodyDef.position.set(startX, startY);
@@ -46,9 +56,17 @@ public abstract class Enemy implements IDamageable {
         defineShape();
     }
 
-    // Every enemy will have its own unique AI update loop
+    /**
+     * Processes frame-by-frame AI logic and spatial evaluations.
+     *
+     * @param dt     The scaled delta time.
+     * @param player A reference to the active player character for proximity and line-of-sight checks.
+     */
     public abstract void update(float dt, Knight player);
 
+    /**
+     * Evaluates whether a collision fixture corresponds to impassable terrain or another active entity.
+     */
     protected boolean hitEnd(Fixture fixture) {
         Object userData = fixture.getUserData();
         if ("spikes".equals(userData) || "ground".equals(userData)) {
@@ -60,6 +78,10 @@ public abstract class Enemy implements IDamageable {
         return false;
     }
 
+    /**
+     * Verifies the player's spatial distance from the entity's original spawn coordinates
+     * to dynamically trigger a respawn if the entity is currently dead.
+     */
     protected void checkRespawn(Knight player) {
         if (player.b2body == null) return;
 
@@ -69,6 +91,9 @@ public abstract class Enemy implements IDamageable {
         }
     }
 
+    /**
+     * Restores health parameters and relocates the physical body back to its initial coordinate vector.
+     */
     public void respawn() {
         this.hp = maxHp;
         this.dead = false;
@@ -99,12 +124,8 @@ public abstract class Enemy implements IDamageable {
         dead = true;
         System.out.println(this.getClass().getSimpleName() + " died! Turning into a corpse.");
 
-        // 1. Reset gravity scale (crucial for flying enemies so they fall to the floor)
         b2body.setGravityScale(1f);
 
-        // 2. The Death Knock-up!
-        // We preserve the X velocity (so weapon knockback still carries it backward)
-        // but reset Y so the pop-up is a consistent height every time.
         b2body.setLinearVelocity(b2body.getLinearVelocity().x, 0);
         b2body.applyLinearImpulse(new Vector2(0, Constants.Enemy.DEATH_KNOCKBACK), b2body.getWorldCenter(), true);
 

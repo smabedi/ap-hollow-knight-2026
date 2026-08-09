@@ -8,6 +8,11 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.knight.KnightState;
 
+/**
+ * Primary rendering engine for the player character.
+ * Maps the discrete logical states of the Knight's physics model to corresponding
+ * visual animation frames, while managing transient overlays like weapon slash VFX.
+ */
 public class KnightRenderer implements EntityRenderer {
     private final Knight player;
     private final Animation<TextureRegion> idleAnim, runAnim, jumpAnim, fallAnim, doubleJumpAnim;
@@ -24,7 +29,7 @@ public class KnightRenderer implements EntityRenderer {
     public KnightRenderer(Knight player, TextureAtlas atlas) {
         this.player = player;
 
-        // Load all animations exactly as they were in the old Knight class...
+        // Initialize and configure all animation sequences from the designated texture atlas
         idleAnim = new Animation<>(0.1f, atlas.findRegions("knight_idle_still"), Animation.PlayMode.LOOP);
         runAnim = new Animation<>(0.1f, atlas.findRegions("knight_run"), Animation.PlayMode.LOOP);
         jumpAnim = new Animation<>(0.1f, atlas.findRegions("knight_jump"), Animation.PlayMode.NORMAL);
@@ -61,7 +66,7 @@ public class KnightRenderer implements EntityRenderer {
 
         TextureRegion currentFrame = getAnimForState(player.currentState).getKeyFrame(stateTimer);
 
-        // --- FLIPPING LOGIC ---
+        // Resolves horizontal sprite orientation based on spellcasting states and wall-sliding physical constraints
         boolean isFlipped = (player.currentState == KnightState.CASTING_WRAITHS || player.currentState == KnightState.CASTING_VOID_WRAITHS);
 
         if (player.currentState == KnightState.WALL_SLIDING) {
@@ -75,23 +80,23 @@ public class KnightRenderer implements EntityRenderer {
             else if (player.facingRight && !currentFrame.isFlipX()) currentFrame.flip(true, false);
         }
 
-        // --- DRAWING LOGIC ---
+        // Computes centralized rendering coordinates aligned with the underlying Box2D fixture bounds
         float width = currentFrame.getRegionWidth() / Constants.World.PPM;
         float height = currentFrame.getRegionHeight() / Constants.World.PPM;
         float x = player.b2body.getPosition().x - (width / 2f);
         float y = player.b2body.getPosition().y - (height / 2f) + 0.5f;
 
-        // Blinking logic
+        // Applies alpha modulation to visually indicate active invincibility frames (I-Frames)
         if (player.iFrameTimer > 0 && !player.isDashing && (player.iFrameTimer % 0.3f) > 0.1f) {
-            batch.setColor(1, 1, 1, 0.1f); // Invisible
+            batch.setColor(1, 1, 1, 0.1f);
         } else {
-            batch.setColor(1, 1, 1, 1f); // Visible
+            batch.setColor(1, 1, 1, 1f);
         }
 
         batch.draw(currentFrame, x, y, width, height);
-        batch.setColor(1, 1, 1, 1f); // Always reset color
+        batch.setColor(1, 1, 1, 1f);
 
-        // --- DRAW VFX OVERLAY (Weapon Slashes) ---
+        // Evaluates and renders transient visual effect overlays, such as directional weapon slashes
         if (activeVfx != null) {
             if (!activeVfx.isAnimationFinished(vfxTimer)) {
                 TextureRegion vfxFrame = activeVfx.getKeyFrame(vfxTimer);
@@ -101,24 +106,24 @@ public class KnightRenderer implements EntityRenderer {
                 float vfxX = player.b2body.getPosition().x;
                 float vfxY = player.b2body.getPosition().y;
 
-                // 1. Safe flipping: Default faces left, so we flip X if facing right
+                // Ensure VFX flipping accurately tracks the player's orientation at the moment of execution
                 boolean drawFlipX = vfxFacingRight;
                 boolean drawFlipY = false;
 
-                // 1. Center the VFX directly on the player first
+                // Calibrate the visual effect coordinates dynamically to the player's center of mass
                 vfxX -= (vfxWidth / 2f);
                 vfxY -= (vfxHeight / 2f);
 
-                // 2. Apply simple directional offsets
+                // Apply targeted offsets based on the distinct geometry of downward versus lateral attacks
                 if (player.isAttackingDown) {
                     vfxY -= Constants.Knight.HEIGHT_HALVED_SCALED;
                 } else {
-                    float sideOffsetX = 1f; // Tweak this number to push it further out
+                    float sideOffsetX = 1f;
                     vfxX += vfxFacingRight ? sideOffsetX : -sideOffsetX;
-                    drawFlipY = true; // Safely flips upside down
+                    drawFlipY = true;
                 }
 
-                // 3. Draw using the overloaded method that flips at render-time, avoiding Texture corruption
+                // Utilize the overloaded draw method to manipulate rotation and mirroring without mutating the source TextureRegion
                 batch.draw(vfxFrame.getTexture(),
                     vfxX, vfxY,
                     vfxWidth / 2f, vfxHeight / 2f,

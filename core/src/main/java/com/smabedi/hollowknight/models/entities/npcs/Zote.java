@@ -8,6 +8,11 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.IDamageable;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
+/**
+ * Represents the NPC Zote.
+ * Handles his physics body, dynamic dialogue progression, and conditional
+ * aggressive state when provoked by the player.
+ */
 public class Zote implements IDamageable {
     private final World world;
     public Body b2body;
@@ -24,6 +29,9 @@ public class Zote implements IDamageable {
         defineZote(x, y);
     }
 
+    /**
+     * Initializes Zote's physical dimensions and properties within the Box2D world.
+     */
     private void defineZote(float x, float y) {
         BodyDef bodyDef = new BodyDef();
         bodyDef.position.set(x, y);
@@ -42,14 +50,18 @@ public class Zote implements IDamageable {
         shape.dispose();
     }
 
+    /**
+     * Evaluates AI logic per frame.
+     * Manages his pursuit behavior and edge-detection when in an angry state.
+     */
     public void update(float dt, Knight player) {
         if (talkTimer > 0) talkTimer -= dt;
 
         if (stunTimer > 0) {
             stunTimer -= dt;
             Vector2 vel = b2body.getLinearVelocity();
-            b2body.setLinearVelocity(vel.x * 0.9f, vel.y); // Heavy friction
-            return; // Exit early!
+            b2body.setLinearVelocity(vel.x * 0.9f, vel.y);
+            return;
         }
 
         if (isAngry) {
@@ -59,7 +71,6 @@ public class Zote implements IDamageable {
             float direction = player.b2body.getPosition().x > b2body.getPosition().x ? 1f : -1f;
             movingRight = direction > 0;
 
-            // 1. Raycast for Walls
             Vector2 wallRayEnd = new Vector2(center.x + (direction * 1.5f * Constants.Zote.WIDTH_HALVED_SCALED), center.y);
             final boolean[] hitWall = {false};
             world.rayCast((fixture, _, _, _) -> {
@@ -67,7 +78,6 @@ public class Zote implements IDamageable {
                 return 1;
             }, center, wallRayEnd);
 
-            // 2. Raycast for Ledges
             Vector2 ledgeRayEnd = new Vector2(center.x + (direction * 1.5f * Constants.Zote.WIDTH_HALVED_SCALED), center.y - (1.5f * Constants.Zote.HEIGHT_HALVED_SCALED));
             final boolean[] hitGround = {false};
             world.rayCast((fixture, _, _, _) -> {
@@ -75,7 +85,6 @@ public class Zote implements IDamageable {
                 return 1;
             }, center, ledgeRayEnd);
 
-            // Turn around if path is blocked or cliff detected
             if (hitWall[0] || !hitGround[0]) {
                 movingRight = !movingRight;
             }
@@ -93,11 +102,15 @@ public class Zote implements IDamageable {
                 b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
             }
         } else {
-            // Idle state
             b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
         }
     }
 
+    /**
+     * Resolves the next sequence of localized text strings based on Zote's current dialogue phase.
+     *
+     * @return The localized string to display, or null if Zote is currently hostile.
+     */
     public String getNextDialogue() {
         if (isAngry) return null;
 
@@ -109,7 +122,7 @@ public class Zote implements IDamageable {
             dialogueIndex++;
             if (dialogueIndex >= Constants.Zote.DIALOG_NUMBER) {
                 hasFinishedIntro = true;
-                dialogueIndex = 0; // Reset for precepts
+                dialogueIndex = 0;
             }
         } else {
             textToDisplay = Assets.getString("zote_precept_" + dialogueIndex % Constants.Zote.PRECEPTS_NUMBER);
@@ -141,6 +154,7 @@ public class Zote implements IDamageable {
 
     @Override
     public void die() {
+        // Zote cannot be killed by conventional means
     }
 
     @Override

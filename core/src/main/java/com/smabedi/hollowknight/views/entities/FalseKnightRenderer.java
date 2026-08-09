@@ -10,6 +10,12 @@ import com.smabedi.hollowknight.models.entities.enemies.BossPhase;
 import com.smabedi.hollowknight.models.entities.enemies.BossSubState;
 import com.smabedi.hollowknight.models.entities.enemies.FalseKnight;
 
+/**
+ * Complex rendering controller for the False Knight boss entity.
+ * Translates a multi-dimensional AI state (Phase, Move, SubState) into a singular
+ * visual animation frame, and dynamically manipulates time-deltas to accelerate
+ * visual playback during the second combat phase.
+ */
 public class FalseKnightRenderer implements EntityRenderer {
     private final FalseKnight boss;
     private final Animation<TextureRegion> idleAnim, runAnim, jumpAnim, jumpAttackAnim, landAnim;
@@ -17,6 +23,7 @@ public class FalseKnightRenderer implements EntityRenderer {
     private final Animation<TextureRegion> stunIdleAnim, stunHitAnim, stunRecoverAnim, deathAnim;
     private float stateTimer = 0f;
     private VisualState currentVisualState = VisualState.IDLE;
+
     public FalseKnightRenderer(FalseKnight boss, TextureAtlas atlas) {
         this.boss = boss;
         idleAnim = new Animation<>(0.1f, atlas.findRegions("boss_idle"), Animation.PlayMode.LOOP);
@@ -41,13 +48,13 @@ public class FalseKnightRenderer implements EntityRenderer {
             currentVisualState = nextState;
         }
 
-        // Double the animation speed if in Phase 2
+        // Dynamically multiply the delta injected into the animation timer during the second phase.
+        // This ensures the visual frames remain perfectly synchronized with the accelerated Box2D physics engine.
         float speedMultiplier = (boss.getCurrentPhase() == BossPhase.PHASE_2) ? 1.75f : 1.0f;
         stateTimer += (dt * speedMultiplier);
 
         TextureRegion currentFrame = getFrame(currentVisualState, stateTimer);
 
-        // Assets face LEFT by default. Flip logic:
         boolean faceRight = boss.facingRight;
         if (faceRight && !currentFrame.isFlipX()) currentFrame.flip(true, false);
         else if (!faceRight && currentFrame.isFlipX()) currentFrame.flip(true, false);
@@ -60,6 +67,9 @@ public class FalseKnightRenderer implements EntityRenderer {
         batch.draw(currentFrame, x, y, width, height);
     }
 
+    /**
+     * Resolves the multi-dimensional AI state machine into a linear visual state enum.
+     */
     private VisualState determineVisualState() {
         if (boss.isDead()) return VisualState.DEATH;
 
@@ -75,12 +85,12 @@ public class FalseKnightRenderer implements EntityRenderer {
         if (move == BossMove.IDLE) return VisualState.IDLE;
 
         if (move == BossMove.CHARGE) {
-            if (sub == BossSubState.WIND_UP) return VisualState.IDLE; // No attack anticipate for charging!
+            if (sub == BossSubState.WIND_UP) return VisualState.IDLE;
             if (sub == BossSubState.ACTIVE) return VisualState.RUN;
             return VisualState.RECOVER;
         }
 
-        // Handle Slams (The ONLY moves that should use the anticipate animation)
+        // Isolate specific attack maneuvers that necessitate a wind-up anticipation frame
         if (move == BossMove.MACE_SLAM || move == BossMove.POWER_SLAM) {
             if (sub == BossSubState.WIND_UP) return VisualState.ANTICIPATE;
             if (sub == BossSubState.ACTIVE) {
@@ -91,9 +101,8 @@ public class FalseKnightRenderer implements EntityRenderer {
             if (sub == BossSubState.RECOVERY) return VisualState.RECOVER;
         }
 
-        // Handle Leaps (Offensive/Defensive)
         if (move == BossMove.OFFENSIVE_LEAP || move == BossMove.DEFENSIVE_LEAP) {
-            if (sub == BossSubState.WIND_UP) return VisualState.IDLE; // Leaps do not wind up attacks!
+            if (sub == BossSubState.WIND_UP) return VisualState.IDLE;
             if (sub == BossSubState.ACTIVE) return VisualState.JUMP;
             if (sub == BossSubState.RECOVERY) return VisualState.LAND;
         }

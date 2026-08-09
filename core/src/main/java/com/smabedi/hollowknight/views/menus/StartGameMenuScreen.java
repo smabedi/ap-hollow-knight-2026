@@ -15,10 +15,16 @@ import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 import com.smabedi.hollowknight.views.customelements.SaveCard;
 
+/**
+ * Scene2D interface for managing game profiles.
+ * Retrieves serialized GameSession objects from the local SQLite database
+ * and dynamically constructs interactive UI widgets representing each save slot.
+ */
 public class StartGameMenuScreen extends MenuScreen {
 
     @Override
     public void showCore() {
+        // Utilize a Stack layout to decouple the alignment of independent UI components
         Stack stack = new Stack();
         stack.setFillParent(true);
         stage.addActor(stack);
@@ -34,7 +40,7 @@ public class StartGameMenuScreen extends MenuScreen {
         slotsWrapper.defaults().padBottom(20);
         stack.add(slotsWrapper);
 
-        // Dynamically fetch JSON blobs from the SQLite database
+        // Execute queries to fetch persisted session states from the local database
         GameSession slot1Data = DatabaseManager.loadSession(1);
         GameSession slot2Data = DatabaseManager.loadSession(2);
         GameSession slot3Data = DatabaseManager.loadSession(3);

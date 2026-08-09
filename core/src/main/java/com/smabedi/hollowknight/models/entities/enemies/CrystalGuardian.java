@@ -9,8 +9,13 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
+/**
+ * Advanced stationary enemy entity.
+ * Executes a state machine that transitions between passive monitoring,
+ * long-range laser deployment, enraged pursuit, and origin resetting.
+ */
 public class CrystalGuardian extends Enemy {
-    private final boolean originalFacingRight; // To remember which way to look when returning
+    private final boolean originalFacingRight;
     private GuardianState currentState;
     private float stateTimer;
     private boolean facingRight;
@@ -56,7 +61,6 @@ public class CrystalGuardian extends Enemy {
         Vector2 center = b2body.getWorldCenter();
         float direction = facingRight ? 1f : -1f;
 
-        // --- SPATIAL AUDIO LOGIC ---
         boolean isMoving = (currentState == GuardianState.ENRAGED || currentState == GuardianState.RETURNING);
 
         if (isMoving) {
@@ -74,10 +78,8 @@ public class CrystalGuardian extends Enemy {
 
         switch (currentState) {
             case IDLE:
-                // Stand perfectly still
                 b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
 
-                // Cast a long ray to look for the player
                 Vector2 visionEnd = new Vector2(
                     center.x + (direction * Constants.Enemy.CrystalGuardian.VISION_RANGE),
                     center.y
@@ -88,14 +90,14 @@ public class CrystalGuardian extends Enemy {
                     Object data = fixture.getUserData();
 
                     if ("ground".equals(data) || "spikes".equals(data)) {
-                        return fraction; // clip ray at obstacle
+                        return fraction;
                     }
                     if ("knight".equals(data)) {
                         spotted[0] = true;
-                        return fraction; // clip ray at player
+                        return fraction;
                     }
 
-                    return -1; // ignore everything else
+                    return -1;
                 }, center, visionEnd);
 
                 if (spotted[0]) {
@@ -110,32 +112,27 @@ public class CrystalGuardian extends Enemy {
                 b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
                 stateTimer -= dt;
                 if (stateTimer <= 0) {
-                    // Preserving your exact fireLaser call (with whatever inputs you originally had, e.g., dt, player, etc.)
                     fireLaser(player, center, direction);
                     System.out.println("Crystal Guardian: ENRAGED!");
                     currentState = GuardianState.FIRING_LASER;
-                    // Set countdown to the length of the laser animation (e.g., 0.6 seconds)
                     stateTimer = 1f;
                 }
                 break;
 
             case FIRING_LASER:
-                b2body.setLinearVelocity(0, b2body.getLinearVelocity().y); // Stand still!
-                stateTimer -= dt; // Countdown while firing
+                b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+                stateTimer -= dt;
                 if (stateTimer <= 0) {
                     currentState = GuardianState.ENRAGED;
-                    // Reset timer to whatever ENRAGED needs (or 0 if it counts up)
                     stateTimer = Constants.Enemy.CrystalGuardian.ENRAGE_DURATION;
                 }
                 break;
 
             case ENRAGED:
                 if (isPathBlocked(center, direction)) {
-                    // Crash! End the charge instantly.
                     currentState = GuardianState.RETURNING;
                     b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
                 } else {
-                    // Only apply high-speed charge if the path is clear
                     b2body.setLinearVelocity(
                         direction * Constants.Enemy.CrystalGuardian.CHARGE_SPEED,
                         b2body.getLinearVelocity().y
@@ -152,13 +149,11 @@ public class CrystalGuardian extends Enemy {
                 float originalX = startX;
                 float distanceToStart = originalX - center.x;
 
-                // If we are close enough to the start, snap to it and go IDLE
                 if (Math.abs(distanceToStart) < 0.025f) {
                     b2body.setTransform(originalX, b2body.getPosition().y, 0);
                     facingRight = originalFacingRight;
                     currentState = GuardianState.IDLE;
                 } else {
-                    // Walk back to the starting position
                     facingRight = distanceToStart > 0;
                     float returnDir = facingRight ? 1f : -1f;
                     b2body.setLinearVelocity(
@@ -170,8 +165,10 @@ public class CrystalGuardian extends Enemy {
         }
     }
 
+    /**
+     * Executes an instantaneous raycast representing a high-energy laser burst.
+     */
     private void fireLaser(Knight player, Vector2 center, float direction) {
-        // Fire an instant raycast that damages the player if they haven't moved out of the way!
         Vector2 laserEnd = new Vector2(
             center.x + (direction * Constants.Enemy.CrystalGuardian.LASER_RANGE),
             center.y
@@ -194,6 +191,9 @@ public class CrystalGuardian extends Enemy {
         AudioManager.playSpatialSfx(Constants.Paths.Sounds.SFX_LASER_BURST, b2body.getWorldCenter(), player.b2body.getWorldCenter(), 20f);
     }
 
+    /**
+     * Projects diagnostic raycasts to evaluate adjacent terrain geometry and prevent logic deadlocks.
+     */
     private boolean isPathBlocked(Vector2 center, float direction) {
         Vector2 wallRayEnd = new Vector2(center.x + (direction * 1.5f * Constants.Enemy.CrystalGuardian.WIDTH_HALVED_SCALED),
             center.y

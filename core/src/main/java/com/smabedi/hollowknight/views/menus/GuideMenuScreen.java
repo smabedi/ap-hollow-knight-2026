@@ -15,6 +15,10 @@ import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
+/**
+ * Scene2D informational menu providing players with dynamic control mappings,
+ * core mechanics overviews, and developer cheat code references.
+ */
 public class GuideMenuScreen extends MenuScreen {
 
     @Override
@@ -23,17 +27,14 @@ public class GuideMenuScreen extends MenuScreen {
         root.setFillParent(true);
         stage.addActor(root);
 
-        // Title
         Label titleLabel = new Label(Assets.getString("guide"), skin);
-        // Assuming your skin has a larger font style, you can set it here if desired
         root.add(titleLabel).padTop(30).padBottom(20).row();
 
-        // Content Table (Goes inside ScrollPane)
         Table content = new Table();
         content.top().left();
         content.defaults().pad(10).left();
 
-        // --- SECTION 1: DYNAMIC CONTROLS ---
+        // Bind and display dynamic control keys directly from the GameSettings configurations
         Label controlsTitle = new Label("--- " + Assets.getString("controls") + " ---", skin);
         controlsTitle.setColor(com.badlogic.gdx.graphics.Color.GOLD);
         content.add(controlsTitle).padTop(20).row();
@@ -45,7 +46,7 @@ public class GuideMenuScreen extends MenuScreen {
         addControlRow(content, Assets.getString("dash"), GameSettings.KEY_DASH);
         addControlRow(content, Assets.getString("focus_cast"), GameSettings.KEY_FOCUS);
 
-        // --- SECTION 2: MECHANICS & ABILITIES ---
+        // Provide explicit mechanical constraints and ability guidelines
         Label mechanicsTitle = new Label("--- " + Assets.getString("mechanics") + " ---", skin);
         mechanicsTitle.setColor(com.badlogic.gdx.graphics.Color.GOLD);
         content.add(mechanicsTitle).padTop(30).row();
@@ -54,7 +55,7 @@ public class GuideMenuScreen extends MenuScreen {
         addDescription(content, Assets.getString("guide_soul_desc"));
         addDescription(content, Assets.getString("guide_spells_desc"));
 
-        // --- SECTION 3: CHEAT CODES ---
+        // Document available developer override codes
         Label cheatsTitle = new Label("--- " + Assets.getString("cheat_codes") + " ---", skin);
         cheatsTitle.setColor(com.badlogic.gdx.graphics.Color.GOLD);
         content.add(cheatsTitle).padTop(30).row();
@@ -78,12 +79,10 @@ public class GuideMenuScreen extends MenuScreen {
             + Input.Keys.toString(Constants.Cheats.Keys.MODIFIER) + " + "
             + Input.Keys.toString(Constants.Cheats.Keys.TIME_DILATION));
 
-        // Wrap content in a ScrollPane
         ScrollPane scrollPane = new ScrollPane(content, skin);
         scrollPane.setFadeScrollBars(false);
         root.add(scrollPane).expand().fill().pad(20).row();
 
-        // Back Button
         TextButton backBtn = new TextButton(Assets.getString("back"), skin);
         backBtn.addListener(new ClickListener() {
             @Override
@@ -109,7 +108,7 @@ public class GuideMenuScreen extends MenuScreen {
         Label lbl = new Label(text, skin);
         lbl.setWrap(true);
         lbl.setAlignment(Align.left);
-        // Width limits the text so it wraps instead of pushing the table endlessly wide
+        // Constrain the label width to enforce automatic text wrapping and prevent structural overflow within the parent Table.
         table.add(lbl).width(700).padBottom(10).row();
     }
 }

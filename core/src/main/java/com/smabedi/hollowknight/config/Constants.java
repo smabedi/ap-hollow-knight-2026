@@ -3,6 +3,11 @@ package com.smabedi.hollowknight.config;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 
+/**
+ * Global configuration data.
+ * Centralizes all magic numbers, file paths, and physical attributes
+ * to ensure consistency and facilitate rapid gameplay balancing.
+ */
 public final class Constants {
     private Constants() {
     }
@@ -111,13 +116,14 @@ public final class Constants {
     public static final class UI {
         public static final int DEFAULT_WIDTH = 1920;
         public static final int DEFAULT_HEIGHT = 1080;
-        public static final float UPP = 2f;
+        public static final float UPP = 2f; // Units Per Pixel UI scaling
         public static final int OVERSCREEN = 1000;
     }
 
     public static final class World {
         public static final Vector2 GRAVITY_VECTOR = new Vector2(0, -12f);
         public static final float TIME_STEP = 1 / 60f;
+        // Pixels Per Meter - Standardizes Box2D physics scaling
         public static final float PPM = 100f;
     }
 
@@ -128,6 +134,9 @@ public final class Constants {
         public static final float TRAUMA_MAX = 1.5f;
     }
 
+    /**
+     * Core player statistics, constraints, and spell parameters.
+     */
     public static final class Knight {
         public static final int WIDTH = 50;
         public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
@@ -202,7 +211,7 @@ public final class Constants {
         public static final int HEIGHT = 300;
         public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
         public static final float FRICTION = 0.5f;
-        public static final float DENSITY = 5f; // Heavy, hard to knock back
+        public static final float DENSITY = 5f; // Heavy density resists light physical knockbacks
 
         public static final class ShockWave {
             public static final float WIDTH = 1f;

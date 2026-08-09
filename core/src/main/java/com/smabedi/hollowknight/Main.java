@@ -12,6 +12,11 @@ import com.smabedi.hollowknight.config.GameSettings;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.SplashScreen;
 
+/**
+ * Entry point for the libGDX application.
+ * Initializes core configurations, applies the custom hardware cursor,
+ * and bootstraps the screen management lifecycle.
+ */
 public class Main extends Game {
     @Override
     public void create() {
@@ -24,7 +29,6 @@ public class Main extends Game {
 
         GameSettings.load();
         ScreenManager.init(this);
-        // Set the Splash Screen as the very first thing the user sees
         this.setScreen(new SplashScreen());
     }
 

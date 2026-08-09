@@ -10,16 +10,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-
+/**
+ * Singleton managing all auditory feedback.
+ * Features automated cross-fading for BGM transitions, pitch modulation to prevent
+ * acoustic fatigue, and spatial 3D audio panning/attenuation for localized entities.
+ */
 public class AudioManager {
-    private static final float FADE_DURATION = 0.8f; // 0.8s fade out + 0.8s fade in
+    private static final float FADE_DURATION = 0.8f;
     private static final Random random = new Random();
     private static AudioManager instance;
+
+    // Tracks looped SFX instances so they can be halted or updated positionally
     private final Map<Long, SoundInstance> activeLoops = new HashMap<>();
+
     private Music activeMusic;
     private Music pendingMusic;
     private float fadeTimer = 0f;
     private FadeState fadeState = FadeState.NONE;
+
     private AudioManager() {
     }
 
@@ -64,10 +72,11 @@ public class AudioManager {
         if (!Assets.getInstance().manager.isLoaded(internalPath, Sound.class)) return -1;
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
+
         // 1f volume, 1f pitch, 0f pan (dead center)
         long id = sound.loop(1f, 1f, 0f);
 
-        // Immediately pause if muted, but keep tracking the ID!
+        // Immediately pause if muted, but keep tracking the ID so it can resume later
         if (!GameSettings.shouldPlaySFX()) sound.pause(id);
 
         getInstance().activeLoops.put(id, new SoundInstance(sound, internalPath));
@@ -114,6 +123,7 @@ public class AudioManager {
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
         long id = sound.loop(volume, 1f, pan);
+
         if (!GameSettings.shouldPlaySFX()) sound.pause(id);
         getInstance().activeLoops.put(id, new SoundInstance(sound, internalPath));
         return id;
@@ -131,6 +141,7 @@ public class AudioManager {
         float pan = MathUtils.clamp((sourcePos.x - listenerPos.x) / falloffRadius, -1f, 1f);
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
+
         // LibGDX overrides pause states when volume is updated, so we must gate it
         if (GameSettings.shouldPlaySFX()) {
             sound.setPan(soundId, pan, volume);
@@ -146,6 +157,7 @@ public class AudioManager {
 
         Sound sound = Assets.getInstance().manager.get(internalPath, Sound.class);
         sound.stop(soundId);
+
         // Remove from the active registry
         getInstance().activeLoops.remove(soundId);
     }
@@ -162,8 +174,9 @@ public class AudioManager {
 
         //noinspection GDXJavaUnsafeIterator
         for (Sound sound : allSounds) {
-            sound.stop(); // Stops every single active emission of this sound
+            sound.stop();
         }
+
         // Clear the registry to prevent memory leaks
         getInstance().activeLoops.clear();
     }
@@ -175,12 +188,14 @@ public class AudioManager {
         float maxMusicVolume = GameSettings.getMusicVolume();
         boolean shouldPlayMusic = GameSettings.shouldPlayMusic();
 
+        // Halt audio gracefully if muted in settings
         if (!shouldPlayMusic) {
             if (activeMusic != null && activeMusic.isPlaying()) activeMusic.pause();
             if (pendingMusic != null && pendingMusic.isPlaying()) pendingMusic.pause();
             return;
         }
 
+        // BGM Crossfade State Machine
         switch (fadeState) {
             case FADING_OUT -> {
                 if (activeMusic != null && activeMusic.isPlaying()) {
@@ -238,7 +253,7 @@ public class AudioManager {
             }
         }
 
-        // Continuous SFX Mute Logic
+        // Continuous SFX Mute Logic for looped audio
         boolean shouldPlaySFX = GameSettings.shouldPlaySFX();
         for (Map.Entry<Long, SoundInstance> entry : activeLoops.entrySet()) {
             if (!shouldPlaySFX) {
@@ -293,20 +308,20 @@ public class AudioManager {
         return playSfx(internalPath, 1f, 1f, 0f);
     }
 
-    // Inside config/AudioManager.java
-
     private long playSfxVariedCore(String internalPath, float minPitch, float maxPitch) {
         return playSfx(internalPath, 1f, MathUtils.random(minPitch, maxPitch), 0f);
     }
 
     private long playSpatialSfxCore(String internalPath, Vector2 sourcePos, Vector2 listenerPos, float falloffRadius) {
         float distance = sourcePos.dst(listenerPos);
+
+        // Prevent audio bleed if listener is entirely outside the falloff zone
         if (distance > falloffRadius) return -1;
 
-        // Linear attenuation formula
+        // Linear attenuation formula for natural 2D sound dampening
         float volume = 1f - (distance / falloffRadius);
 
-        // Panning map: negative value left side, positive value right side
+        // Panning map: negative value targets left stereo channel, positive targets right
         float pan = MathUtils.clamp((sourcePos.x - listenerPos.x) / falloffRadius, -1f, 1f);
 
         return playSfx(internalPath, volume, 1f, pan);

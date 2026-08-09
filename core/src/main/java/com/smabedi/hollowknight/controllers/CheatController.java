@@ -12,6 +12,9 @@ import com.smabedi.hollowknight.views.game.GameScreen;
 import com.smabedi.hollowknight.views.game.GameUI;
 import com.smabedi.hollowknight.views.game.LocationType;
 
+/**
+ * Intercepts keyboard input to execute developer commands and cheat codes.
+ */
 public class CheatController extends InputAdapter {
     private final Knight player;
     private final GameScreen gameScreen;
@@ -31,7 +34,6 @@ public class CheatController extends InputAdapter {
         if (Gdx.input.isKeyPressed(Constants.Cheats.Keys.MODIFIER)) {
 
             switch (keycode) {
-                // 1. God Mode
                 case Constants.Cheats.Keys.GOD_MODE:
                     player.isGodMode = !player.isGodMode;
                     gameUI.showToast(Assets.getString("god_mode") + ": " +
@@ -39,14 +41,12 @@ public class CheatController extends InputAdapter {
                     AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     return true;
 
-                // 2. Refill Soul
                 case Constants.Cheats.Keys.REFILL_SOUL:
                     player.soul = Constants.Knight.MAX_SOUL;
                     gameUI.showToast(Assets.getString("soul_refilled"));
                     AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     return true;
 
-                // 3. Emergency Heal (Safety Net Toggle)
                 case Constants.Cheats.Keys.EMERGENCY_HEAL:
                     player.emergencyHealArmed = !player.emergencyHealArmed;
                     gameUI.showToast(Assets.getString("emergency_auto_heal") + ": " +
@@ -54,18 +54,15 @@ public class CheatController extends InputAdapter {
                     AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     return true;
 
-                // 4. Boss Arena Teleport
                 case Constants.Cheats.Keys.BOSS_TELEPORT:
                     if (session.location != LocationType.GREENPATH) {
-                        // We are in another map! Trigger a transition.
                         session.pendingTransition = true;
                         session.nextLocation = LocationType.GREENPATH;
                         session.pendingBossTeleport = true;
-                        session.isArenaLocked = false; // Ensure camera unlocks
+                        session.isArenaLocked = false;
                         gameUI.showToast("Warping to Greenpath...");
                         AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     } else {
-                        // We are already in Greenpath, just teleport instantly.
                         player.b2body.setTransform(session.bossTeleportX, session.bossTeleportY, 0);
                         session.lastSafeX = session.bossTeleportX;
                         session.lastSafeY = session.bossTeleportY;
@@ -74,31 +71,28 @@ public class CheatController extends InputAdapter {
                     }
                     return true;
 
-                // 5. Time Dilation
                 case Constants.Cheats.Keys.TIME_DILATION:
                     if (gameScreen.timeScale == 1f) {
-                        gameScreen.timeScale = 0.3f; // 30% speed
+                        gameScreen.timeScale = 0.3f;
                         gameUI.showToast(Assets.getString("time_dilation") + ": " + Assets.getString("activated"));
                         AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     } else {
-                        gameScreen.timeScale = 1f; // Normal speed
+                        gameScreen.timeScale = 1f;
                         gameUI.showToast(Assets.getString("time_dilation") + ": " + Assets.getString("deactivated"));
                         AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     }
                     return true;
 
-                // 6. Noclip / Spectator Mode
                 case Constants.Cheats.Keys.SPECTATOR_MODE:
                     player.isNoclip = !player.isNoclip;
                     if (player.isNoclip) {
-                        player.b2body.setGravityScale(0f); // Float
-                        for (Fixture fix : player.b2body.getFixtureList()) fix.setSensor(true); // Phase through walls
+                        player.b2body.setGravityScale(0f);
+                        for (Fixture fix : player.b2body.getFixtureList()) fix.setSensor(true);
                         gameUI.showToast(Assets.getString("spectator_mode") + ": " + Assets.getString("on"));
                         AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
                     } else {
-                        player.b2body.setGravityScale(1f); // Fall
+                        player.b2body.setGravityScale(1f);
                         for (Fixture fix : player.b2body.getFixtureList()) {
-                            // Only revert the main body. The foot/wall detectors are naturally sensors.
                             if ("knight".equals(fix.getUserData())) fix.setSensor(false);
                         }
                         gameUI.showToast(Assets.getString("spectator_mode") + ": " + Assets.getString("off"));

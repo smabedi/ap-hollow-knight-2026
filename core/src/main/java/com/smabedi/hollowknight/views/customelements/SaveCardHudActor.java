@@ -14,6 +14,11 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 
+/**
+ * A specialized Scene2D Actor that generates a static, miniature replica of the main game HUD.
+ * Utilizes a localized FrameBuffer Object (FBO) pipeline upon initialization to bake complex
+ * mask blending effects into a single lightweight texture, ensuring UI performance.
+ */
 public class SaveCardHudActor extends Actor {
     private final TextureRegion baseBar;
     private final TextureRegion glass;
@@ -22,7 +27,7 @@ public class SaveCardHudActor extends Actor {
     private final TextureRegion fboRegion;
 
     private final int health;
-    private final float scale = 0.6f; // Scales the massive game HUD down for the UI card
+    private final float scale = 0.6f;
 
     public SaveCardHudActor(int health, int soul) {
         this.health = health;
@@ -34,12 +39,11 @@ public class SaveCardHudActor extends Actor {
 
         TextureRegion maskCircle = atlas.findRegion("healthbar_mask");
         TextureRegion eyes = atlas.findRegion("healthbar_eyes");
-        TextureRegion orbIdle = atlas.findRegions("soulorb_idle").first(); // Static frame
+        TextureRegion orbIdle = atlas.findRegions("soulorb_idle").first();
 
         int fboW = baseBar.getRegionWidth();
         int fboH = baseBar.getRegionHeight();
 
-        // 1. Bake the masked orb logic ONE TIME using an isolated SpriteBatch to avoid Scene2D conflicts
         FrameBuffer tempFbo = new FrameBuffer(Pixmap.Format.RGBA8888, fboW, fboH, false);
         SpriteBatch tempBatch = new SpriteBatch();
         OrthographicCamera fboCam = new OrthographicCamera(fboW, fboH);
@@ -61,7 +65,6 @@ public class SaveCardHudActor extends Actor {
         tempBatch.draw(maskCircle, 0, 0);
         tempBatch.end();
 
-        // 2. Extract the result into a permanent Pixmap so we can instantly destroy the FBO
         Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, fboW, fboH);
         tempFbo.end();
 
@@ -69,12 +72,10 @@ public class SaveCardHudActor extends Actor {
         this.fboRegion = new TextureRegion(fboTex);
         this.fboRegion.flip(false, true);
 
-        // Cleanup temps
         pixmap.dispose();
         tempFbo.dispose();
         tempBatch.dispose();
 
-        // 3. Define the actual bounding box dimensions for this Actor
         float totalWidth = (fboW * scale) + (health * (maskFull.getRegionWidth() * scale / 1.5f));
         setSize(totalWidth, fboH * scale);
     }
@@ -102,13 +103,15 @@ public class SaveCardHudActor extends Actor {
         }
     }
 
-    // Garbage collection protection: Automatically dispose the raw texture when the Actor is removed
     @Override
     public boolean remove() {
         dispose();
         return super.remove();
     }
 
+    /**
+     * Prevents memory leaks by releasing the dynamically generated texture from VRAM.
+     */
     public void dispose() {
         if (fboTex != null) fboTex.dispose();
     }

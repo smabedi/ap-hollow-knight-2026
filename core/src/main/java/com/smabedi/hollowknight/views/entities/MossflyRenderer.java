@@ -7,6 +7,10 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.enemies.Mossfly;
 
+/**
+ * Manages the rendering lifecycle of the Mossfly entity.
+ * Translates the dynamic stealth and pursuit states into a cohesive visual sequence.
+ */
 public class MossflyRenderer implements EntityRenderer {
     private final Mossfly mossfly;
     private final Animation<TextureRegion> shakeAnim;
@@ -15,6 +19,7 @@ public class MossflyRenderer implements EntityRenderer {
     private final Animation<TextureRegion> deathAnim;
     private float stateTimer = 0f;
     private State currentState = State.HIDDEN;
+
     public MossflyRenderer(Mossfly mossfly, TextureAtlas atlas) {
         this.mossfly = mossfly;
         shakeAnim = new Animation<>(0.2f, atlas.findRegions("mossfly_shake"), Animation.PlayMode.LOOP);
@@ -27,20 +32,20 @@ public class MossflyRenderer implements EntityRenderer {
     public void render(Batch batch, float dt) {
         State nextState = currentState;
 
-        // 1. Determine the logical next state
+        // Project the underlying logical AI state onto the visual rendering enumerator
         if (mossfly.isDead()) {
             nextState = State.DEAD;
         } else if (mossfly.isHidden()) {
             nextState = State.HIDDEN;
         } else if (currentState == State.HIDDEN) {
-            // Just broke cover!
+            // Intercept the transition from hidden to flying to inject the appearance animation
             nextState = State.APPEARING;
         } else if (currentState == State.APPEARING && appearAnim.isAnimationFinished(stateTimer)) {
-            // Finished the transition animation, start flying
+            // Await completion of the appearance sequence before defaulting to the continuous flight loop
             nextState = State.FLYING;
         }
 
-        // 2. Reset timer if state changed
+        // Enforce state transition resets to guarantee animations begin at the correct initial frame
         if (nextState != currentState) {
             stateTimer = 0f;
             currentState = nextState;
@@ -53,10 +58,10 @@ public class MossflyRenderer implements EntityRenderer {
             case DEAD -> currentFrame = deathAnim.getKeyFrame(stateTimer);
             case APPEARING -> currentFrame = appearAnim.getKeyFrame(stateTimer);
             case FLYING -> currentFrame = flyAnim.getKeyFrame(stateTimer);
-            default -> currentFrame = shakeAnim.getKeyFrame(stateTimer); // HIDDEN
+            default -> currentFrame = shakeAnim.getKeyFrame(stateTimer);
         }
 
-        // 3. Flipping logic (Default asset faces LEFT)
+        // Determine horizontal orientation directly from the physical body's velocity vector
         float velX = mossfly.b2body.getLinearVelocity().x;
 
         if (velX > 0 && !currentFrame.isFlipX()) {
@@ -65,7 +70,7 @@ public class MossflyRenderer implements EntityRenderer {
             currentFrame.flip(true, false);
         }
 
-        // 4. Draw
+        // Calculate rendering coordinates and apply state-dependent vertical offsets
         float width = currentFrame.getRegionWidth() / Constants.World.PPM;
         float height = currentFrame.getRegionHeight() / Constants.World.PPM;
         float x = mossfly.b2body.getPosition().x - (width / 2f);
