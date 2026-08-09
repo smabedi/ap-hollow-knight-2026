@@ -3,6 +3,11 @@ package com.smabedi.hollowknight.config;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 
+/**
+ * Global configuration data.
+ * Centralizes all magic numbers, file paths, and physical attributes
+ * to ensure consistency and facilitate rapid gameplay balancing.
+ */
 public final class Constants {
     private Constants() {
     }
@@ -13,8 +18,8 @@ public final class Constants {
         public static final String LANG_MANAGEMENT = "i18n/";
         public static final String STRINGS = LANG_MANAGEMENT + "strings";
         public static final String MAPS = "maps/";
-        public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads_test.tmx";
-        public static final String GREENPATH = MAPS + "greenpath_test.tmx";
+        public static final String FORGOTTEN_CROSSROADS = MAPS + "forgotten_crossroads.tmx";
+        public static final String GREENPATH = MAPS + "greenpath.tmx";
 
         public static final class Saves {
             public static final String ROOT = "saves/";
@@ -111,13 +116,14 @@ public final class Constants {
     public static final class UI {
         public static final int DEFAULT_WIDTH = 1920;
         public static final int DEFAULT_HEIGHT = 1080;
-        public static final float UPP = 2f;
+        public static final float UPP = 2f; // Units Per Pixel UI scaling
         public static final int OVERSCREEN = 1000;
     }
 
     public static final class World {
-        public static final Vector2 GRAVITY_VECTOR = new Vector2(0, -10f);
+        public static final Vector2 GRAVITY_VECTOR = new Vector2(0, -12f);
         public static final float TIME_STEP = 1 / 60f;
+        // Pixels Per Meter - Standardizes Box2D physics scaling
         public static final float PPM = 100f;
     }
 
@@ -128,6 +134,9 @@ public final class Constants {
         public static final float TRAUMA_MAX = 1.5f;
     }
 
+    /**
+     * Core player statistics, constraints, and spell parameters.
+     */
     public static final class Knight {
         public static final int WIDTH = 50;
         public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
@@ -165,8 +174,8 @@ public final class Constants {
 
         public static final class HowlingWraiths {
             public static final float DURATION = 1f;
-            public static final float WIDTH = 2f;
-            public static final float HEIGHT = 2f;
+            public static final float WIDTH = 3f;
+            public static final float HEIGHT = 4f;
         }
 
         public static final class VengefulSpirit {
@@ -192,7 +201,7 @@ public final class Constants {
         public static final float TYPE_SPEED = 0.025f;
         public static final int DIALOG_NUMBER = 3;
         public static final int PRECEPTS_NUMBER = 3;
-        public static final float INTERACTION_DISTANCE = 4f;
+        public static final float INTERACTION_DISTANCE = 2f;
     }
 
     public static final class FalseKnight {
@@ -202,7 +211,7 @@ public final class Constants {
         public static final int HEIGHT = 300;
         public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
         public static final float FRICTION = 0.5f;
-        public static final float DENSITY = 5f; // Heavy, hard to knock back
+        public static final float DENSITY = 5f; // Heavy density resists light physical knockbacks
 
         public static final class ShockWave {
             public static final float WIDTH = 1f;
@@ -212,7 +221,7 @@ public final class Constants {
     }
 
     public static final class Enemy {
-        public static final float RESPAWN_DISTANCE = 20f;
+        public static final float RESPAWN_DISTANCE = 15f;
         public static final float DEATH_KNOCKBACK = 5f;
 
         public static final class Crawlid {
@@ -251,15 +260,16 @@ public final class Constants {
         public static final class CrystalGuardian {
             public static final int HP = 6;
             public static final float CHARGE_SPEED = 5.5f;
-            public static final float RETURN_SPEED = 2f;
+            public static final float RETURN_SPEED = 2.5f;
             public static final int WIDTH = 80;
             public static final float WIDTH_HALVED_SCALED = WIDTH / 2f / World.PPM;
             public static final int HEIGHT = 120;
             public static final float HEIGHT_HALVED_SCALED = HEIGHT / 2f / World.PPM;
             public static final float FRICTION = 0.2f;
-            public static final float VISION_RANGE = 12f; // Long range laser sight!
+            public static final float VISION_RANGE = 5f;
+            public static final float LASER_RANGE = 40f;
             public static final float ENRAGE_DURATION = 3f;
-            public static final float LASER_TELEGRAPH_TIME = 0.4f; // A brief pause to warn the player
+            public static final float LASER_TELEGRAPH_TIME = 0.4f;
         }
     }
 

@@ -13,9 +13,14 @@ import java.util.Map;
 
 import static com.smabedi.hollowknight.views.ScreenType.START_GAME;
 
+/**
+ * Centralized state machine for routing and caching application screens.
+ * Manages memory by disposing active gameplay instances when navigating
+ * back to core menus, while preserving standard UI layouts for rapid switching.
+ */
 public final class ScreenManager {
-    private static Main main;
     private static final Map<ScreenType, Screen> screens = new HashMap<>();
+    private static Main main;
     @SuppressWarnings("GDXJavaStaticResource")
     private static GameScreen currentGameScreen;
     @SuppressWarnings("GDXJavaStaticResource")
@@ -28,8 +33,14 @@ public final class ScreenManager {
         ScreenManager.main = main;
     }
 
+    /**
+     * Transitions to a designated menu screen. Lazily instantiates screens
+     * to optimize startup time and memory footprint.
+     */
     public static void setMenuScreen(ScreenType type) {
-        AudioManager.playMusic(Constants.Paths.Sounds.BGM_MENU, true);
+        if (!isGameActive()) {
+            AudioManager.playMusic(Constants.Paths.Sounds.BGM_MENU, true);
+        }
 
         if (!screens.containsKey(type)) {
             Screen newScreen = switch (type) {
@@ -71,6 +82,10 @@ public final class ScreenManager {
         }
     }
 
+    /**
+     * Purges the active game environment to free system resources,
+     * forcing a reload of the primary menu states.
+     */
     public static void clearGameScreen() {
         if (currentGameScreen != null) {
             currentGameScreen.dispose();
@@ -82,14 +97,15 @@ public final class ScreenManager {
         AudioManager.stopAllSfx();
     }
 
+    /**
+     * Rebuilds all cached UI components to reflect updated localization strings.
+     */
     public static void reloadLanguage() {
-        // 1. Dispose and clear ONLY the menus so they regenerate with the new strings
         for (Screen screen : screens.values()) {
             screen.dispose();
         }
         screens.clear();
 
-        // 2. Rebuild the HUD/Pause menu if a game is currently active
         if (currentGameScreen != null) {
             currentGameScreen.rebuildUI();
         }

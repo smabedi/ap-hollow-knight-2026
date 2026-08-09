@@ -4,6 +4,10 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.inventory.Inventory;
 import com.smabedi.hollowknight.views.game.LocationType;
 
+/**
+ * Encapsulates the entire persistent state of a single game run.
+ * Serves as the primary data model serialized to the SQLite database.
+ */
 public class GameSession {
     public int slotIndex;
     public int health;
@@ -11,7 +15,6 @@ public class GameSession {
     public int soul;
     public LocationType location;
     public int playtime;
-    private transient float playtimeAccumulator = 0f;
     public int deathCounter;
     public int enemyKillCounter;
     public Inventory inventory;
@@ -40,12 +43,22 @@ public class GameSession {
     public boolean pendingTransition = false;
     public LocationType nextLocation;
     public boolean pendingBossTeleport = false;
+
+    // Transient fields are ignored during JSON serialization
     public transient boolean isOneSitting = true;
+    private transient float playtimeAccumulator = 0f;
 
-    // Default constructor required for LibGDX JSON deserialization
-    public GameSession() {}
+    /**
+     * Default constructor required for LibGDX JSON deserialization.
+     */
+    public GameSession() {
+    }
 
-    // Constructor for starting a brand-new game
+    /**
+     * Instantiates a new game session with default starting values.
+     *
+     * @param slotIndex The save slot this session occupies.
+     */
     public GameSession(int slotIndex) {
         this.slotIndex = slotIndex;
         health = Constants.Knight.MAX_HEALTH;
@@ -58,30 +71,41 @@ public class GameSession {
         inventory = new Inventory();
     }
 
+    /**
+     * Increases the screen shake trauma, capping at a maximum threshold.
+     */
     public void addTrauma(float amount) {
         shakeTrauma += amount;
         if (shakeTrauma > Constants.Camera.TRAUMA_MAX) shakeTrauma = Constants.Camera.TRAUMA_MAX;
     }
 
+    /**
+     * Hard-sets the screen shake trauma, capping at a maximum threshold.
+     */
     public void setTrauma(float amount) {
         shakeTrauma = amount;
         if (shakeTrauma > Constants.Camera.TRAUMA_MAX) shakeTrauma = Constants.Camera.TRAUMA_MAX;
     }
 
+    /**
+     * Updates time-dependent session variables, such as playtime tracking
+     * and dynamic camera trauma decay.
+     *
+     * @param scaledDt Delta time affected by time-dilation effects.
+     * @param dt       Raw, unscaled delta time.
+     */
     public void update(float scaledDt, float dt) {
-        // 1. Decay camera trauma
         if (shakeTrauma > 0) {
             shakeTrauma -= scaledDt * Constants.Camera.TRAUMA_DECAY;
             if (shakeTrauma < 0) shakeTrauma = 0;
         }
 
-        // 2. Increment Playtime
         playtimeAccumulator += dt;
         if (playtimeAccumulator >= 1f) {
-            playtime++; // Add one second
-            playtimeAccumulator -= 1f; // Carry over any extra fractions of a second
+            playtime++;
+            playtimeAccumulator -= 1f;
         }
     }
 
-    // NOTE: fuck me.
+    // Note: fuck me.
 }

@@ -31,13 +31,18 @@ import static com.badlogic.gdx.math.Interpolation.pow2In;
 import static com.badlogic.gdx.math.Interpolation.pow2Out;
 import static com.badlogic.gdx.utils.Align.right;
 
+/**
+ * Manages the Scene2D User Interface overlay during active gameplay.
+ * Handles the instantiation, layout, and event delegation for the pause menu,
+ * inventory system, NPC dialog boxes, and dynamic toast notifications.
+ */
 public class GameUI {
     public final Stage stage;
     private final Skin skin;
-    private Table pauseMenu;
     private final Knight player;
     private final GameSession session;
     private final Inventory inventory;
+    private Table pauseMenu;
     private Table inventoryMenu;
     private Label notchLabel;
     private Label charmDescription;
@@ -67,13 +72,18 @@ public class GameUI {
         buildInventoryMenu();
     }
 
+    /**
+     * Constructs the primary pause menu overlay, integrating session persistence
+     * controls and developer cheat code references.
+     */
     private void buildPauseMenu() {
         pauseMenu = new Table();
         pauseMenu.setFillParent(true);
         pauseMenu.defaults().pad(10);
 
+        // Generate a semi-transparent dark overlay to contrast the menu against active gameplay
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(0, 0, 0, 0.85f)); // Darkened slightly for better readability
+        pixmap.setColor(new Color(0, 0, 0, 0.85f));
         pixmap.fill();
         Texture transparentBlack = new Texture(pixmap);
         pauseMenu.setBackground(new TextureRegionDrawable(new TextureRegion(transparentBlack)));
@@ -83,7 +93,6 @@ public class GameUI {
         title.setColor(Color.GOLD);
         pauseMenu.add(title).padBottom(20).row();
 
-        // --- BUTTONS ---
         TextButton continueBtn = new TextButton(Assets.getString("continue"), skin);
         continueBtn.addListener(new ClickListener() {
             @Override
@@ -98,8 +107,6 @@ public class GameUI {
         settingsBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                // SettingsMenuScreen will lay over the game.
-                // We don't dispose the game screen here, just switch contexts.
                 ScreenManager.setMenuScreen(ScreenType.SETTINGS);
                 AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
             }
@@ -117,7 +124,6 @@ public class GameUI {
 
                 DatabaseManager.saveSession(session);
 
-                // Clear the active game before returning to the main menu!
                 ScreenManager.clearGameScreen();
                 ScreenManager.setMenuScreen(ScreenType.MAIN);
                 AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
@@ -125,7 +131,6 @@ public class GameUI {
         });
         pauseMenu.add(quitBtn).width(200).padBottom(30).row();
 
-        // --- CHEAT CODES DISPLAY ---
         Table cheatsTable = new Table();
         cheatsTable.defaults().pad(5).left();
 
@@ -158,13 +163,15 @@ public class GameUI {
         stage.addActor(pauseMenu);
     }
 
+    /**
+     * Initializes the dialog UI container used for NPC interactions.
+     */
     private void buildDialogBox() {
         dialogBox = new Table();
         dialogBox.bottom().padBottom(50);
         dialogBox.setFillParent(true);
 
-        // Dark background for readability
-        dialogBox.setBackground(blackBackground); // Reusing the toast background
+        dialogBox.setBackground(blackBackground);
 
         dialogTextLabel = new Label("", skin);
         dialogTextLabel.setWrap(true);
@@ -175,8 +182,10 @@ public class GameUI {
         stage.addActor(dialogBox);
     }
 
+    /**
+     * Prepares the root container and background assets for the dynamic toast notification system.
+     */
     private void buildToastSystem() {
-        // Create a reusable, dark, semi-transparent background for the toast boxes
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(new Color(0, 0, 0, 0.6f));
         pixmap.fill();
@@ -195,9 +204,13 @@ public class GameUI {
         pauseMenu.setVisible(!isPaused);
     }
 
+    /**
+     * Integrates dialogue into the UI with support for typewriter interrupts.
+     * Invoking this while text is actively typing skips the animation. Invoking it
+     * after typing is complete closes the dialogue box.
+     */
     public void showDialog(String text) {
         if (isTyping) {
-            // Player pressed UP while typing: Skip to the end!
             displayedText = targetText;
             dialogTextLabel.setText(displayedText);
             isTyping = false;
@@ -205,12 +218,10 @@ public class GameUI {
         }
 
         if (dialogBox.isVisible() && !isTyping) {
-            // Player pressed UP after text finished: Close the box
             dialogBox.setVisible(false);
             return;
         }
 
-        // Start a new dialogue line
         targetText = text;
         displayedText = "";
         dialogTextLabel.setText("");
@@ -223,8 +234,11 @@ public class GameUI {
         return dialogBox.isVisible();
     }
 
+    /**
+     * Dispatches a transient notification to the screen corner.
+     * Uses Scene2D Action sequencing for chained animation logic (Slide in -> Delay -> Slide out).
+     */
     public void showToast(String message) {
-        // 1. Create the core toast box
         Table toastBox = new Table();
 
         Label toastLabel = new Label(message, skin);
@@ -232,59 +246,55 @@ public class GameUI {
         toastLabel.setAlignment(right);
 
         toastBox.add(toastLabel).align(right);
-        toastBox.pack(); // Calculate the box size based on the text
+        toastBox.pack();
 
-        // 2. THE WRAPPER TRICK
-        // A WidgetGroup reserves space in the parent Table, but doesn't force layout on its children.
-        // This allows us to animate the toastBox's position inside it!
+        // Encapsulate the toast within a WidgetGroup to enable independent animation sequencing
+        // without disrupting the parent table's strict layout mechanics.
         WidgetGroup wrapper = new WidgetGroup();
         wrapper.setSize(toastBox.getWidth(), toastBox.getHeight());
         wrapper.addActor(toastBox);
 
-        // 3. Set starting state: invisible and pushed 150 pixels to the right
         toastBox.setColor(1, 1, 1, 0);
         float slideOffset = 150f;
         toastBox.setPosition(slideOffset, 0);
 
-        // 4. Add the WRAPPER to the main container (not the toastBox directly)
         toastContainer.add(wrapper).size(toastBox.getWidth(), toastBox.getHeight()).padBottom(10).align(right).row();
 
-        // 5. Smooth Slide & Fade Sequence
+        // Chain the presentation lifecycle
         toastBox.addAction(Actions.sequence(
-            // IN: Slide left to (0,0) and fade in at the same time
             Actions.parallel(
                 Actions.fadeIn(0.25f),
-                Actions.moveTo(0, 0, 0.25f, pow2Out) // pow2Out gives a natural decelerating slide
+                Actions.moveTo(0, 0, 0.25f, pow2Out)
             ),
             Actions.delay(2f),
-            // OUT: Slide back out to the right and fade out
             Actions.parallel(
                 Actions.fadeOut(0.5f),
                 Actions.moveBy(slideOffset, 0, 0.5f, pow2In)
             ),
             Actions.run(() -> {
-                // Safely collapse the gap without breaking the Table's row logic
+                // Execute layout invalidation to seamlessly collapse the gap left by the destroyed wrapper
                 Cell<?> cell = toastContainer.getCell(wrapper);
                 if (cell != null) {
-                    cell.setActor(null); // Remove the wrapper from the cell
-                    cell.size(0, 0);     // Shrink the cell to 0 width/height
-                    cell.pad(0);         // Remove the padding
+                    cell.setActor(null);
+                    cell.size(0, 0);
+                    cell.pad(0);
                 }
-                // Force the table to recalculate layout to close the gap
                 toastContainer.invalidateHierarchy();
 
-                // Destroy the wrapper (which destroys the toastBox)
                 wrapper.remove();
             })
         ));
     }
 
+    /**
+     * Constructs the inventory overlay layout, initializing the grid constraints
+     * and binding logic for charm loadout management.
+     */
     private void buildInventoryMenu() {
         inventoryMenu = new Table();
         inventoryMenu.setFillParent(true);
         inventoryMenu.defaults().pad(10);
 
-        // Reuse the translucent black background from the pause menu
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(new Color(0, 0, 0, 0.6f));
         pixmap.fill();
@@ -311,6 +321,10 @@ public class GameUI {
         stage.addActor(inventoryMenu);
     }
 
+    /**
+     * Forces a localized data refresh of the inventory grid. Rebuilds the charm buttons
+     * to accurately reflect equipped status and notch consumption logic.
+     */
     @SuppressWarnings("GDXJavaUnsafeIterator")
     public void refreshInventoryUI() {
         notchLabel.setText(Assets.getString("notches_used") + ": " + inventory.getUsedNotches() + " / " + Constants.Knight.Inventory.MAX_NOTCHES);
@@ -320,17 +334,9 @@ public class GameUI {
         for (CharmType charm : inventory.getOwnedCharms()) {
             boolean isEquipped = inventory.isEquipped(charm);
 
-            // Determine the exact region name based on the equipped state
             String regionName = charm.getLangKey() + (isEquipped ? "" : "_deactive");
-
-            // Fetch the correct icon from the HUD atlas
             TextureRegion charmIcon = Assets.getUiAtlas().findRegion(regionName);
-
-            // Instantiate the custom actor with vertical layout (icon on top, name below)
-            // We pass null for the description so it doesn't render text next to it
             IconTextItem charmElement = new IconTextItem(charmIcon, charm.getName(), null, skin, true, !isEquipped);
-
-            // Ensure the Table catches the click events
             charmElement.setTouchable(Touchable.enabled);
 
             charmElement.addListener(new ClickListener() {
@@ -341,10 +347,8 @@ public class GameUI {
                     } else {
                         inventory.equipCharm(charm);
                     }
-                    // Update the dedicated description label located elsewhere in your UI
                     charmDescription.setText(charm.getDescription());
 
-                    // Rebuild the grid to instantly refresh the icon textures
                     refreshInventoryUI();
                     AudioManager.playSfx(Constants.Paths.Sounds.SFX_UI_BUTTON);
                 }
@@ -352,7 +356,7 @@ public class GameUI {
 
             charmsGrid.add(charmElement).pad(15);
             col++;
-            if (col >= 4) { // 4 charms per row
+            if (col >= 4) {
                 col = 0;
                 charmsGrid.row();
             }
@@ -360,13 +364,13 @@ public class GameUI {
     }
 
     public void toggleInventory() {
-        if (pauseMenu.isVisible()) return; // Don't open if standard pause menu is up
+        if (pauseMenu.isVisible()) return;
 
         boolean isVisible = inventoryMenu.isVisible();
         inventoryMenu.setVisible(!isVisible);
 
         if (!isVisible) {
-            refreshInventoryUI(); // Refresh data every time we open it
+            refreshInventoryUI();
             charmDescription.setText(Assets.getString("select_a_charm"));
         }
     }
@@ -375,6 +379,9 @@ public class GameUI {
         return inventoryMenu != null && inventoryMenu.isVisible();
     }
 
+    /**
+     * Advances dynamic UI logic, such as the dialogue typewriter effect, before drawing the stage.
+     */
     public void render(float delta) {
         if (isTyping && dialogBox.isVisible()) {
             typewriterTimer += delta;
@@ -385,7 +392,7 @@ public class GameUI {
                 textIndex++;
 
                 if (textIndex >= targetText.length()) {
-                    isTyping = false; // Finished typing
+                    isTyping = false;
                 }
             }
         }

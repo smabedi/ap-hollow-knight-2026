@@ -23,6 +23,10 @@ import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
+/**
+ * The final sequence view displayed upon defeating the primary boss.
+ * Renders a looping video background via texture animation and computes aggregate gameplay statistics.
+ */
 public class EndGameScreen implements Screen {
     private final Stage stage;
     private final Skin skin;
@@ -45,22 +49,19 @@ public class EndGameScreen implements Screen {
         Table root = new Table();
         root.setFillParent(true);
 
-        // Start completely transparent for the fade-in effect
+        // Initialize the root container with an alpha of zero to facilitate a smooth fade-in transition
         root.setColor(1, 1, 1, 0);
 
-        // 1. Title
         Label titleLabel = new Label(Assets.getString("you_won"), skin);
         titleLabel.setColor(Color.GOLD);
-        // Assuming your skin has a title font style, you could pass "title" here
         root.add(titleLabel).padBottom(40).row();
 
-        // 2. Stats Calculation
+        // Calculate human-readable playtime from the total accumulated seconds
         int hours = session.playtime / 3600;
         int minutes = (session.playtime % 3600) / 60;
         int seconds = session.playtime % 60;
         String timeFormatted = String.format("%02d:%02d:%02d", hours, minutes, seconds);
 
-        // 3. Stats Display
         Table statsTable = new Table();
         statsTable.defaults().pad(10).center();
 
@@ -70,7 +71,6 @@ public class EndGameScreen implements Screen {
 
         root.add(statsTable).padBottom(50).row();
 
-        // 4. Main Menu Button
         TextButton mainMenuBtn = new TextButton(Assets.getString("main_menu"), skin);
         mainMenuBtn.addListener(new ClickListener() {
             @Override
@@ -82,7 +82,7 @@ public class EndGameScreen implements Screen {
         });
         root.add(mainMenuBtn).width(200);
 
-        // 5. Fade In Action (Takes 1.5 seconds)
+        // Apply a progressive fade-in action spanning 1.5 seconds
         root.addAction(Actions.fadeIn(1.5f));
 
         stage.addActor(root);
@@ -102,28 +102,22 @@ public class EndGameScreen implements Screen {
         stateTime += delta;
         TextureRegion currentFrame = videoAnimation.getKeyFrame(stateTime, true);
 
-        // Get current viewport dimensions
         float viewWidth = stage.getViewport().getWorldWidth();
         float viewHeight = stage.getViewport().getWorldHeight();
 
-        // Get original frame dimensions
         float texWidth = currentFrame.getRegionWidth();
         float texHeight = currentFrame.getRegionHeight();
 
-        // Calculate dimensions to fill the screen while maintaining aspect ratio
-        // Scaling.fill automatically calculates the correct size for you
+        // Calculate the optimal dimensions to fill the viewport while strictly maintaining the original aspect ratio
         Vector2 size = com.badlogic.gdx.utils.Scaling.fill.apply(texWidth, texHeight, viewWidth, viewHeight);
 
-        // Center the image on screen
         float x = (viewWidth - size.x) / 2f;
         float y = (viewHeight - size.y) / 2f;
 
         stage.getBatch().begin();
-        // Draw using the calculated centered position and size
         stage.getBatch().draw(currentFrame, x, y, size.x, size.y);
         stage.getBatch().end();
 
-        // Render UI over the background
         stage.act(delta);
         stage.draw();
     }

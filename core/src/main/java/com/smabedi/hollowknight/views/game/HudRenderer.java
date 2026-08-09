@@ -14,12 +14,16 @@ import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 
+/**
+ * Dedicated rendering engine for the player's primary Heads Up Display (HUD).
+ * Implements a specialized FrameBuffer Object (FBO) multi-pass rendering pipeline to
+ * achieve complex alpha-masking operations for the dynamic soul orb liquid filler.
+ */
 public class HudRenderer {
     private final Knight player;
     private final ExtendViewport uiViewport;
     private final OrthographicCamera uiCamera;
 
-    // Assets
     private final TextureRegion baseBar;
     private final TextureRegion maskCircle;
     private final TextureRegion eyes;
@@ -32,28 +36,21 @@ public class HudRenderer {
     private final Animation<TextureRegion> orbShrink;
     private final Animation<TextureRegion> maskBreakAnim;
     private final Animation<TextureRegion> maskHealAnim;
-
-    // Soul tracking state
-    private float stateTime = 0f;
-    private float currentFillPercent = 0f;
     private final FrameBuffer fbo;
     private final TextureRegion fboRegion;
     private final OrthographicCamera fboCamera;
-
-    // Mask tracking state
-    private enum MaskState {FULL, EMPTY, BREAKING, HEALING}
-
     private final MaskState[] maskStates;
     private final float[] maskTimers;
+    private float stateTime = 0f;
+    private float currentFillPercent = 0f;
 
     public HudRenderer(Knight player) {
         this.player = player;
 
-        // 1. Separate UI camera setup
+        // Establish a decoupled orthographic camera for resolution-independent HUD rendering
         this.uiCamera = new OrthographicCamera();
         this.uiViewport = new ExtendViewport(Constants.UI.DEFAULT_WIDTH, Constants.UI.DEFAULT_HEIGHT, uiCamera);
 
-        // 2. Load Textures directly from your HUD Atlas
         TextureAtlas atlas = Assets.getUiAtlas();
         this.baseBar = atlas.findRegion("healthbar");
         this.maskCircle = atlas.findRegion("healthbar_mask");
@@ -68,7 +65,7 @@ public class HudRenderer {
         this.maskBreakAnim = new Animation<>(0.05f, atlas.findRegions("mask_break"), Animation.PlayMode.NORMAL);
         this.maskHealAnim = new Animation<>(0.05f, atlas.findRegions("mask_heal"), Animation.PlayMode.NORMAL);
 
-        // 3. FBO Configuration
+        // Configure the FrameBuffer Object (FBO) for the isolated soul orb alpha-masking operations
         int fboW = baseBar.getRegionWidth();
         int fboH = baseBar.getRegionHeight();
         this.fbo = new FrameBuffer(Pixmap.Format.RGBA8888, fboW, fboH, false);
@@ -79,7 +76,7 @@ public class HudRenderer {
         this.fboCamera.position.set(fboW / 2f, fboH / 2f, 0);
         this.fboCamera.update();
 
-        // 4. Initialize Mask States
+        // Pre-allocate tracking arrays for discrete health mask state evaluation
         int maxHealth = Constants.Knight.MAX_HEALTH;
         this.maskStates = new MaskState[maxHealth];
         this.maskTimers = new float[maxHealth];
@@ -88,10 +85,14 @@ public class HudRenderer {
         }
     }
 
+    /**
+     * Steps logic for UI animations independently of physical game time.
+     * Linearly interpolates resource gauges and manages discrete health state transitions.
+     */
     public void update(float dt) {
         stateTime += dt;
 
-        // Soul Lerping
+        // Linearly interpolate the soul meter fill percentage for smooth visual transitions
         float targetPercent = player.soul / (float) Constants.Knight.MAX_SOUL;
         if (currentFillPercent < targetPercent) {
             currentFillPercent = Math.min(targetPercent, currentFillPercent + dt * 1.5f);
@@ -99,7 +100,7 @@ public class HudRenderer {
             currentFillPercent = Math.max(targetPercent, currentFillPercent - dt * 1.5f);
         }
 
-        // Mask State Transitions
+        // Evaluate state transitions for health masks (healing or breaking animations)
         for (int i = 0; i < maskStates.length; i++) {
             maskTimers[i] += dt;
             boolean shouldBeFull = player.health > i;
@@ -120,10 +121,14 @@ public class HudRenderer {
         }
     }
 
+    /**
+     * Executes the two-pass rendering sequence. Processes complex masking operations into
+     * the FBO before compositing the final HUD overlay onto the primary SpriteBatch.
+     */
     public void render(SpriteBatch batch) {
-        // --- 1. PRE-RENDER FBO MASK IN AN ISOLATED PIPELINE ---
         batch.end();
 
+        // Pipeline Pass 1: Render the dynamic soul liquid masked by the orb boundary into the FBO
         fbo.begin();
         Gdx.gl.glClearColor(0, 0, 0, 0);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -137,7 +142,9 @@ public class HudRenderer {
         else if (currentFillPercent > targetPercent + 0.01f) currentAnim = orbShrink;
 
         TextureRegion liquidFrame = currentAnim.getKeyFrame(stateTime);
-        float liquidY = -100f + 1.02f * (100f * currentFillPercent); // Min Y is -100, Max Y is 0
+
+        // Calculate the vertical physical offset of the liquid texture based on internal capacity
+        float liquidY = -100f + 1.02f * (100f * currentFillPercent);
 
         batch.draw(liquidFrame, 10, liquidY);
         batch.draw(eyes, 0, 0);
@@ -148,21 +155,18 @@ public class HudRenderer {
         batch.end();
         fbo.end();
 
-        // --- 2. MAIN HUD RENDERING ON TOP-LEFT CORNER ---
+        // Pipeline Pass 2: Composite the base UI, FBO layer, and health mask states onto the viewport
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-        // Layout Calculations (Top-Left Anchors)
         float padding = 30f;
         float hudX = padding;
         float hudY = uiViewport.getWorldHeight() - baseBar.getRegionHeight() - padding;
 
-        // Draw Base, Masked FBO result, and Glass Shine
         batch.draw(baseBar, hudX, hudY);
         batch.draw(fboRegion, hudX, hudY);
         batch.draw(glass, hudX, hudY);
-
 
         float maskStartX = hudX + baseBar.getRegionWidth() / 2f;
         float maskY = hudY + (baseBar.getRegionHeight() / 2f) - (maskFull.getRegionHeight() / 2f) + 15f;
@@ -183,7 +187,15 @@ public class HudRenderer {
         uiViewport.update(width, height, true);
     }
 
+    /**
+     * Prevents memory leaks by freeing the FrameBuffer Object from native VRAM.
+     */
     public void dispose() {
         if (fbo != null) fbo.dispose();
     }
+
+    /**
+     * Encapsulates the tracking states used for sequential health loss and recovery animations.
+     */
+    private enum MaskState {FULL, EMPTY, BREAKING, HEALING}
 }

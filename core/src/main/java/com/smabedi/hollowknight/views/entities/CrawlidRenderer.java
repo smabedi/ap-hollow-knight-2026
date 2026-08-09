@@ -7,12 +7,16 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.enemies.Crawlid;
 
+/**
+ * Handles the visual rendering lifecycle of the Crawlid entity.
+ * Synchronizes Box2D physics momentum with corresponding sprite orientations and animation states.
+ */
 public class CrawlidRenderer implements EntityRenderer {
     private final Crawlid crawlid;
-    private float stateTimer = 0f;
-    private boolean wasDead = false;
     private final Animation<TextureRegion> walkAnim;
     private final Animation<TextureRegion> deathAnim;
+    private float stateTimer = 0f;
+    private boolean wasDead = false;
 
     public CrawlidRenderer(Crawlid crawlid, TextureAtlas atlas) {
         this.crawlid = crawlid;
@@ -23,8 +27,7 @@ public class CrawlidRenderer implements EntityRenderer {
     public void render(Batch batch, float dt) {
         boolean isDead = crawlid.isDead();
 
-        // 1. Detect state transition to reset the animation timer
-        // This handles both dying and respawning!
+        // Evaluate state transitions to ensure animations reset to frame zero upon death or respawn
         if (isDead != wasDead) {
             stateTimer = 0f;
             wasDead = isDead;
@@ -33,19 +36,17 @@ public class CrawlidRenderer implements EntityRenderer {
         stateTimer += dt;
         TextureRegion currentFrame = isDead ? deathAnim.getKeyFrame(stateTimer) : walkAnim.getKeyFrame(stateTimer);
 
-        // 2. Flipping logic (Default asset faces LEFT)
+        // Determine horizontal orientation directly from the physical body's velocity vector.
+        // A velocity of 0 safely retains the previous frame's flip state.
         float velX = crawlid.b2body.getLinearVelocity().x;
 
         if (velX > 0 && !currentFrame.isFlipX()) {
-            // Moving Right: Flip to face right
             currentFrame.flip(true, false);
         } else if (velX < 0 && currentFrame.isFlipX()) {
-            // Moving Left: Un-flip to face left
             currentFrame.flip(true, false);
         }
-        // NOTE: If velX == 0 (e.g., dead and stopped), it safely retains its current flip state.
 
-        // 3. Draw
+        // Calculate centralized rendering coordinates aligned with the Box2D fixture bounds
         float width = currentFrame.getRegionWidth() / Constants.World.PPM;
         float height = currentFrame.getRegionHeight() / Constants.World.PPM;
         float x = crawlid.b2body.getPosition().x - (width / 2f);

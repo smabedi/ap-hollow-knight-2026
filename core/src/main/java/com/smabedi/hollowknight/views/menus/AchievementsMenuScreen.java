@@ -16,6 +16,10 @@ import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 import com.smabedi.hollowknight.views.customelements.IconTextItem;
 
+/**
+ * Scene2D interface displaying the player's unlocked achievements.
+ * Evaluates persistent GameSettings data to dynamically construct a scrollable status list.
+ */
 public class AchievementsMenuScreen extends MenuScreen {
 
     @Override
@@ -32,7 +36,7 @@ public class AchievementsMenuScreen extends MenuScreen {
         content.top().left();
         content.defaults().pad(15).left();
 
-        // Build the list dynamically based on GameSettings Preferences[cite: 16]
+        // Dynamically construct the achievement list based on persistent user configuration states.
         addAchievementRow(content, "COMPLETION", Assets.getString("achv_COMPLETION"), Assets.getString("achv_desc_COMPLETION"));
         addAchievementRow(content, "SPEEDRUN", Assets.getString("achv_SPEEDRUN"), Assets.getString("achv_desc_SPEEDRUN"));
         addAchievementRow(content, "TRUE_HUNTER", Assets.getString("achv_TRUE_HUNTER"), Assets.getString("achv_desc_TRUE_HUNTER"));
@@ -57,11 +61,10 @@ public class AchievementsMenuScreen extends MenuScreen {
     private void addAchievementRow(Table table, String id, String title, String description) {
         boolean isUnlocked = GameSettings.isAchievementUnlocked(id);
 
-        // Fetch the corresponding mask from the HUD atlas
         String regionName = isUnlocked ? "unlocked_mask" : "locked_mask";
         TextureRegion statusIcon = Assets.getUiAtlas().findRegion(regionName);
 
-        // Pass 'false' for horizontal layout (icon on the left, text on the right)
+        // Instantiate a horizontal layout row (icon on the left, text on the right) for each achievement.
         IconTextItem achievementRow = new IconTextItem(statusIcon, title, description, skin, false, !isUnlocked);
 
         table.add(achievementRow).left().padBottom(20).row();

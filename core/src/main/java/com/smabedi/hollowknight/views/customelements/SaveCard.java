@@ -12,10 +12,15 @@ import com.smabedi.hollowknight.models.game.GameSession;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.game.LocationType;
 
+/**
+ * A custom Scene2D Table widget representing an interactable save slot.
+ * Handles the display of session data (playtime, location, health) and delegates
+ * load/delete operations to the DatabaseManager.
+ */
 public class SaveCard extends Table {
     private final int slotIndex;
-    private GameSession session;
     private final Skin skin;
+    private GameSession session;
     private SaveCardHudActor hudActor;
 
     public SaveCard(int slotIndex, GameSession session, Skin skin) {
@@ -26,6 +31,10 @@ public class SaveCard extends Table {
         buildCard();
     }
 
+    /**
+     * Constructs the visual layout of the save card. Dynamically alters its appearance
+     * and functionality based on whether the assigned slot contains existing session data.
+     */
     private void buildCard() {
         this.clearChildren();
         this.left().center();
@@ -59,7 +68,6 @@ public class SaveCard extends Table {
             filledStyle.up = new TextureRegionDrawable(Assets.getUiAtlas().findRegion(areaRegion));
             contentTable.setStyle(filledStyle);
 
-            // Inject the custom scaled replica of the main game HUD
             hudActor = new SaveCardHudActor(session.health, session.soul);
             contentTable.add(hudActor).size(hudActor.getWidth(), hudActor.getHeight()).padRight(50);
 
@@ -67,10 +75,8 @@ public class SaveCard extends Table {
             Label timeLabel = new Label(session.playtime / 60 + " " + Assets.getString("min"), skin);
 
             Table infoTable = new Table();
-            // Change .right() to .left() so text reads cleanly outwards from the HUD actor space
-            infoTable.add(locationLabel).right().row();
-            infoTable.add(timeLabel).right();
-            // Change .right() to .expandX().left() so it grabs all remaining space and sits cleanly next to the masks
+            infoTable.add(locationLabel).left().row();
+            infoTable.add(timeLabel).left();
             contentTable.add(infoTable).expandX().left().padLeft(30);
 
             contentTable.addListener(new ClickListener() {
@@ -101,6 +107,10 @@ public class SaveCard extends Table {
         }
     }
 
+    /**
+     * Safely purges the UI elements and visual trackers of a deleted save,
+     * triggering a structural rebuild of the card widget into an empty state.
+     */
     private void clearSaveAndRefresh() {
         if (hudActor != null) {
             hudActor.dispose();

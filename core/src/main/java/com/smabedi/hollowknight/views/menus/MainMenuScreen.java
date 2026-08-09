@@ -14,6 +14,11 @@ import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.views.ScreenManager;
 import com.smabedi.hollowknight.views.ScreenType;
 
+/**
+ * The primary entry interface for the application.
+ * Utilizes a Scene2D Stack to decouple the layout constraints of the central logo
+ * and options from the peripheral navigation buttons.
+ */
 public class MainMenuScreen extends MenuScreen {
     @Override
     public void showCore() {
@@ -23,24 +28,21 @@ public class MainMenuScreen extends MenuScreen {
 
         Table mainOptionsWrapper = new Table();
         mainOptionsWrapper.center();
-        // Removed global width constraint so the logo can render at full size
+        // Configure the main options wrapper without a global width constraint to allow the central logo to render at its native scaled dimensions.
         mainOptionsWrapper.defaults().spaceBottom(50);
         stack.add(mainOptionsWrapper);
 
-        // --- INJECT CUSTOM LOGO ---
         TextureRegion logoRegion = Assets.getUiAtlas().findRegion("logo");
         Image logoImage = new Image(logoRegion);
 
-        // Force the high-res image to scale down and maintain its aspect ratio
+        // Inject and scale the primary studio logo, enforcing aspect ratio preservation via Scaling.fit.
         logoImage.setScaling(com.badlogic.gdx.utils.Scaling.fit);
 
-        // Constrain the layout cell so it doesn't push your buttons off the screen
-        // (Tweak the 900 and 250 values to get the exact size you want)
+        // Constrain the logo cell bounds to prevent spatial conflicts with the primary navigation buttons.
         mainOptionsWrapper.add(logoImage).width(900).height(250).padBottom(60).row();
 
-        // --- BUTTONS ---
         TextButton startGameBtn = new TextButton(Assets.getString("start_game"), skin);
-        mainOptionsWrapper.add(startGameBtn).width(300).row(); // Restored 300 width constraint directly to the button
+        mainOptionsWrapper.add(startGameBtn).width(300).row();
 
         startGameBtn.addListener(new ClickListener() {
             @Override
@@ -51,7 +53,7 @@ public class MainMenuScreen extends MenuScreen {
         });
 
         TextButton achievementsBtn = new TextButton(Assets.getString("achievements"), skin);
-        mainOptionsWrapper.add(achievementsBtn).width(300).row(); // Restored 300 width constraint
+        mainOptionsWrapper.add(achievementsBtn).width(300).row();
 
         achievementsBtn.addListener(new ClickListener() {
             @Override
@@ -62,7 +64,7 @@ public class MainMenuScreen extends MenuScreen {
         });
 
         TextButton quitGameBtn = new TextButton(Assets.getString("quit_game"), skin);
-        mainOptionsWrapper.add(quitGameBtn).width(300).row(); // Restored 300 width constraint
+        mainOptionsWrapper.add(quitGameBtn).width(300).row();
 
         quitGameBtn.addListener(new ClickListener() {
             @Override
@@ -71,7 +73,7 @@ public class MainMenuScreen extends MenuScreen {
             }
         });
 
-        // --- CORNER MENU BUTTONS ---
+        // Isolate peripheral navigation buttons using decoupled Table wrappers within the parent Stack.
         Table guideBtnWrapper = new Table();
         guideBtnWrapper.top().left().pad(50);
         stack.add(guideBtnWrapper);

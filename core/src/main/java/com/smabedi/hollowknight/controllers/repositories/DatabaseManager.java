@@ -9,21 +9,22 @@ import com.smabedi.hollowknight.models.game.GameSession;
 
 import java.sql.*;
 
+/**
+ * Manages the SQLite database for local game session persistence.
+ * Utilizes JSON serialization to store complex state objects efficiently within the database.
+ */
 public class DatabaseManager {
-    // Stores the database file locally in the user's OS-specific app data folder
     private static final String DB_URL;
     private static final Json json = new Json();
 
     static {
         json.setOutputType(JsonWriter.OutputType.json);
 
-        // 1. Ensure the saves directory exists before SQLite tries to use it
         FileHandle saveDir = Gdx.files.local(Constants.Paths.Saves.ROOT_PATH);
         if (!saveDir.exists()) {
             saveDir.mkdirs();
         }
 
-        // 2. Safely construct the absolute URL now that the folder exists
         DB_URL = "jdbc:sqlite:" + Gdx.files.local(Constants.Paths.Saves.DATABASE).file().getAbsolutePath();
 
         json.setOutputType(JsonWriter.OutputType.json);
@@ -51,8 +52,10 @@ public class DatabaseManager {
         }
     }
 
+    /**
+     * Saves or updates a game session using UPSERT logic.
+     */
     public static void saveSession(GameSession session) {
-        // UPSERT logic: Insert a new row, or update it if the slot_index already exists
         String upsertSQL = "INSERT INTO save_slots (slot_index, session_blob) VALUES (?, ?) "
             + "ON CONFLICT(slot_index) DO UPDATE SET session_blob = excluded.session_blob;";
 
@@ -60,7 +63,7 @@ public class DatabaseManager {
              PreparedStatement preparedStatement = conn.prepareStatement(upsertSQL)) {
 
             preparedStatement.setInt(1, session.slotIndex);
-            preparedStatement.setString(2, json.toJson(session)); // Serialize object to JSON string
+            preparedStatement.setString(2, json.toJson(session));
             preparedStatement.executeUpdate();
             System.out.println("Successfully saved session to slot " + session.slotIndex);
 
@@ -69,6 +72,10 @@ public class DatabaseManager {
         }
     }
 
+    /**
+     * Retrieves and deserializes a game session from the database.
+     * Also validates specific constraints (e.g., One Shot challenge invalidation).
+     */
     public static GameSession loadSession(int slotIndex) {
         String selectSQL = "SELECT session_blob FROM save_slots WHERE slot_index = ?;";
 
@@ -80,10 +87,9 @@ public class DatabaseManager {
 
             if (rs.next()) {
                 String blob = rs.getString("session_blob");
-                GameSession session = json.fromJson(GameSession.class, blob); // Deserialize JSON string back to object
+                GameSession session = json.fromJson(GameSession.class, blob);
 
-                // Enforce One Shot, One Kill constraint:
-                // If a player loads a save, it is no longer a single sitting.
+                // The "One Shot" achievement is invalidated upon reloading a save file
                 if (session != null) {
                     session.isOneSitting = false;
                 }
@@ -93,9 +99,12 @@ public class DatabaseManager {
         } catch (Exception e) {
             System.err.println("Failed to load session: " + e.getMessage());
         }
-        return null; // Slot is completely empty
+        return null;
     }
 
+    /**
+     * Purges a specific save slot from the database.
+     */
     public static void deleteSession(int slotIndex) {
         String deleteSQL = "DELETE FROM save_slots WHERE slot_index = ?;";
 

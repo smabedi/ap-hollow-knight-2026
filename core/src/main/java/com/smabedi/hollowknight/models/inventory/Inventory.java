@@ -3,6 +3,10 @@ package com.smabedi.hollowknight.models.inventory;
 import com.badlogic.gdx.utils.Array;
 import com.smabedi.hollowknight.config.Constants;
 
+/**
+ * Manages the player's collection and active loadout of Charms.
+ * Enforces notch capacity limits and ensures duplicate charms cannot be equipped.
+ */
 public class Inventory {
     private final Array<CharmType> ownedCharms;
     private final Array<CharmType> equippedCharms;
@@ -12,12 +16,21 @@ public class Inventory {
         this.equippedCharms = new Array<>();
     }
 
+    /**
+     * Grants a new charm to the player's collection, preventing duplicates.
+     */
     public void addOwnedCharm(CharmType charm) {
         if (!ownedCharms.contains(charm, true)) {
             ownedCharms.add(charm);
         }
     }
 
+    /**
+     * Attempts to equip a charm to the active loadout.
+     * Evaluates ownership, current equipment status, and notch capacity constraints.
+     *
+     * @return true if the charm was successfully equipped, false otherwise.
+     */
     public boolean equipCharm(CharmType charm) {
         if (!ownedCharms.contains(charm, true) || equippedCharms.contains(charm, true)) {
             return false;
@@ -32,6 +45,9 @@ public class Inventory {
         return true;
     }
 
+    /**
+     * Removes a charm from the active loadout.
+     */
     public void unequipCharm(CharmType charm) {
         equippedCharms.removeValue(charm, true);
     }

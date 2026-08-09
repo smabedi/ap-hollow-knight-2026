@@ -13,9 +13,17 @@ import com.ray3k.stripe.FreeTypeSkinLoader;
 
 import java.util.Locale;
 
+/**
+ * Singleton wrapper around LibGDX's AssetManager.
+ * Centralizes the loading, tracking, and retrieval of all external resources
+ * (Textures, Audio, UI Skins, Localization Strings) to prevent memory leaks
+ * and ensure synchronous loading during the splash screen.
+ */
 public class Assets {
     private static Assets instance;
     public final AssetManager manager;
+
+    // Handles multi-language string extraction based on GameSettings
     public I18NBundle bundle;
 
     private Assets() {
@@ -41,19 +49,18 @@ public class Assets {
         return getInstance().bundle;
     }
 
-    public void reloadLanguage() {
-        bundle = I18NBundle.createBundle(
-            Gdx.files.internal(Constants.Paths.STRINGS),
-            Locale.of(GameSettings.getLanguage())
-        );
-    }
-
     public static <T> void load(String fileName, Class<T> type) {
         getManager().load(fileName, type);
     }
 
+    /**
+     * Queues all necessary game assets into the AssetManager.
+     * This must be called before the loading screen begins updating the manager.
+     */
     public static void queueAssets() {
+        // Custom loader required to parse TTF fonts embedded within the UI Skin JSON
         getManager().setLoader(Skin.class, new FreeTypeSkinLoader(getManager().getFileHandleResolver()));
+
         load(Constants.Paths.SKIN, Skin.class);
         load(Constants.Paths.Textures.KNIGHT_ATLAS, TextureAtlas.class);
         load(Constants.Paths.Textures.VFX_ATLAS, TextureAtlas.class);
@@ -94,6 +101,7 @@ public class Assets {
         load(Constants.Paths.Sounds.SFX_FK_LAND, Sound.class);
         load(Constants.Paths.Sounds.SFX_FK_RUN_LOOP, Sound.class);
         load(Constants.Paths.Sounds.SFX_SOUL_FULL, Sound.class);
+
         for (String path : Constants.Paths.Sounds.SFX_FK_ROAR) {
             load(path, Sound.class);
         }
@@ -135,6 +143,8 @@ public class Assets {
     public static TextureAtlas getBackgroundAtlas() {
         return getManager().get(Constants.Paths.Videos.BACKGROUND, TextureAtlas.class);
     }
+
+    // --- Pre-configured Animation Getters ---
 
     public static Animation<TextureRegion> getShockwaveVfx() {
         return new Animation<>(0.2f, getVfxAtlas().findRegions("shockwave"), Animation.PlayMode.NORMAL);
@@ -178,5 +188,15 @@ public class Assets {
 
     public static void dispose() {
         getManager().dispose();
+    }
+
+    /**
+     * Rebuilds the I18NBundle. Called dynamically when the user changes the language setting.
+     */
+    public void reloadLanguage() {
+        bundle = I18NBundle.createBundle(
+            Gdx.files.internal(Constants.Paths.STRINGS),
+            Locale.of(GameSettings.getLanguage())
+        );
     }
 }

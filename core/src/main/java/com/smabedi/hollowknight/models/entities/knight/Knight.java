@@ -6,7 +6,13 @@ import com.smabedi.hollowknight.config.AudioManager;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.controllers.EventCallback;
 
+/**
+ * The core data model representing the player character.
+ * Encapsulates the Box2D physics body, health, soul, and ability state timers.
+ * Leaves input processing to the PlayerController and animation handling to the KnightRenderer.
+ */
 public class Knight {
+    private final EventCallback eventCallback;
     public World world;
     public Body b2body;
     public boolean facingRight = true;
@@ -39,8 +45,8 @@ public class Knight {
     public boolean hasVoidHeart = false;
     public KnightState currentState = KnightState.IDLE;
     public KnightState previousState = KnightState.IDLE;
+    public boolean isAttackingUp = false;
     public boolean isAttackingDown = false;
-    private final EventCallback eventCallback;
     public long walkLoopId = -1;
     public long wallSlideLoopId = -1;
 
@@ -52,8 +58,11 @@ public class Knight {
         defineKnight(startX, startY);
     }
 
+    /**
+     * Decrements active cooldowns and updates the current state classification.
+     * Manages audio loop toggling based on state resolution.
+     */
     public void update(float dt) {
-        // Decrease timers
         if (iFrameTimer > 0) iFrameTimer -= dt;
         if (attackDurationTimer > 0) attackDurationTimer -= dt;
         if (spritCastTimer > 0) spritCastTimer -= dt;
@@ -62,7 +71,6 @@ public class Knight {
         previousState = currentState;
         currentState = getState();
 
-        // --- WALKING LOOP ---
         if (currentState == KnightState.WALKING && !isDead) {
             if (walkLoopId == -1) {
                 walkLoopId = AudioManager.loopSfx(Constants.Paths.Sounds.SFX_RUN);
@@ -72,7 +80,6 @@ public class Knight {
             walkLoopId = -1;
         }
 
-        // --- WALL SLIDE LOOP ---
         if (currentState == KnightState.WALL_SLIDING && !isDead) {
             if (wallSlideLoopId == -1) {
                 wallSlideLoopId = AudioManager.loopSfx(Constants.Paths.Sounds.SFX_WALL_SLIDE);
@@ -83,15 +90,20 @@ public class Knight {
         }
     }
 
+    /**
+     * Determines the most appropriate descriptive state for the Knight
+     * based on vertical momentum, grounding, and active spell timers.
+     */
     private KnightState getState() {
         if (attackDurationTimer > 0) {
-            return isAttackingDown ? KnightState.ATTACKING_DOWN : KnightState.ATTACKING_SIDE;
+            if (isAttackingDown) return KnightState.ATTACKING_DOWN;
+            if (isAttackingUp) return KnightState.ATTACKING_UP;
+            return KnightState.ATTACKING_SIDE;
         }
 
         if (spritCastTimer > 0) return hasVoidHeart ? KnightState.CASTING_VOID_SPIRIT : KnightState.CASTING_SPIRIT;
         if (wraithsTimer > 0) return hasVoidHeart ? KnightState.CASTING_VOID_WRAITHS : KnightState.CASTING_WRAITHS;
 
-        // 2. State Triggers
         if (isFocusing) return KnightState.FOCUSING;
         if (isDashing) return hasSharpShadow ? KnightState.SHADOW_DASHING : KnightState.DASHING;
 
@@ -114,6 +126,10 @@ public class Knight {
         return KnightState.IDLE;
     }
 
+    /**
+     * Configures the primary Box2D rigid body alongside environmental sensors
+     * used for wall sliding and grounded evaluations.
+     */
     private void defineKnight(float x, float y) {
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
@@ -122,7 +138,6 @@ public class Knight {
         b2body = world.createBody(bodyDef);
         b2body.setFixedRotation(true);
 
-        // Main Body Fixture
         PolygonShape bodyShape = new PolygonShape();
         bodyShape.setAsBox(Constants.Knight.WIDTH_HALVED_SCALED, Constants.Knight.HEIGHT_HALVED_SCALED);
 
@@ -133,7 +148,6 @@ public class Knight {
 
         b2body.createFixture(fixtureDef).setUserData("knight");
 
-        // Foot Sensor (Detects Grounding)
         PolygonShape footSensor = new PolygonShape();
         footSensor.setAsBox(
             Constants.Knight.WIDTH_HALVED_SCALED * 0.8f,
@@ -145,7 +159,6 @@ public class Knight {
         fixtureDef.isSensor = true;
         b2body.createFixture(fixtureDef).setUserData("foot_sensor");
 
-        // Left wall sensor
         PolygonShape leftSensor = new PolygonShape();
         leftSensor.setAsBox(Constants.Knight.SENSOR_WIDTH, Constants.Knight.HEIGHT_HALVED_SCALED,
             new Vector2(-Constants.Knight.WIDTH_HALVED_SCALED, 0), 0);
@@ -154,7 +167,6 @@ public class Knight {
         leftDef.isSensor = true;
         b2body.createFixture(leftDef).setUserData("left_sensor");
 
-        // Right wall sensor
         PolygonShape rightSensor = new PolygonShape();
         rightSensor.setAsBox(Constants.Knight.SENSOR_WIDTH, Constants.Knight.HEIGHT_HALVED_SCALED,
             new Vector2(Constants.Knight.WIDTH_HALVED_SCALED, 0), 0);
@@ -163,15 +175,16 @@ public class Knight {
         rightDef.isSensor = true;
         b2body.createFixture(rightDef).setUserData("right_sensor");
 
-        // Memory cleanup
         bodyShape.dispose();
         footSensor.dispose();
         leftSensor.dispose();
         rightSensor.dispose();
     }
 
+    /**
+     * Grants soul resources to the Knight, capped at a maximum limit.
+     */
     public void addSoul(int amount) {
-        // Only play the sound if the orb isn't already maxed out
         if (soul < Constants.Knight.MAX_SOUL) {
             AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_SOUL_PICKUP, 0.9f, 1.1f);
         } else {
@@ -185,6 +198,9 @@ public class Knight {
         System.out.println("Soul gained! Current Soul: " + soul);
     }
 
+    /**
+     * Recovers health masks for the Knight, triggering auditory and visual feedback.
+     */
     public void heal(int amount) {
         health += amount;
         if (health > Constants.Knight.MAX_HEALTH) {
@@ -195,27 +211,28 @@ public class Knight {
         System.out.println("Healed! HP: " + health);
     }
 
+    /**
+     * Resolves incoming damage calculations, overriding with developer cheats or
+     * evaluating lethal thresholds to flag death states.
+     */
     public void takeDamage(int amount, float knockbackDirX) {
-        // Also intercept damages if Cheat is active
         if (isGodMode || isNoclip || iFrameTimer > 0 || isDead) return;
 
-        // EMERGENCY HEAL SAFETY NET INTERCEPT
         if (health - amount <= 0 && emergencyHealArmed) {
-            amount = health - 1; // This ensures health -= amount leaves exactly 1 HP
+            amount = health - 1;
             emergencyHealArmed = false;
             System.out.println("Emergency Heal prevented death! Taking knockback.");
         }
 
         eventCallback.setCameraTrauma(0.75f);
         health -= amount;
-        // Interrupt focus if we get hit!
+
         isFocusing = false;
         focusTimer = 0f;
 
         if (health <= 0) {
             System.out.println("Knight has died!");
 
-            // Instantly kill the walking loop on death
             if (walkLoopId != -1) {
                 AudioManager.stopSfx(Constants.Paths.Sounds.SFX_RUN, walkLoopId);
                 walkLoopId = -1;
@@ -226,14 +243,11 @@ public class Knight {
                 wallSlideLoopId = -1;
             }
 
-            // 1. Reset state for resurrection
             health = Constants.Knight.MAX_HEALTH;
             isDead = false;
 
-            // 2. Fire events
             eventCallback.onPlayerDeath();
         } else {
-            // Give 1 second of invincibility
             iFrameTimer = Constants.Knight.I_FRAME_DURATION;
             AudioManager.playSfxVaried(Constants.Paths.Sounds.SFX_DAMAGE, 0.85f, 1.15f);
             b2body.setLinearVelocity(0, 0);

@@ -7,51 +7,48 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 
+/**
+ * Dedicated renderer for the NPC Zote.
+ * Evaluates dynamic interaction flags and hostile states to determine the correct
+ * visual playback sequence.
+ */
 public class ZoteRenderer {
     private final Zote zote;
-    private float stateTimer = 0f;
-
-    private enum VisualState { IDLE, TALK, ATTACK }
-    private VisualState currentVisualState = VisualState.IDLE;
-
     private final Animation<TextureRegion> idleAnim;
     private final Animation<TextureRegion> talkAnim;
     private final Animation<TextureRegion> attackAnim;
+    private float stateTimer = 0f;
+    private VisualState currentVisualState = VisualState.IDLE;
 
     public ZoteRenderer(Zote zote, TextureAtlas atlas) {
         this.zote = zote;
         idleAnim = new Animation<>(0.1f, atlas.findRegions("zote_idle"), Animation.PlayMode.LOOP);
-
-        // NORMAL mode ensures it plays exactly once and stops!
+        // Normal playback ensures the dialogue animation completes a single cycle per interaction
         talkAnim = new Animation<>(0.1f, atlas.findRegions("zote_talk"), Animation.PlayMode.NORMAL);
-
         attackAnim = new Animation<>(0.1f, atlas.findRegions("zote_attack"), Animation.PlayMode.LOOP);
     }
 
     public void render(Batch batch, float dt) {
         VisualState nextState = currentVisualState;
 
-        // 1. Determine State
+        // Map the logical NPC interaction states to the visual rendering enumerator
         if (zote.isAngry()) {
             nextState = VisualState.ATTACK;
-        }
-        else if (zote.isTalking()) {
-            // Model says we just interacted! Switch to TALK.
+        } else if (zote.isTalking()) {
+            // Intercept active dialogue flags to trigger the talking animation sequence
             if (currentVisualState != VisualState.TALK) {
                 nextState = VisualState.TALK;
             }
-        }
-        else if (currentVisualState == VisualState.TALK) {
-            // If we are currently talking visually, stay in this state UNTIL the animation finishes!
+        } else if (currentVisualState == VisualState.TALK) {
+            // Lock the visual state machine until the transient talking animation resolves completely
             if (talkAnim.isAnimationFinished(stateTimer)) {
                 nextState = VisualState.IDLE;
             }
-        }
-        else {
+        } else {
             nextState = VisualState.IDLE;
         }
 
-        // 2. State Transition Reset
+        // Reset the internal timer upon state transitions to ensure clean animation playback
         if (nextState != currentVisualState) {
             stateTimer = 0f;
             currentVisualState = nextState;
@@ -66,12 +63,12 @@ public class ZoteRenderer {
             default -> currentFrame = idleAnim.getKeyFrame(stateTimer);
         }
 
-        // 3. Flipping Logic (Zote assets face LEFT by default)
+        // Synchronize horizontal sprite orientation with the NPC's movement trajectory
         boolean faceRight = zote.isFacingRight();
         if (faceRight && !currentFrame.isFlipX()) currentFrame.flip(true, false);
         else if (!faceRight && currentFrame.isFlipX()) currentFrame.flip(true, false);
 
-        // 4. Draw
+        // Calculate and apply centralized rendering coordinates based on the physical body's position
         float width = currentFrame.getRegionWidth() / Constants.World.PPM;
         float height = currentFrame.getRegionHeight() / Constants.World.PPM;
         float x = zote.b2body.getPosition().x - (width / 2f);
@@ -79,4 +76,6 @@ public class ZoteRenderer {
 
         batch.draw(currentFrame, x, y, width, height);
     }
+
+    private enum VisualState {IDLE, TALK, ATTACK}
 }

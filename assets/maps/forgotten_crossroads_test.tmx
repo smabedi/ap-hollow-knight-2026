@@ -62,7 +62,7 @@
   </tile>
  </tileset>
  <tileset firstgid="29" name="terrain" tilewidth="8" tileheight="8" tilecount="262144" columns="512">
-  <image source="../textures/environment/forgotten-crossroads/SpriteAtlasTexture-Crossroads (Group 0)-4096x4096-fmt12.png" width="4096" height="4096"/>
+  <image source="../textures/environment/forgotten-crossroads/main_1.png" width="4096" height="4096"/>
  </tileset>
  <tileset firstgid="262173" name="guard_table_01" tilewidth="8" tileheight="8" tilecount="680" columns="40">
   <image source="../textures/environment/forgotten-crossroads/guard_table_01.png" width="323" height="142"/>

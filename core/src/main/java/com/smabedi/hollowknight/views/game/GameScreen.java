@@ -31,7 +31,7 @@ import com.smabedi.hollowknight.controllers.PlayerController;
 import com.smabedi.hollowknight.models.entities.enemies.*;
 import com.smabedi.hollowknight.models.entities.items.Shockwave;
 import com.smabedi.hollowknight.models.entities.items.VengefulSpirit;
-import com.smabedi.hollowknight.models.entities.items.VfxInstance;
+import com.smabedi.hollowknight.models.entities.items.VfxType;
 import com.smabedi.hollowknight.models.entities.knight.Knight;
 import com.smabedi.hollowknight.models.entities.npcs.Zote;
 import com.smabedi.hollowknight.models.game.B2WorldCreator;
@@ -42,10 +42,19 @@ import com.smabedi.hollowknight.views.entities.*;
 
 import static com.badlogic.gdx.utils.Timer.schedule;
 
+/**
+ * The core gameplay loop and rendering engine.
+ * Orchestrates Box2D physics stepping, multi-layer parallax rendering, custom GLSL shader effects,
+ * input multiplexing, and entity life-cycles.
+ */
 public class GameScreen implements Screen {
+    public static final Array<VfxInstance> vfxList = new Array<>();
     private final OrthographicCamera camera;
     private final Viewport viewport;
     private final GameSession session;
+    private final Array<Body> bodyBuffer = new Array<>();
+    private final ShaderProgram worldShader;
+    public float timeScale = 1f;
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
     private World world;
@@ -60,24 +69,21 @@ public class GameScreen implements Screen {
     private HudRenderer hudRenderer;
     private PlayerController playerController;
     private SpriteBatch batch;
-    public float timeScale = 1f;
     private CheatController cheatController;
-    private final Array<Body> bodyBuffer = new Array<>();
-    public static final Array<VfxInstance> vfxList = new Array<>();
     private AmbientParticles ambientParticles;
     private AchievementManager achievementManager;
-    private final ShaderProgram worldShader;
     private float currentSaturation = 1f;
 
     public GameScreen(GameSession session) {
         this.session = session;
         camera = new OrthographicCamera();
+        float zoomFactor = 1.2f;
         viewport = new FitViewport(
-            Constants.UI.DEFAULT_WIDTH / Constants.World.PPM,
-            Constants.UI.DEFAULT_HEIGHT / Constants.World.PPM,
+            (Constants.UI.DEFAULT_WIDTH / Constants.World.PPM) / zoomFactor,
+            (Constants.UI.DEFAULT_HEIGHT / Constants.World.PPM) / zoomFactor,
             camera);
 
-        // --- COMPILE POST-PROCESSING SHADER ---
+        // Compile custom GLSL fragment and vertex shaders for dynamic brightness and desaturation effects
         String vertexShader =
             """
                 attribute vec4 a_position;
@@ -127,7 +133,16 @@ public class GameScreen implements Screen {
         loadMap(session.location);
     }
 
+    /**
+     * Bootstraps the Box2D physics environment, parses TiledMap objects,
+     * and instantiates all required entities and rendering controllers.
+     *
+     * @param location The enum identifier dictating the target map file.
+     */
     public void loadMap(LocationType location) {
+        // Terminate all active SFX loops from the previous map instance to prevent audio bleeds
+        AudioManager.stopAllSfx();
+
         if (map != null) map.dispose();
         if (renderer != null) renderer.dispose();
         if (gameUI != null) gameUI.dispose();
@@ -142,28 +157,44 @@ public class GameScreen implements Screen {
         camera.position.set(viewport.getWorldWidth() / 2f, viewport.getWorldHeight() / 2f, 0);
         batch = new SpriteBatch();
 
-        // --- AUDIO & PARTICLE LOGIC ---
-        // 1. Initialize Particles (It auto-detects the map internally!)
+        // Initialize environment-specific ambient particles
         ambientParticles = new AmbientParticles(location);
 
-        // 2. Handle Music Swaps
+        // Map audio tracks to localized environments
         switch (location) {
-            case FORGOTTEN_CROSSROADS ->
-                AudioManager.playMusic(Constants.Paths.Sounds.BGM_CROSSROADS, true);
-            case GREENPATH ->
-                AudioManager.playMusic(Constants.Paths.Sounds.BGM_GREENPATH, true);
-
+            case FORGOTTEN_CROSSROADS -> AudioManager.playMusic(Constants.Paths.Sounds.BGM_CROSSROADS, true);
+            case GREENPATH -> {
+                if (session.isArenaLocked) {
+                    AudioManager.playMusic(Constants.Paths.Sounds.BGM_BOSS, true);
+                } else {
+                    AudioManager.playMusic(Constants.Paths.Sounds.BGM_GREENPATH, true);
+                }
+            }
         }
 
         entityRenderers = new Array<>();
         TextureAtlas entityAtlas = Assets.getEntityAtlas();
 
+        // Reset the arena solidification flag to ensure the newly instantiated physical gates process correctly
+        session.arenaGatesSolidified = false;
+
         assert map != null;
         new B2WorldCreator(world, map, session);
 
+        Animation<TextureRegion> damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
         EventCallback eventCallback = new EventCallback() {
             @Override
-            public void spawnStaticVfx(Animation<TextureRegion> anim, float x, float y, float offsetX, float offsetY, boolean facingRight, boolean defaultFacesRight) {
+            public void spawnStaticVfx(VfxType type, float x, float y, float offsetX, float offsetY, boolean facingRight, boolean defaultFacesRight) {
+                Animation<TextureRegion> anim = switch (type) {
+                    case DAMAGE -> damageAnimation;
+                    case NORMAL_DASH -> Assets.getNormalDashVfx();
+                    case SHADOW_DASH -> Assets.getShadowDashVfx();
+                    case WRAITHS -> Assets.getWraithsVfx();
+                    case VOID_WRAITHS -> Assets.getVoidWraithsVfx();
+                    case SPIRIT_CAST -> Assets.getSpiritCastVfx();
+                    case VOID_SPIRIT_CAST -> Assets.getVoidSpiritCastVfx();
+                };
+
                 vfxList.add(new VfxInstance(anim, x, y, offsetX, offsetY, facingRight, defaultFacesRight));
             }
 
@@ -183,27 +214,23 @@ public class GameScreen implements Screen {
                 achievementManager.evaluateBossDefeat();
                 System.out.println("Boss died. Arena unlocked.");
 
-                // Freeze the player to prevent them from moving during the transition delay
                 player.isGodMode = true;
                 player.b2body.setLinearVelocity(0, player.b2body.getLinearVelocity().y);
 
-                // 1-Second Delay before transitioning to the End Game Screen
                 schedule(new Timer.Task() {
                     @Override
                     public void run() {
-                        // postRunnable forces this block to execute safely on the
-                        // next main OpenGL render frame, avoiding native threading collisions!
+                        // Dispatch the screen transition strictly to the main OpenGL render thread
                         Gdx.app.postRunnable(() -> ScreenManager.setEndGameScreen(session));
                     }
-                }, 1f);
+                }, 2f);
             }
 
             @Override
             public void onPlayerDeath() {
-                session.isArenaLocked = false;
                 session.pendingDeathRespawn = true;
                 session.deathCounter++;
-                System.out.println("Player died. Arena unlocked. Respawning.");
+                System.out.println("Player died. Respawning.");
             }
 
             @Override
@@ -213,12 +240,14 @@ public class GameScreen implements Screen {
             }
         };
 
-        Animation<TextureRegion> damageAnimation = new Animation<>(0.05f, Assets.getVfxAtlas().findRegions("damage_vfx"), Animation.PlayMode.NORMAL);
         enemies = new Array<>();
         for (MapObject object : map.getLayers().get("spawns").getObjects()) {
             float x = ((float) object.getProperties().get("x")) / Constants.World.PPM;
             float y = ((float) object.getProperties().get("y")) / Constants.World.PPM;
             String type = (String) object.getProperties().get("type");
+
+            zote = null;
+            zoteRenderer = null;
 
             switch (type) {
                 case "player" -> {
@@ -232,7 +261,6 @@ public class GameScreen implements Screen {
 
                     player = new Knight(world, spawnX, spawnY, session.health, session.soul, eventCallback);
 
-                    // Synchronize session and initial safe spot
                     session.playerX = spawnX;
                     session.playerY = spawnY;
                     if (session.lastSafeX == -1f) {
@@ -262,13 +290,13 @@ public class GameScreen implements Screen {
                     entityRenderers.add(new HuskHornheadRenderer(hornhead, entityAtlas));
                 }
                 case "crystal_guardian" -> {
-                    CrystalGuardian guardian = new CrystalGuardian(world, x, y, false, eventCallback); // false = starts facing left
+                    CrystalGuardian guardian = new CrystalGuardian(world, x, y, false, eventCallback);
                     enemies.add(guardian);
                     entityRenderers.add(new CrystalGuardianRenderer(guardian, entityAtlas));
                 }
-                case "boss" -> { // Match the Type string from your Tiled map
-                    FalseKnight boss = new FalseKnight(world, x, y, eventCallback, damageAnimation);
-                    enemies.add(boss); // Bosses extend Enemy, so they fit in the AI update loop naturally
+                case "boss" -> {
+                    FalseKnight boss = new FalseKnight(world, x, y, eventCallback);
+                    enemies.add(boss);
                     entityRenderers.add(new FalseKnightRenderer(boss, Assets.getBossAtlas()));
                 }
                 case "zote" -> {
@@ -278,59 +306,60 @@ public class GameScreen implements Screen {
             }
         }
 
-        // --- NEW: Execute Cross-Map Boss Teleport ---
+        // Execute teleportation directives triggered via developer cheats
         if (session.pendingBossTeleport && session.bossTeleportX != -1f) {
-            // Snap the player to the teleport point
             assert player != null;
             player.b2body.setTransform(session.bossTeleportX, session.bossTeleportY, 0);
 
-            // Sync all session coordinates so saving and respawning work perfectly
             session.playerX = session.bossTeleportX;
             session.playerY = session.bossTeleportY;
             session.lastSafeX = session.bossTeleportX;
             session.lastSafeY = session.bossTeleportY;
 
-            session.pendingBossTeleport = false; // Consume the flag
+            session.pendingBossTeleport = false;
             System.out.println("Cross-map boss teleport complete.");
         }
 
-        // Initialize the UI and HUD for the new map
         gameUI = new GameUI(session, player);
         hudRenderer = new HudRenderer(player);
 
-        // --- CRITICAL FIX: Manually push the current screen size to the new viewports! ---
+        // Force viewport synchronization to prevent UI scaling defects upon creation
         int currentWidth = Gdx.graphics.getWidth();
         int currentHeight = Gdx.graphics.getHeight();
         gameUI.resize(currentWidth, currentHeight);
         hudRenderer.resize(currentWidth, currentHeight);
 
         achievementManager = new AchievementManager(session, gameUI);
-        playerController = new PlayerController(player, session.inventory, gameUI, eventCallback, damageAnimation);
+        playerController = new PlayerController(player, session.inventory, gameUI, eventCallback);
         cheatController = new CheatController(player, gameUI, this, session);
 
-        world.setContactListener(new WorldContactListener(player, session.inventory, session, eventCallback, damageAnimation));
+        world.setContactListener(new WorldContactListener(player, session.inventory, session, eventCallback));
 
         setupInputProcessors();
     }
 
+    /**
+     * Executes the primary game logic step. Evaluates entity state, handles input,
+     * steps the Box2D physics simulation, and enforces camera boundaries.
+     *
+     * @param dt Unscaled delta time from the render loop.
+     */
     public void update(float dt) {
         if (gameUI.isPaused()) return;
 
-        // --- MAP TRANSITION EXECUTION ---
+        // Process scheduled map transitions sequentially
         if (session.pendingTransition) {
             session.location = session.nextLocation;
 
-            // --- CRITICAL FIX: Save the Knight's current stats before destroying him! ---
+            // Preserve local player vitals across scene destruction
             if (player != null) {
                 session.health = player.health;
                 session.soul = player.soul;
             }
 
-            // Force the engine to use the target map's default player_spawn
             session.playerX = -1f;
             session.playerY = -1f;
 
-            // Reset safe spots so we don't teleport back to the old map
             session.lastSafeX = -1f;
             session.lastSafeY = -1f;
 
@@ -340,7 +369,6 @@ public class GameScreen implements Screen {
             return;
         }
 
-        // Scale timers and inputs
         float scaledDt = dt * timeScale;
 
         playerController.handleInput(scaledDt);
@@ -355,25 +383,29 @@ public class GameScreen implements Screen {
             }
         }
 
-        // Safely solidify gates (index-based iteration)
+        // Dynamically solidify background arena gates during boss encounters
         if (session.isArenaLocked && !session.arenaGatesSolidified) {
             world.getBodies(bodyBuffer);
 
             for (int i = 0; i < bodyBuffer.size; i++) {
                 Body b = bodyBuffer.get(i);
-                // It is safe to access the fixture list as we are not
-                // destroying the body, just toggling a property.
                 //noinspection GDXJavaUnsafeIterator
                 for (Fixture f : b.getFixtureList()) {
                     if ("arena_gate".equals(f.getUserData())) {
-                        f.setSensor(false); // Wall is now solid
+                        f.setSensor(false);
                     }
                 }
             }
             session.arenaGatesSolidified = true;
+
+            for (int i = 0; i < enemies.size; i++) {
+                if (enemies.get(i) instanceof FalseKnight) {
+                    ((FalseKnight) enemies.get(i)).isActive = true;
+                }
+            }
         }
 
-        // Safely OPEN gates when arena is unlocked
+        // Revert gates to transparent sensors when the encounter concludes
         if (!session.isArenaLocked && session.arenaGatesSolidified) {
             world.getBodies(bodyBuffer);
             for (int i = 0; i < bodyBuffer.size; i++) {
@@ -381,47 +413,47 @@ public class GameScreen implements Screen {
                 //noinspection GDXJavaUnsafeIterator
                 for (Fixture f : b.getFixtureList()) {
                     if ("arena_gate".equals(f.getUserData())) {
-                        f.setSensor(true); // Gates become ghosts again
+                        f.setSensor(true);
                     }
                 }
             }
             session.arenaGatesSolidified = false;
         }
 
-        // DO NOT scale the frameTime added to the accumulator
+        // Decouple physics stepping from render framerate
         float frameTime = Math.min(dt, 0.25f);
         accumulator += frameTime;
         float TIME_STEP = Constants.World.TIME_STEP;
 
         while (accumulator >= TIME_STEP) {
-            // Scale the physics step internally, keeping 60 smooth frames!
             world.step(TIME_STEP * timeScale, 6, 2);
             accumulator -= TIME_STEP;
         }
 
-        // 1. UI Check: Did we just discover a new checkpoint?
         if (session.safeSpotUpdated) {
             gameUI.showToast(Assets.getString("checkpoint_reached"));
             AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
-            session.safeSpotUpdated = false; // Consume the flag
+            session.safeSpotUpdated = false;
         }
 
-        // 2. Execute DEATH Respawn (Returns to Level Start)
+        // Process respawn protocols triggered by lethal combat damage
         if (session.pendingDeathRespawn) {
-            player.b2body.setTransform(session.initialSpawnX, session.initialSpawnY, 0);
+            if (session.isArenaLocked) {
+                player.b2body.setTransform(session.lastSafeX, session.lastSafeY, 0);
+            } else {
+                player.b2body.setTransform(session.initialSpawnX, session.initialSpawnY, 0);
+                session.lastSafeX = session.initialSpawnX;
+                session.lastSafeY = session.initialSpawnY;
+            }
+
             player.b2body.setLinearVelocity(0, 0);
 
-            // Reset the safe spot to the start point!
-            session.lastSafeX = session.initialSpawnX;
-            session.lastSafeY = session.initialSpawnY;
-
-            // You can add a localization string for "You Died!" later
             gameUI.showToast(Assets.getString("death_respawning"));
             AudioManager.playSfx(Constants.Paths.Sounds.SFX_NOTIFICATION);
 
             session.pendingDeathRespawn = false;
         }
-        // 3. Execute SPIKE Respawn (Returns to Last Checkpoint)
+        // Process respawn protocols triggered by environmental hazards
         else if (session.pendingRespawn) {
             player.b2body.setTransform(session.lastSafeX, session.lastSafeY, 0);
             player.b2body.setLinearVelocity(0, 0);
@@ -440,7 +472,8 @@ public class GameScreen implements Screen {
             zote.update(scaledDt, player);
         }
 
-        world.getBodies(bodyBuffer); // LibGDX safely clears and refills this existing array!
+        // Garbage collection tracking for spell projectiles
+        world.getBodies(bodyBuffer);
         //noinspection GDXJavaUnsafeIterator
         for (Body body : bodyBuffer) {
             Object userData = body.getUserData();
@@ -457,16 +490,22 @@ public class GameScreen implements Screen {
                     wave.isDestroyed = true;
                 } else if (!wave.isDestroyed) {
                     wave.stateTimer += scaledDt;
+                    float currentVx = body.getLinearVelocity().x;
+                    float direction = Math.signum(currentVx);
+                    body.setLinearVelocity(currentVx + (direction * 15f * scaledDt), 0);
                 }
             }
         }
 
-        // 3. APPLY CAMERA LOGIC (Lerp, Clamp)
+        // Evaluate camera lerping targeting the player
         float targetX = player.b2body.getPosition().x;
         float targetY = player.b2body.getPosition().y;
 
-        camera.position.x += (targetX - camera.position.x) * 0.1f;
-        camera.position.y += (targetY - camera.position.y) * 0.1f;
+        float cameraSpeed = 8f;
+        float lerpFactor = Math.min(1f, cameraSpeed * scaledDt);
+
+        camera.position.x += (targetX - camera.position.x) * lerpFactor;
+        camera.position.y += (targetY - camera.position.y) * lerpFactor;
 
         float camHalfWidth = camera.viewportWidth / 2f;
         float camHalfHeight = camera.viewportHeight / 2f;
@@ -476,14 +515,13 @@ public class GameScreen implements Screen {
         float currentMinY = session.isArenaLocked ? session.arenaMinY : session.mapMinY;
         float currentMaxY = session.isArenaLocked ? session.arenaMaxY : session.mapMaxY;
 
-        // X-Axis Clamp
+        // Apply boundary clamping
         if ((currentMaxX - currentMinX) <= camera.viewportWidth) {
             camera.position.x = currentMinX + (currentMaxX - currentMinX) / 2f;
         } else {
             camera.position.x = MathUtils.clamp(camera.position.x, currentMinX + camHalfWidth, currentMaxX - camHalfWidth);
         }
 
-        // Y-Axis Clamp
         if ((currentMaxY - currentMinY) <= camera.viewportHeight) {
             camera.position.y = currentMinY + (currentMaxY - currentMinY) / 2f;
         } else {
@@ -501,20 +539,18 @@ public class GameScreen implements Screen {
 
         viewport.apply();
 
-        float anchorX = 16;
-        float anchorY = 11;
+        float anchorX = 5;
+        float anchorY = 10;
 
-        // Store the pure logical position calculated by update()
         float realX = camera.position.x;
         float realY = camera.position.y;
         float travelX = realX - anchorX;
         float travelY = realY - anchorY;
 
-        // --- CALCULATE SHAKE OFFSET FOR THIS FRAME ---
+        // Apply physical screen shake calculations based on accumulated trauma
         float shakeOffsetX = 0f;
         float shakeOffsetY = 0f;
 
-        // Freeze shake if the game is paused
         if (session.shakeTrauma > 0 && (gameUI == null || !gameUI.isPaused())) {
             float shake = session.shakeTrauma * session.shakeTrauma * session.shakeTrauma;
             shakeOffsetX = Constants.Camera.MAX_SHAKE_OFFSET_X * shake * MathUtils.random(-1f, 1f);
@@ -525,35 +561,28 @@ public class GameScreen implements Screen {
         float viewWidth = camera.viewportWidth + (overscan * 2);
         float viewHeight = camera.viewportHeight + (overscan * 2);
 
-        // =========================================================
-        // SHADER CALCULATIONS (Brightness & Health Saturation)
-        // =========================================================
+        // Pre-process target shader saturation based on active health metrics
         float targetSaturation = 1f;
 
         if (player != null) {
             if (player.health == 2) {
-                targetSaturation = 0.5f; // 50% saturation
+                targetSaturation = 0.5f;
             } else if (player.health <= 1) {
-                targetSaturation = 0.1f; // 10% saturation
+                targetSaturation = 0.1f;
             }
         }
 
-        // Lerp the saturation for a smooth fade effect
-        float transitionSpeed = 1.5f; // Adjust to make the fade faster or slower
+        float transitionSpeed = 1.5f;
         currentSaturation = MathUtils.lerp(currentSaturation, targetSaturation, delta * transitionSpeed);
 
-        // Bind the shader and inject our variables
         worldShader.bind();
         worldShader.setUniformf("u_brightness", GameSettings.getBrightness());
         worldShader.setUniformf("u_saturation", currentSaturation);
 
-        // Lock the shader onto our renderers
         renderer.getBatch().setShader(worldShader);
         batch.setShader(worldShader);
 
-        // =========================================================
-        // PASS 1: BACKGROUND (Slow Parallax)
-        // =========================================================
+        // Pass 1: Background Layer
         camera.position.set(anchorX + (travelX * 0.5f) + shakeOffsetX, anchorY + (travelY * 0.5f) + shakeOffsetY, 0);
         camera.update();
 
@@ -564,10 +593,8 @@ public class GameScreen implements Screen {
         );
         renderer.render(new int[]{0});
 
-        // =========================================================
-        // PASS 2: BACK (Slightly Slow Parallax)
-        // =========================================================
-        camera.position.set(anchorX + (travelX * 0.75f) + shakeOffsetX, anchorY + (travelY * 0.75f) + shakeOffsetY, 0);
+        // Pass 2: Secondary Background
+        camera.position.set(anchorX + (travelX * 0.9f) + shakeOffsetX, anchorY + (travelY * 0.9f) + shakeOffsetY, 0);
         camera.update();
 
         renderer.setView(camera.combined,
@@ -577,9 +604,7 @@ public class GameScreen implements Screen {
         );
         renderer.render(new int[]{1, 2, 3});
 
-        // =========================================================
-        // PASS 3: MID (Normal Speed)
-        // =========================================================
+        // Pass 3: Mid-ground (Physical layer)
         camera.position.set(realX + shakeOffsetX, realY + shakeOffsetY, 0);
         camera.update();
 
@@ -590,16 +615,12 @@ public class GameScreen implements Screen {
         );
         renderer.render(new int[]{4, 5, 6});
 
-        // =========================================================
-        // PASS 4: DRAW ENTITIES & PROJECTILES
-        // =========================================================
+        // Pass 4: Dynamic Entities and Projectiles
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        // Set to 0f if paused, freezing all entity animations & particles
         float renderDelta = (gameUI != null && gameUI.isPaused()) ? 0f : (delta * timeScale);
 
-        // Draw enemies and Zote first so they appear behind the Knight if they overlap
         //noinspection GDXJavaUnsafeIterator
         for (EntityRenderer entityRenderer : entityRenderers) {
             entityRenderer.render(batch, renderDelta);
@@ -613,7 +634,7 @@ public class GameScreen implements Screen {
 
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
 
-        // --- DRAW STATIC VFX ---
+        // Render Static VFX overlays
         //noinspection GDXJavaUnsafeIterator
         for (VfxInstance vfx : vfxList) {
             TextureRegion frame = vfx.animation.getKeyFrame(vfx.timer);
@@ -636,7 +657,7 @@ public class GameScreen implements Screen {
 
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-        // --- DRAW DYNAMIC PROJECTILES ---
+        // Extract Box2D geometry specifically mapping to projectile logic
         world.getBodies(bodyBuffer);
         //noinspection GDXJavaUnsafeIterator
         for (Body body : bodyBuffer) {
@@ -659,10 +680,9 @@ public class GameScreen implements Screen {
                     batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
             }
 
-            // FALSE KNIGHT SHOCKWAVE
             else if (userData instanceof Shockwave wave && !wave.isDestroyed) {
                 Animation<TextureRegion> anim = Assets.getShockwaveVfx();
-                wave.stateTimer += renderDelta; // Advance timer inside the open batch loop safely
+                wave.stateTimer += renderDelta;
                 TextureRegion frame = anim.getKeyFrame(wave.stateTimer);
 
                 boolean movingRight = body.getLinearVelocity().x > 0;
@@ -674,16 +694,12 @@ public class GameScreen implements Screen {
                 float h = frame.getRegionHeight() / Constants.World.PPM;
 
                 batch.draw(frame, body.getPosition().x - (w / 2f), body.getPosition().y - (h / 2f) + 0.5f, w, h);
-
-                if (anim.isAnimationFinished(wave.stateTimer)) { wave.setToDestroy = true; }
             }
         }
 
         batch.end();
 
-        // =========================================================
-        // PASS 5: FOREGROUNDS (Fast Parallax)
-        // =========================================================
+        // Pass 5: Foreground (Fast Parallax)
         camera.position.set((realX * 1.3f) + shakeOffsetX, (realY * 1.3f) + shakeOffsetY, 0);
         camera.update();
 
@@ -694,35 +710,26 @@ public class GameScreen implements Screen {
         );
         renderer.render(new int[]{7, 8, 9});
 
-        // --- RENDER AMBIENT PARTICLES (Foreground Parallax) ---
         camera.position.set((realX * 1.5f) + shakeOffsetX, (realY * 1.5f) + shakeOffsetY, 0);
         camera.update();
 
         batch.setProjectionMatrix(camera.combined);
-        // FIXED: Removed batch.begin() and batch.end() here because AmbientParticles handles it internally!
         ambientParticles.updateAndRender(renderDelta, camera, batch);
 
-        // --- SHADER RESET ---
-        // Wipe the shader so the HUD, Overlays, and Menus render normally!
+        // Decouple shaders prior to pure UI drawing operations
         batch.setShader(null);
         renderer.getBatch().setShader(null);
 
-        // =========================================================
-        // PASS 6: PURE VIEW HUD OVERLAY
-        // =========================================================
+        // Pass 6: Pure View HUD Overlay
         if (hudRenderer != null) {
             hudRenderer.update(delta);
 
-            // HudRenderer FBO logic requires an open batch to start,
-            // and it leaves it open when it's done.
             batch.begin();
             hudRenderer.render(batch);
             batch.end();
         }
 
-        // =========================================================
-        // PASS 7: SCENE2D UI
-        // =========================================================
+        // Pass 7: Scene2D Main User Interface
         camera.position.set(realX, realY, 0);
         camera.update();
 
@@ -766,6 +773,10 @@ public class GameScreen implements Screen {
         if (worldShader != null) worldShader.dispose();
     }
 
+    /**
+     * Instantiates an InputMultiplexer to correctly funnel priority inputs
+     * through the developer cheat system down into the Scene2D UI layer.
+     */
     private void setupInputProcessors() {
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(cheatController);
@@ -798,12 +809,14 @@ public class GameScreen implements Screen {
             }
         });
 
-        // Tell LibGDX to use our fresh multiplexer!
         Gdx.input.setInputProcessor(multiplexer);
     }
 
+    /**
+     * Executes a teardown and reconstruction of the main UI layout components,
+     * ensuring dynamic data binding is safely preserved across language transitions.
+     */
     public void rebuildUI() {
-        // Remember the current states
         boolean wasPaused = gameUI != null && gameUI.isPaused();
         boolean wasInventoryOpen = gameUI != null && gameUI.isInventoryOpen();
 
@@ -811,22 +824,18 @@ public class GameScreen implements Screen {
             gameUI.dispose();
         }
 
-        // Rebuild with new language strings
         gameUI = new GameUI(session, player);
 
-        // --- NEW: Update the controllers with the fresh UI reference! ---
         if (cheatController != null) cheatController.setGameUI(gameUI);
         if (playerController != null) playerController.setGameUI(gameUI);
         if (achievementManager != null) achievementManager.setGameUI(gameUI);
 
-        // Restore the states
         if (wasInventoryOpen) {
             gameUI.toggleInventory();
         } else if (wasPaused) {
             gameUI.togglePause();
         }
 
-        // Rebind the input multiplexer so the new GameUI stage receives clicks
         setupInputProcessors();
     }
 }
