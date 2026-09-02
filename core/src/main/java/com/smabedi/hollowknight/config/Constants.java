@@ -114,8 +114,8 @@ public final class Constants {
     }
 
     public static final class UI {
-        public static final int DEFAULT_WIDTH = 1920;
-        public static final int DEFAULT_HEIGHT = 1080;
+        public static final int DEFAULT_WIDTH = 1600;
+        public static final int DEFAULT_HEIGHT = 900;
         public static final float UPP = 2f; // Units Per Pixel UI scaling
         public static final int OVERSCREEN = 1000;
     }
