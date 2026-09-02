@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.smabedi.hollowknight.config.Assets;
 import com.smabedi.hollowknight.config.Constants;
 import com.smabedi.hollowknight.config.GameSettings;
@@ -24,8 +24,7 @@ abstract public class MenuScreen implements Screen {
     private float stateTime = 0f;
 
     public MenuScreen() {
-        ScreenViewport viewport = new ScreenViewport();
-        viewport.setUnitsPerPixel(1f / Constants.UI.UPP);
+        FitViewport viewport = new FitViewport(Constants.UI.DEFAULT_WIDTH, Constants.UI.DEFAULT_HEIGHT);
         this.stage = new Stage(viewport);
         this.skin = Assets.getSkin();
 
