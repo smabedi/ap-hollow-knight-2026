@@ -24,7 +24,7 @@ abstract public class MenuScreen implements Screen {
     private float stateTime = 0f;
 
     public MenuScreen() {
-        FitViewport viewport = new FitViewport(Constants.UI.DEFAULT_WIDTH, Constants.UI.DEFAULT_HEIGHT);
+        FitViewport viewport = new FitViewport(Constants.UI.DEFAULT_WIDTH / 1.25f, Constants.UI.DEFAULT_HEIGHT / 1.25f);
         this.stage = new Stage(viewport);
         this.skin = Assets.getSkin();
 
